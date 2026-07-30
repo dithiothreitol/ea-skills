@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+
+# Compiled model artifacts are reproducible from the DSL; do not commit them.
+**/build/model.xml
+**/build/*.svg
+**/build/report/

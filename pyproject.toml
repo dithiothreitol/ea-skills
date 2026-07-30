@@ -1,0 +1,19 @@
+[project]
+name = "ea-skills"
+version = "0.1.0"
+description = "Claude Code skills and deterministic tooling for the full enterprise architecture lifecycle"
+requires-python = ">=3.11"
+dependencies = ["pyyaml>=6.0", "jsonschema>=4.20", "lxml>=5.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+easkills = "easkills.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.setuptools]
+packages = ["easkills"]

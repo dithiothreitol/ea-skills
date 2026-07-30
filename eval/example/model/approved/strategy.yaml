@@ -1,0 +1,49 @@
+# Strategy layer. The capability map is the spine of the model: everything in the
+# lower layers attaches to a capability, which is what makes portfolio views derivable.
+
+elements:
+  - id: cap-order-management
+    type: Capability
+    name: Order Management
+    documentation: Taking, validating and confirming customer orders.
+    owner: ea@aurorafoods.example
+    lastReviewed: 2026-07-15
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: We can take an order and we can ship it
+
+  - id: cap-warehouse-operations
+    type: Capability
+    name: Warehouse Operations
+    documentation: Picking, packing and dispatching goods from the warehouse.
+    owner: ea@aurorafoods.example
+    lastReviewed: 2026-07-15
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: release the order to the warehouse for picking
+
+  - id: cap-customer-service
+    type: Capability
+    name: Customer Service
+    documentation: >
+      Answering customer questions about orders in flight. Identified as the weakest
+      capability in the 2026-07-15 operations interview.
+    owner: ea@aurorafoods.example
+    lastReviewed: 2026-07-15
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: Customer service is the weak spot
+
+  - id: goal-shorten-lead-time
+    type: Goal
+    name: Shorten Order-to-Delivery Lead Time
+    documentation: >
+      No stakeholder stated this goal explicitly; it is inferred from the emphasis on
+      delivery windows and the described customer-service pain. Confirm with the
+      sponsor before using it to justify investment.
+    owner: ea@aurorafoods.example
+    lastReviewed: 2026-07-15
+    assumed: true
+    rationale: >
+      Inferred from operational pain described in the interview, not stated as a goal by
+      any stakeholder. Needs confirmation at the next architecture board.

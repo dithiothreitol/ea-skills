@@ -1,0 +1,7 @@
+# Negative fixture: every concept in this repository is wrong on purpose.
+# The test suite asserts that each documented rule code actually fires here.
+name: Broken Fixture Model
+documentation: Deliberately invalid model used to test the validator.
+stalenessDays: 30
+quoteMatchThreshold: 0.90
+factsRoot: .

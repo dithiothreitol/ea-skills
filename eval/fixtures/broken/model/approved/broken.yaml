@@ -1,0 +1,241 @@
+# Each entry below is annotated with the rule code it is meant to trigger.
+
+elements:
+  # --- well-formed anchors, used as endpoints for the relationship tests -------------
+  - id: node-a
+    type: Node
+    name: Application Server A
+    owner: infra@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data centre hosts two application servers
+
+  - id: node-b
+    type: Node
+    name: Application Server B
+    owner: infra@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: facts/sources/notes.md
+        quote: two application servers that mirror each other
+
+  - id: app-finance
+    type: ApplicationComponent
+    name: Finance System
+    owner: finance@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: facts/sources/notes.md
+        quote: Order records are held by the finance system
+
+  - id: data-order
+    type: DataObject
+    name: Order Record
+    owner: finance@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: facts/sources/notes.md
+        quote: referenced by the customer portal
+
+  - id: actor-customer
+    type: BusinessActor
+    name: Customer
+    owner: sales@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: facts/sources/notes.md
+        quote: referenced by the customer portal
+
+  - id: process-invoicing
+    type: BusinessProcess
+    name: Issue Invoice
+    owner: finance@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: facts/sources/notes.md
+        quote: Order records are held by the finance system
+
+  # --- NAME004: two elements of the same type sharing a name ------------------------
+  - id: dup-name-first
+    type: ApplicationInterface
+    name: Shared Name
+    owner: it@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data centre hosts two application servers
+  - id: dup-name-second
+    type: ApplicationInterface
+    name: Shared Name
+    owner: it@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data centre hosts two application servers
+
+  # --- GOV001 + GOV002: no owner, no review date, in the approved zone --------------
+  - id: unowned
+    type: BusinessRole
+    name: Unowned Role
+    provenance:
+      - file: facts/sources/notes.md
+        quote: Order records are held by the finance system
+
+  # --- GOV004: reviewed long before the 30-day threshold in ea.config.yaml ----------
+  - id: stale
+    type: BusinessRole
+    name: Stale Role
+    owner: someone@example.test
+    lastReviewed: 2020-01-01
+    provenance:
+      - file: facts/sources/notes.md
+        quote: Order records are held by the finance system
+
+  # --- GOV003: unparseable review date ----------------------------------------------
+  - id: bad-date
+    type: BusinessRole
+    name: Bad Date Role
+    owner: someone@example.test
+    lastReviewed: "2026-13-45"
+    provenance:
+      - file: facts/sources/notes.md
+        quote: Order records are held by the finance system
+
+  # --- PROV003: the quote does not occur in the cited source -------------------------
+  - id: fabricated-quote
+    type: BusinessRole
+    name: Fabricated Citation Role
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: facts/sources/notes.md
+        quote: the board approved a budget of four million euro for this programme
+
+  # --- PROV004: quote is close but not verbatim ("center" vs "centre") ---------------
+  - id: paraphrased-quote
+    type: BusinessRole
+    name: Paraphrased Citation Role
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data center hosts two application servers
+
+  # --- PROV002: the cited source does not exist -------------------------------------
+  - id: missing-source
+    type: BusinessRole
+    name: Missing Source Role
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: facts/sources/does-not-exist.md
+        quote: any quote at all goes here
+
+  # --- PROV001: no provenance and not declared as an assumption ----------------------
+  - id: unsourced
+    type: BusinessRole
+    name: Unsourced Role
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+
+  # --- PROV005: assumed but no rationale --------------------------------------------
+  - id: assumed-without-rationale
+    type: BusinessRole
+    name: Assumed Role
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    assumed: true
+
+  # --- SMELL001 + NAME001: isolated element with a placeholder name ------------------
+  - id: orphan
+    type: Facility
+    name: TBD Distribution Centre
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data centre hosts two application servers
+
+  # --- SCHEMA001: not an ArchiMate concept ------------------------------------------
+  - id: bogus-type
+    type: Microservice
+    name: Bogus Type
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data centre hosts two application servers
+
+relationships:
+  # --- REL001: DataObject -> BusinessActor permits Association only ------------------
+  - id: rel-illegal
+    type: Serving
+    source: data-order
+    target: actor-customer
+    provenance:
+      - file: facts/sources/notes.md
+        quote: referenced by the customer portal
+
+  # --- REL001 with swapped-endpoint hint: Realization is legal the other way round ---
+  - id: rel-swapped
+    type: Realization
+    source: process-invoicing
+    target: app-finance
+    provenance:
+      - file: facts/sources/notes.md
+        quote: Order records are held by the finance system
+
+  # --- REL002: composition cycle ----------------------------------------------------
+  - id: rel-cycle-ab
+    type: Composition
+    source: node-a
+    target: node-b
+    provenance:
+      - file: facts/sources/notes.md
+        quote: two application servers that mirror each other
+  - id: rel-cycle-ba
+    type: Composition
+    source: node-b
+    target: node-a
+    provenance:
+      - file: facts/sources/notes.md
+        quote: two application servers that mirror each other
+
+  # --- REF001: endpoint that does not exist -----------------------------------------
+  - id: rel-dangling
+    type: Association
+    source: node-a
+    target: no-such-element
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data centre hosts two application servers
+
+  # --- REL003: same type, same endpoints, twice -------------------------------------
+  - id: rel-duplicate-one
+    type: Association
+    source: app-finance
+    target: actor-customer
+    provenance:
+      - file: facts/sources/notes.md
+        quote: Order records are held by the finance system
+  - id: rel-duplicate-two
+    type: Association
+    source: app-finance
+    target: actor-customer
+    provenance:
+      - file: facts/sources/notes.md
+        quote: Order records are held by the finance system
+
+views:
+  # --- REF002: view refers to an element that is not in the model --------------------
+  - id: view-bad-reference
+    name: Broken View
+    include:
+      - node-a
+      - no-such-element
+
+  # --- REF003: view with nothing on it ----------------------------------------------
+  - id: view-empty
+    name: Empty View
+    include: []

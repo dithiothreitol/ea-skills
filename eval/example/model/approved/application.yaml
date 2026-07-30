@@ -1,0 +1,83 @@
+# Application layer. Inventory-style attributes live in `properties` so application
+# portfolio views (TIME disposition, lifecycle, fit) are derivable without re-modelling.
+
+elements:
+  - id: app-order-portal
+    type: ApplicationComponent
+    name: Order Portal
+    documentation: Customer-facing ordering web application. Holds no stock data of its own.
+    owner: ecommerce@aurorafoods.example
+    lastReviewed: 2026-06-30
+    properties:
+      lifecycle: active
+      timeDisposition: Invest
+      functionalFit: good
+      technicalFit: good
+      hosting: managed cloud
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: Customer-facing ordering web application
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The order portal is where customers see prices and place orders
+
+  - id: app-erp-core
+    type: ApplicationComponent
+    name: ERP Core
+    documentation: Order master data, invoicing and finance. Publishes the order API.
+    owner: finance-systems@aurorafoods.example
+    lastReviewed: 2026-06-30
+    properties:
+      lifecycle: active
+      timeDisposition: Tolerate
+      functionalFit: adequate
+      technicalFit: poor
+      hosting: on-premise
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The ERP core holds the master order records and does the invoicing
+
+  - id: app-wms
+    type: ApplicationComponent
+    name: Warehouse Management System
+    documentation: Picking, packing and dispatch on the warehouse floor.
+    owner: logistics-it@aurorafoods.example
+    lastReviewed: 2026-06-30
+    properties:
+      lifecycle: active
+      timeDisposition: Migrate
+      functionalFit: good
+      technicalFit: adequate
+      hosting: on-premise
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: Picking, packing and dispatch
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The warehouse management system runs picking and dispatch on the floor
+
+  - id: service-order-api
+    type: ApplicationService
+    name: Order API
+    documentation: >
+      Published by the ERP core, consumed by the order portal. Single integration point
+      between the two systems and a single point of failure for ordering.
+    owner: finance-systems@aurorafoods.example
+    lastReviewed: 2026-06-30
+    properties:
+      criticality: high
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: The order API is published by the ERP core and consumed by the order portal
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: it calls an order API that the ERP publishes
+
+  - id: data-order-record
+    type: DataObject
+    name: Order Record
+    documentation: The ERP representation of a purchase order.
+    owner: finance-systems@aurorafoods.example
+    lastReviewed: 2026-06-30
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: >
+          Order records are stored in the ERP database and represent the purchase orders
+          that the business works with

@@ -1,0 +1,286 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ea-skills:schema:model",
+  "title": "EA Skills model file",
+  "description": "One fragment of the enterprise architecture model. Enumerations are generated from the vendored ArchiMate 3.2 oracle.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "elements": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/element"
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/relationship"
+      }
+    },
+    "views": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/view"
+      }
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+      "maxLength": 80,
+      "description": "Stable author-supplied identifier; never regenerated."
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file",
+        "quote"
+      ],
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the source document, relative to the repository root."
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 8,
+          "description": "Verbatim excerpt from that document; verified mechanically."
+        }
+      }
+    },
+    "element": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/slug"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "documentation": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lastReviewed": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "provenance": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/provenance"
+          }
+        },
+        "assumed": {
+          "type": "boolean",
+          "description": "True when the concept is not evidenced by a source; requires a rationale."
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "type": {
+          "enum": [
+            "ApplicationCollaboration",
+            "ApplicationComponent",
+            "ApplicationEvent",
+            "ApplicationFunction",
+            "ApplicationInteraction",
+            "ApplicationInterface",
+            "ApplicationProcess",
+            "ApplicationService",
+            "Artifact",
+            "Assessment",
+            "BusinessActor",
+            "BusinessCollaboration",
+            "BusinessEvent",
+            "BusinessFunction",
+            "BusinessInteraction",
+            "BusinessInterface",
+            "BusinessObject",
+            "BusinessProcess",
+            "BusinessRole",
+            "BusinessService",
+            "Capability",
+            "CommunicationNetwork",
+            "Constraint",
+            "Contract",
+            "CourseOfAction",
+            "DataObject",
+            "Deliverable",
+            "Device",
+            "DistributionNetwork",
+            "Driver",
+            "Equipment",
+            "Facility",
+            "Gap",
+            "Goal",
+            "Grouping",
+            "ImplementationEvent",
+            "Junction",
+            "Location",
+            "Material",
+            "Meaning",
+            "Node",
+            "Outcome",
+            "Path",
+            "Plateau",
+            "Principle",
+            "Product",
+            "Representation",
+            "Requirement",
+            "Resource",
+            "Stakeholder",
+            "SystemSoftware",
+            "TechnologyCollaboration",
+            "TechnologyEvent",
+            "TechnologyFunction",
+            "TechnologyInteraction",
+            "TechnologyInterface",
+            "TechnologyProcess",
+            "TechnologyService",
+            "Value",
+            "ValueStream",
+            "WorkPackage"
+          ]
+        }
+      }
+    },
+    "relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "source",
+        "target"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/slug"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "documentation": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lastReviewed": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "provenance": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/provenance"
+          }
+        },
+        "assumed": {
+          "type": "boolean",
+          "description": "True when the concept is not evidenced by a source; requires a rationale."
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "type": {
+          "enum": [
+            "Access",
+            "Aggregation",
+            "Assignment",
+            "Association",
+            "Composition",
+            "Flow",
+            "Influence",
+            "Realization",
+            "Serving",
+            "Specialization",
+            "Triggering"
+          ]
+        },
+        "source": {
+          "$ref": "#/$defs/slug"
+        },
+        "target": {
+          "$ref": "#/$defs/slug"
+        }
+      }
+    },
+    "view": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/slug"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "documentation": {
+          "type": "string"
+        },
+        "viewpoint": {
+          "type": "string",
+          "description": "ArchiMate example viewpoint name, e.g. Layered or Capability Map."
+        },
+        "include": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slug"
+          },
+          "description": "Element ids to show; connections are derived from the model."
+        }
+      }
+    }
+  }
+}

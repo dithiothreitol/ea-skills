@@ -1,0 +1,39 @@
+# Views declare which elements to show. Geometry is computed by the compiler, so layout
+# is reproducible and diffs stay about content rather than pixels.
+
+views:
+  - id: layered-overview
+    name: Layered Overview
+    viewpoint: Layered
+    documentation: >
+      Whole-model overview from capabilities down to infrastructure. Frames the
+      "how does the portfolio support what we do" concern for architects.
+    include:
+      - cap-order-management
+      - cap-warehouse-operations
+      - cap-customer-service
+      - actor-b2b-customer
+      - process-order-fulfilment
+      - service-order-intake
+      - object-purchase-order
+      - app-order-portal
+      - app-erp-core
+      - app-wms
+      - service-order-api
+      - data-order-record
+      - node-erp-app-server
+      - sysswt-postgresql
+
+  - id: capability-realization
+    name: Capability Realization
+    viewpoint: Capability Map
+    documentation: >
+      Which application supports which capability. Frames the portfolio-rationalisation
+      concern for the CIO: one capability with a Tolerate-rated system behind it.
+    include:
+      - cap-order-management
+      - cap-warehouse-operations
+      - cap-customer-service
+      - app-order-portal
+      - app-erp-core
+      - app-wms

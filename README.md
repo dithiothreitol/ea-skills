@@ -1,0 +1,183 @@
+# ea-skills
+
+Claude Code skills for the whole enterprise-architecture lifecycle -- **define,
+document, govern, maintain** -- turning unstructured input into a validated ArchiMate
+3.2 model, generated views and standards-shaped documentation, in git.
+
+The design principle is narrow and load-bearing:
+
+> **The model supplies judgement. The tooling supplies proof.**
+> Anything a language model asserts about ArchiMate semantics, or about what a source
+> document says, is checked by code against vendored primary-source data before it can
+> enter the repository.
+
+That inverts the usual arrangement, and it is deliberate: relationship semantics is the
+weakest measured capability of language models on modelling tasks, and fabricated source
+citations are a documented failure mode. Both are exactly the kind of thing a validator
+catches for free and a reviewer catches at 3pm on a Friday, if at all.
+
+**Status: Phase 0 complete.** The deterministic core -- DSL, three-layer validator,
+Open Exchange compiler -- works and is tested. The skills that drive it are being built
+on top, phase by phase (see [Roadmap](#roadmap)).
+
+## What exists today
+
+```bash
+python -m pip install -r requirements.txt
+
+# Validate a model repository (exit 1 on any error -- use it as a CI gate)
+python -m easkills validate --root eval/example
+
+# Compile to ArchiMate Open Exchange XML, validated against the Open Group XSDs
+python -m easkills compile --root eval/example
+```
+
+The worked example (`eval/example/`) is a small fictional B2B food manufacturer: fifteen
+elements from capability map down to database, every one traceable to a quote in
+`facts/sources/`, two views, zero findings. `eval/fixtures/broken/` is its opposite --
+every rule in the catalogue violated on purpose, so the test suite can prove each rule
+actually fires.
+
+```
+$ python -m easkills validate --root eval/example
+EA model validation -- zone 'approved' at .../eval/example
+ArchiMate oracle 3.2; 15 elements, 15 relationships, 2 views
+
+INFO    PROV006  model/approved/strategy.yaml:elements[3] [goal-shorten-lead-time]
+         assumed, pending confirmation: Inferred from operational pain described in the
+         interview, not stated as a goal by any stakeholder. Needs confirmation at the
+         next architecture board.
+
+0 error(s), 0 warning(s) -- PASS
+```
+
+And what a real catch looks like:
+
+```
+ERROR   REL001  model/approved/broken.yaml:relationships[1] [rel-swapped]
+         Realization from BusinessProcess 'process-invoicing' to ApplicationComponent
+         'app-finance' is not permitted by the ArchiMate 3.2 relationship matrix.
+         Permitted here: Association, Flow, Serving, Triggering -- it is permitted in the
+         opposite direction, so the endpoints are probably swapped
+```
+
+## How it works
+
+**Authoring format is fragmented YAML** (`model/<zone>/*.yaml`), so git diffs stay
+reviewable at concept level. Open Exchange XML is a build artifact, never hand-edited.
+Identifiers are author-supplied stable slugs, so re-running a pipeline produces a
+reviewable diff rather than a rewrite.
+
+**Two zones.** `staging/` holds machine proposals; `approved/` holds human-signed
+content. Ownership and review dates are mandatory in `approved` and advisory in
+`staging`. Governance and reporting read only from `approved`.
+
+**Every concept is evidenced or declared.** Each element and relationship carries
+`provenance` (source file plus verbatim quote) which the validator locates in the actual
+file, or `assumed: true` with a rationale, which surfaces as an open question. There is
+no third option -- and no way to quietly invent an element.
+
+```yaml
+elements:
+  - id: app-erp-core
+    type: ApplicationComponent
+    name: ERP Core
+    owner: finance-systems@aurorafoods.example
+    lastReviewed: 2026-06-30
+    properties:
+      timeDisposition: Tolerate     # portfolio views come free, not from re-modelling
+      lifecycle: active
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The ERP core holds the master order records and does the invoicing
+```
+
+**Views declare content, not geometry.** A view lists which elements to show; the
+compiler computes a deterministic layered layout. Neither a person nor a model
+hand-places coordinates, so diffs stay about architecture.
+
+**The oracle is vendored and hash-pinned.** Semantic rules come from Archi's
+`relationships.xml` (the ArchiMate 3.2 permitted-relationship matrix, 11 569
+combinations) and the Open Group exchange schemas -- not from rules typed from memory,
+and not fetched at runtime. See [`oracle/NOTICE.md`](oracle/NOTICE.md). The JSON Schema
+for the DSL is *generated* from the same oracle, so the authoring format cannot drift
+from the validator.
+
+Full rule list with severities: [`docs/RULES.md`](docs/RULES.md). Design rationale and
+the research behind it: [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md).
+
+## Standards position
+
+| Concern | What is used | How |
+|---|---|---|
+| Notation | **ArchiMate 3.2** | Primary. Enforced from the machine-readable matrix, exported as Open Group Model Exchange XML. |
+| Architecture description | **ISO/IEC/IEEE 42010:2022** | Documentation structure and conformance checking: stakeholders, concerns, viewpoints, views, correspondences, decisions with rationale. Phase 3--4. |
+| Method and governance | **TOGAF 10** | Used as vocabulary and for governance mechanics (conformance levels, dispensations with expiry, Phase H change classes, Architecture Repository layout) -- *not* as a process to march through. |
+| Detail design | **UML** | Secondary, where ArchiMate is too coarse (sequences, deployment). |
+| Decisions | **MADR** | Architecture decision records in the governance log. |
+
+On TOGAF specifically: the empirical case-study literature finds that even
+self-described TOGAF practices do not follow the ADM or use the Content Framework, and
+that the single most-used EA artifact in practice -- the business capability map -- is not
+in TOGAF's content metamodel at all. So this repository targets the artifact set
+practitioners are documented to actually use (capability map first, then landscapes,
+inventories, roadmaps, principles, standards, solution overviews, decision records) and
+implements TOGAF where it is genuinely strong: governance mechanics.
+
+## Roadmap
+
+| Phase | Scope | Status |
+|---|---|---|
+| **0** | DSL + JSON Schema, three-layer validator, Open Exchange compiler, oracle pinning, worked example, negative fixtures, test suite | **done** |
+| **1** | `ea-intake`: chunked extraction with a gleaning pass, entity resolution, mechanically verified provenance, clarification questions where sources are thin | next |
+| **2** | Modelling skills per layer, capability map as spine, validate--repair loop capped at three iterations, two-zone approval | planned |
+| **3** | Viewpoint selection driven by stakeholder concerns, rendering (Archi headless / PlantUML), ISO 42010-structured architecture description, audience one-pagers | planned |
+| **4** | Governance and maintenance: compliance assessment with TOGAF's six conformance levels, dispensations with mandatory expiry, standards information base, Phase H change triage, delta ingestion, EA-debt register, staleness and KPI reporting, 42010 conformance checker | planned |
+| **5** | Golden-set regression harness and a maintained capability comparison against neighbouring projects | planned |
+
+Phase 4 is the point of the project, not an afterthought. Model *generation* is
+crowded; governing and maintaining a validated ArchiMate repository over time is not.
+
+## Honest positioning
+
+There is no shortage of adjacent work: Claude skills that advise on TOGAF, MCP servers
+that manipulate Archi models, tools that lint architecture-as-code in bespoke YAML,
+markdown-only governance frameworks, and commercial platforms with real ingestion
+agents. Several close neighbours appeared in mid-2026 and are moving quickly.
+
+What is not otherwise available, as of the July 2026 survey behind
+[`docs/BLUEPRINT.md`](docs/BLUEPRINT.md), is the *combination*: skills-packaged,
+ingesting unstructured input, emitting real ArchiMate exchange files with generated
+views, per-element source traceability that is mechanically verified, deterministic
+semantic validation, standards-shaped documentation, **and** the governance and
+maintenance half of the lifecycle. Each capability exists somewhere; the integration is
+the contribution, and the governance end is where it is thinnest elsewhere.
+
+That is a claim with a shelf life, and it is stated as a comparison rather than a boast
+so it can be checked and, when it stops being true, corrected.
+
+## Repository layout
+
+```
+easkills/        deterministic tooling (oracle, DSL, validator, compiler, CLI)
+oracle/          vendored, hash-pinned rule data + NOTICE.md
+schema/          model.schema.json -- generated from the oracle
+skills/          the Claude Code skills
+template/        scaffold to copy for a new enterprise
+eval/example/    worked example, clean
+eval/fixtures/   negative fixtures, deliberately broken
+tests/           pytest suite
+docs/            BLUEPRINT.md (design + research), RULES.md (rule catalogue)
+```
+
+## Development
+
+```bash
+python -m venv .venv && .venv/Scripts/python -m pip install -r requirements.txt
+.venv/Scripts/python -m pytest tests -q          # 64 tests
+.venv/Scripts/python -m easkills oracle-info     # oracle version + pin status
+.venv/Scripts/python -m easkills gen-schema      # regenerate the DSL schema
+```
+
+Licence: MIT for the code in this repository. The vendored oracle files are third-party
+material with their own terms -- see [`oracle/NOTICE.md`](oracle/NOTICE.md).

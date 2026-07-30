@@ -1,0 +1,24 @@
+elements:
+  - id: node-erp-app-server
+    type: Node
+    name: ERP Application Server
+    documentation: Dedicated server in the primary data centre hosting the ERP core.
+    owner: infrastructure@aurorafoods.example
+    lastReviewed: 2026-06-30
+    properties:
+      location: primary data centre
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: The ERP core runs on a dedicated application server in the primary data centre
+
+  - id: sysswt-postgresql
+    type: SystemSoftware
+    name: PostgreSQL 16
+    documentation: Database instance the ERP core depends on. Not shared with other systems.
+    owner: infrastructure@aurorafoods.example
+    lastReviewed: 2026-06-30
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: >
+          That server also hosts the PostgreSQL 16 database instance that the ERP depends
+          on

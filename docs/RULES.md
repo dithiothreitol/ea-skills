@@ -1,0 +1,94 @@
+# Rule catalogue
+
+Every rule is deterministic. None of them consults a language model, and every one is
+exercised by a case in `eval/fixtures/broken/` -- adding a rule means adding a fixture
+case for it, otherwise the test suite fails to prove the rule works.
+
+Severity meanings:
+
+* **error** -- the model is wrong. Exit code 1; the compiler refuses to run.
+* **warning** -- the model is questionable. Passes by default, fails under `--strict`.
+* **info** -- a declared, accepted state worth surfacing (currently: assumptions).
+
+## Layer 0 -- oracle integrity
+
+| Code | Severity | Rule |
+|---|---|---|
+| `ORACLE001` | error | A vendored oracle file is missing or does not match its pinned SHA-256. Re-pin deliberately with `python -m easkills pin-oracle`. |
+| `ORACLE002` | warning | The relationship matrix declares an ArchiMate version other than 3.2. |
+| `ORACLE003` | warning | The matrix contains a concept with no layer assignment in `easkills/oracle.py`. |
+
+## Layer 1 -- schema and integrity
+
+| Code | Severity | Rule |
+|---|---|---|
+| `SCHEMA000` | error | The YAML file cannot be parsed, or its top level is not a mapping. |
+| `SCHEMA001` | error | The file violates `schema/model.schema.json` -- unknown key, missing required field, bad identifier pattern, or a `type` that is not an ArchiMate 3.2 concept. |
+| `ID001` | error | Duplicate identifier. Reported against the second definition, naming the file holding the first. |
+| `ID002` | error | The same identifier is used by both an element and a relationship. |
+| `REF001` | error | A relationship endpoint does not resolve to an element in this zone. |
+| `REF002` | error | A view includes an element that is not in the model. |
+| `REF003` | warning | A view has no elements on it. |
+
+## Layer 1 -- traceability
+
+Traceability is verified, not trusted. A model whose citations are unchecked is a model
+whose citations may be invented, and invented citations are a documented failure mode of
+language-model extraction.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `PROV001` | error | No provenance and not marked `assumed: true`. Every concept is either evidenced or an explicit assumption. |
+| `PROV002` | error | The cited source file does not exist. |
+| `PROV003` | error | The quote does not occur in the cited file (whitespace- and case-insensitive). A citation that cannot be located is a fabricated citation. |
+| `PROV004` | warning | The quote matches only approximately (similarity at or above `quoteMatchThreshold`, default 0.90). Quote verbatim text instead of paraphrasing. |
+| `PROV005` | error | Marked `assumed: true` with no rationale. |
+| `PROV006` | info | A declared assumption, listed so it can be confirmed or dropped at review. |
+
+## Layer 1 -- governance metadata
+
+Ownership and review dates are the documented mitigations for the way EA repositories
+actually die: content nobody owns, that nobody revisits. They are mandatory in the
+`approved` zone and advisory in `staging`, where content is still a machine proposal.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `GOV001` | error / warning | No `owner`. Error in `approved`, warning in `staging`. |
+| `GOV002` | error / warning | No `lastReviewed`. Error in `approved`, warning in `staging`. |
+| `GOV003` | error | `lastReviewed` is not a valid ISO date. |
+| `GOV004` | warning | Not reviewed within `stalenessDays` (default 365). |
+| `GOV005` | warning | `lastReviewed` is in the future. |
+
+## Layer 2 -- ArchiMate semantics
+
+| Code | Severity | Rule |
+|---|---|---|
+| `REL001` | error | The relationship type is not permitted between these two element types by the ArchiMate 3.2 matrix. The message lists what *is* permitted, and says so explicitly when the relationship would be legal in the opposite direction -- swapped endpoints are the most common authoring mistake. |
+| `REL002` | error | Composition or aggregation closes a cycle. Structural containment must form a hierarchy. |
+| `REL003` | warning | Another relationship already has the same type, source and target. |
+
+## Layer 2 -- conventions and smells
+
+| Code | Severity | Rule |
+|---|---|---|
+| `NAME001` | warning | The name contains a placeholder (`TBD`, `TODO`, `XXX`, `???`, ...). |
+| `NAME002` | warning | The name has leading, trailing or doubled whitespace. |
+| `NAME003` | warning | The name is shorter than three characters. |
+| `NAME004` | warning | Another element of the same type already has this name. Duplicate names are an EA smell and break traceability for anyone reading a view. |
+| `SMELL001` | warning | The element has no relationships (isolated element / dead component). |
+
+## Not yet implemented
+
+Stated so nobody mistakes silence for a clean bill of health:
+
+* **Derivation rules** (DR1--DR8) and **potential derivation rules** (PDR1--PDR12) from
+  Appendix B of the specification, and the Appendix B.4 restrictions on cross-domain
+  derivation. The direct-relationship matrix is enforced; derived relationships are not
+  yet checked.
+* **The wider EA smells catalogue.** One structural smell of roughly sixty-three
+  catalogued ones is implemented (`SMELL001`), plus duplicate naming. Cyclic dependency
+  beyond composition, strict-layer violations and portfolio-level smells are Phase 4.
+* **Verb-phrase naming for behaviour elements.** The convention (noun phrases for
+  structure, verb phrases for behaviour) is real but needs more than a regex to check
+  honestly, so it is not pretended at.
+* **ISO/IEC/IEEE 42010:2022 conformance** of the documentation set. Phase 4.

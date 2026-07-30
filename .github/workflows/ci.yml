@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Oracle integrity
+        run: python -m easkills oracle-info
+
+      - name: Tests
+        run: python -m pytest tests -q
+
+      # The worked example is part of the contract: it must stay clean, warnings
+      # included, or the documented "0 errors, 0 warnings" claim is stale.
+      - name: Validate worked example (strict)
+        run: python -m easkills validate --root eval/example --strict
+
+      - name: Compile worked example
+        run: python -m easkills compile --root eval/example
+
+      # The negative fixture must keep failing. A green run here would mean the
+      # validator has stopped catching things.
+      - name: Negative fixture must fail
+        run: |
+          if python -m easkills validate --root eval/fixtures/broken; then
+            echo "::error::the broken fixture validated cleanly -- the validator is not catching violations"
+            exit 1
+          fi
+
+      - name: Upload exchange file
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: archimate-exchange-file
+          path: eval/example/build/model.xml
+          if-no-files-found: ignore

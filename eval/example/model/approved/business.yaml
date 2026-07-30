@@ -1,0 +1,48 @@
+elements:
+  - id: actor-b2b-customer
+    type: BusinessActor
+    name: B2B Customer
+    documentation: Wholesalers and retail chains. Consumers are explicitly out of scope.
+    owner: sales@aurorafoods.example
+    lastReviewed: 2026-07-15
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: B2B customers place orders through the online order portal
+
+  - id: process-order-fulfilment
+    type: BusinessProcess
+    name: Fulfil Customer Order
+    documentation: >
+      Stock check, delivery-window confirmation, release to the warehouse. Triggered by an
+      order arriving in the portal.
+    owner: operations@aurorafoods.example
+    lastReviewed: 2026-07-15
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The order fulfilment process starts the moment an order lands in the portal
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: >
+          We check stock, confirm the delivery window with the customer, then release the
+          order to the warehouse for picking
+
+  - id: service-order-intake
+    type: BusinessService
+    name: Order Intake Service
+    documentation: The externally visible service B2B customers consume when ordering.
+    owner: sales@aurorafoods.example
+    lastReviewed: 2026-07-15
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: B2B customers place orders through the online order portal
+
+  - id: object-purchase-order
+    type: BusinessObject
+    name: Purchase Order
+    documentation: The order document auditors request. Retained for seven years.
+    owner: operations@aurorafoods.example
+    lastReviewed: 2026-07-15
+    properties:
+      retention: 7 years
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The purchase order document itself is what auditors ask for

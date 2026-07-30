@@ -1,0 +1,132 @@
+# Relationships carry provenance too: a dependency nobody can point to a source for is
+# a guess, and guesses are what make an EA model untrustworthy.
+
+relationships:
+  # Capability realization -- how the application portfolio supports the spine.
+  - id: rel-erp-realizes-order-management
+    type: Realization
+    source: app-erp-core
+    target: cap-order-management
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The ERP core holds the master order records and does the invoicing
+
+  - id: rel-wms-realizes-warehouse-operations
+    type: Realization
+    source: app-wms
+    target: cap-warehouse-operations
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The warehouse management system runs picking and dispatch on the floor
+
+  - id: rel-portal-realizes-customer-service
+    type: Realization
+    source: app-order-portal
+    target: cap-customer-service
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The order portal is where customers see prices and place orders
+
+  - id: rel-order-management-realizes-goal
+    type: Realization
+    source: cap-order-management
+    target: goal-shorten-lead-time
+    assumed: true
+    rationale: >
+      Depends on the inferred goal; confirm together with goal-shorten-lead-time.
+
+  # Business layer chain.
+  - id: rel-intake-serves-customer
+    type: Serving
+    source: service-order-intake
+    target: actor-b2b-customer
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: B2B customers place orders through the online order portal
+
+  - id: rel-fulfilment-realizes-intake
+    type: Realization
+    source: process-order-fulfilment
+    target: service-order-intake
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The order fulfilment process starts the moment an order lands in the portal
+
+  - id: rel-fulfilment-accesses-purchase-order
+    type: Access
+    source: process-order-fulfilment
+    target: object-purchase-order
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The purchase order document itself is what auditors ask for
+
+  # Application to business.
+  - id: rel-order-api-serves-fulfilment
+    type: Serving
+    source: service-order-api
+    target: process-order-fulfilment
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: it calls an order API that the ERP publishes
+
+  - id: rel-wms-serves-fulfilment
+    type: Serving
+    source: app-wms
+    target: process-order-fulfilment
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The warehouse management system supports the order fulfilment process directly
+
+  - id: rel-order-record-realizes-purchase-order
+    type: Realization
+    source: data-order-record
+    target: object-purchase-order
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: >
+          Order records are stored in the ERP database and represent the purchase orders
+          that the business works with
+
+  # Application internals.
+  - id: rel-erp-realizes-order-api
+    type: Realization
+    source: app-erp-core
+    target: service-order-api
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: The order API is published by the ERP core and consumed by the order portal
+
+  - id: rel-order-api-serves-portal
+    type: Serving
+    source: service-order-api
+    target: app-order-portal
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: The order API is published by the ERP core and consumed by the order portal
+
+  - id: rel-erp-accesses-order-record
+    type: Access
+    source: app-erp-core
+    target: data-order-record
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: Order records are stored in the ERP database
+
+  # Technology.
+  - id: rel-erp-server-serves-erp
+    type: Serving
+    source: node-erp-app-server
+    target: app-erp-core
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: The ERP core runs on a dedicated application server in the primary data centre
+
+  - id: rel-erp-server-composes-postgresql
+    type: Composition
+    source: node-erp-app-server
+    target: sysswt-postgresql
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: >
+          That server also hosts the PostgreSQL 16 database instance that the ERP depends
+          on

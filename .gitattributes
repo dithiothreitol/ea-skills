@@ -1,0 +1,11 @@
+# Normalize line endings for authored text.
+* text=auto eol=lf
+
+# The vendored oracle is hash-pinned: git must not touch a single byte, or the
+# SHA-256 verification (rule ORACLE001) fails on any clone that converts line
+# endings. Treating these as binary guarantees byte-identical checkouts.
+oracle/*.xml -text
+oracle/*.xsd -text
+
+# Compiled exchange files are artifacts; keep them byte-stable if ever committed.
+*.archimate -text

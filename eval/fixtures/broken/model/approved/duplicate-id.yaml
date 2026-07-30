@@ -1,0 +1,12 @@
+# ID001: this identifier is already defined in broken.yaml. Split across two files
+# because that is how duplicate identifiers actually happen in a fragmented model.
+
+elements:
+  - id: node-a
+    type: Node
+    name: Application Server A Redefined
+    owner: infra@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data centre hosts two application servers

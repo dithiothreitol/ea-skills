@@ -1,0 +1,15 @@
+# Model repository configuration.
+name: Aurora Foods Enterprise Architecture
+documentation: >
+  Worked example shipped with the ea-skills repository. Aurora Foods is fictional;
+  the model exists to exercise the validator and compiler end to end, and to show
+  what evidence-backed modelling looks like in practice.
+
+# Elements not reviewed within this many days raise a staleness warning (GOV004).
+stalenessDays: 365
+
+# Minimum similarity before a provenance quote counts as an approximate match (PROV004).
+quoteMatchThreshold: 0.90
+
+# Provenance file references resolve against this directory.
+factsRoot: .

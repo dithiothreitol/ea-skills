@@ -1,0 +1,13 @@
+name: <Organisation> Enterprise Architecture
+documentation: >
+  One-paragraph statement of what this model covers and what it is for. Name the
+  decisions it exists to support; a model with no stated audience goes unused.
+
+# Elements not reviewed within this many days raise a staleness warning (GOV004).
+stalenessDays: 365
+
+# Minimum similarity before a provenance quote counts as an approximate match (PROV004).
+quoteMatchThreshold: 0.90
+
+# Provenance file references resolve against this directory.
+factsRoot: .
