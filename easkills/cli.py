@@ -105,7 +105,7 @@ def cmd_pin_oracle(_args: argparse.Namespace) -> int:
         if p.is_file() and p.suffix in {".xml", ".xsd"}
     )
     lines = [f"{oracle.sha256(oracle.ORACLE_DIR / name)}  {name}" for name in files]
-    oracle.CHECKSUMS.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    oracle.CHECKSUMS.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
     print(f"Pinned {len(lines)} oracle file(s) in {oracle.CHECKSUMS}")
     for line in lines:
         print(f"  {line}")

@@ -135,7 +135,13 @@ def build_schema() -> dict[str, Any]:
 def write_schema(path: Path | None = None) -> Path:
     target = path or SCHEMA_PATH
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps(build_schema(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    # newline="\n" so regenerating on Windows does not rewrite every line ending and
+    # bury the real change in a whole-file diff.
+    target.write_text(
+        json.dumps(build_schema(), indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
     return target
 
 
