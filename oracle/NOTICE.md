@@ -16,6 +16,28 @@ its pin, so an oracle change is always a deliberate, reviewable commit
 | `archimate3_Model.xsd` | [The Open Group](https://www.opengroup.org/xsd/archimate/) -- `3.1/` | 2026-07-29 | Model Exchange File Format schema (Open Group document C19C, covers ArchiMate 3.1 **and** 3.2 models). Drives the compiler's output validation. |
 | `archimate3_Diagram.xsd` | The Open Group, as above | 2026-07-29 | Adds views/diagrams. This is the schema a model **with views** must validate against. |
 | `archimate3_View.xsd` | The Open Group, as above | 2026-07-29 | Included by the Diagram schema; adds `views` to the model root. |
+| `xml.xsd` | [W3C](https://www.w3.org/2001/xml.xsd) | 2026-07-30 | Schema for the `xml:` namespace (`xml:lang`). Required because `archimate3_Model.xsd` imports it **by URL**. |
+
+## The xml.xsd trap
+
+`archimate3_Model.xsd` line 11 declares:
+
+```xml
+<xs:import namespace="http://www.w3.org/XML/1998/namespace"
+           schemaLocation="http://www.w3.org/2001/xml.xsd" />
+```
+
+A naive `etree.XMLSchema(etree.parse(...))` therefore fetches that schema from w3.org
+every time it validates. It works on a developer machine with network access and fails in
+a sandboxed CI runner -- the worst failure mode available to a validation gate, because it
+passes exactly where nobody is watching and fails where everybody is.
+
+`easkills/oracle.py` builds the schema through a parser with `no_network=True` plus an
+offline resolver that maps the URL to the vendored copy and **raises** on any other
+remote reference. The vendored Open Group files are left byte-identical, since they are
+hash-pinned; only the resolution is redirected. `test_exchange_schema_builds_without_network`
+locks this in: with the network disabled at parser level, a successful schema build is
+proof the import resolved locally.
 
 ## Licensing
 

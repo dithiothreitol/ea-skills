@@ -99,9 +99,10 @@ hand-places coordinates, so diffs stay about architecture.
 **The oracle is vendored and hash-pinned.** Semantic rules come from Archi's
 `relationships.xml` (the ArchiMate 3.2 permitted-relationship matrix, 11 569
 combinations) and the Open Group exchange schemas -- not from rules typed from memory,
-and not fetched at runtime. See [`oracle/NOTICE.md`](oracle/NOTICE.md). The JSON Schema
-for the DSL is *generated* from the same oracle, so the authoring format cannot drift
-from the validator.
+and genuinely not fetched at runtime: schema building runs with the network disabled at
+parser level, and a test proves it. See [`oracle/NOTICE.md`](oracle/NOTICE.md). The JSON
+Schema for the DSL is *generated* from the same oracle, so the authoring format cannot
+drift from the validator.
 
 Full rule list with severities: [`docs/RULES.md`](docs/RULES.md). Design rationale and
 the research behind it: [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md).

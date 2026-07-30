@@ -247,7 +247,7 @@ def build_tree(model: dsl.Model) -> etree._ElementTree:
 
 
 def validate_against_xsd(xml: bytes) -> list[str]:
-    schema = etree.XMLSchema(etree.parse(str(oracle.DIAGRAM_XSD)))
+    schema = oracle.exchange_schema()
     document = etree.fromstring(xml)
     if schema.validate(document):
         return []

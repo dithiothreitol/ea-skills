@@ -27,7 +27,20 @@ RELATIONSHIPS_XML = ORACLE_DIR / "relationships.xml"
 RELATIONSHIP_KEYS_XML = ORACLE_DIR / "relationships-keys.xml"
 MODEL_XSD = ORACLE_DIR / "archimate3_Model.xsd"
 DIAGRAM_XSD = ORACLE_DIR / "archimate3_Diagram.xsd"
+XML_NAMESPACE_XSD = ORACLE_DIR / "xml.xsd"
 CHECKSUMS = ORACLE_DIR / "SHA256SUMS"
+
+# The Open Group model schema declares
+#   <xs:import namespace="http://www.w3.org/XML/1998/namespace"
+#              schemaLocation="http://www.w3.org/2001/xml.xsd" />
+# so a naive schema build silently reaches out to w3.org -- which works on a developer
+# machine and fails in a sandboxed CI runner, the worst possible failure mode for a
+# validation gate. The referenced schema is vendored and mapped here instead. The
+# vendored XSDs themselves stay byte-identical, because they are hash-pinned.
+REMOTE_SCHEMA_MAP: dict[str, Path] = {
+    "http://www.w3.org/2001/xml.xsd": XML_NAMESPACE_XSD,
+    "https://www.w3.org/2001/xml.xsd": XML_NAMESPACE_XSD,
+}
 
 AOEF_NS = "http://www.opengroup.org/xsd/archimate/3.0/"
 XSI_NS = "http://www.w3.org/2001/XMLSchema-instance"
@@ -231,6 +244,42 @@ def _matrix() -> tuple[dict[tuple[str, str], frozenset[str]], frozenset[str], st
 def matrix_version() -> str:
     """ArchiMate version declared by the vendored matrix (expected: 3.2)."""
     return _matrix()[2]
+
+
+class _OfflineResolver(etree.Resolver):
+    """Resolve schema imports from the vendored oracle and refuse the network.
+
+    Anything not vendored raises rather than being fetched, so an offline gap shows up
+    as a loud error at development time instead of a green local run and a red CI run.
+    """
+
+    def resolve(self, system_url, public_id, context):  # noqa: D102 - lxml callback
+        if system_url in REMOTE_SCHEMA_MAP:
+            local = REMOTE_SCHEMA_MAP[system_url]
+            if not local.is_file():
+                raise OracleError(f"vendored schema missing for {system_url}: expected {local}")
+            return self.resolve_filename(str(local), context)
+        if system_url and (system_url.startswith("file:") or Path(system_url).exists()):
+            return None  # local include between the vendored schemas; default handling
+        raise OracleError(
+            f"refusing to fetch a schema resource over the network: {system_url}. "
+            "Vendor it under oracle/ and add it to REMOTE_SCHEMA_MAP."
+        )
+
+
+def schema_parser() -> etree.XMLParser:
+    parser = etree.XMLParser(no_network=True)
+    parser.resolvers.add(_OfflineResolver())
+    return parser
+
+
+@lru_cache(maxsize=1)
+def exchange_schema() -> etree.XMLSchema:
+    """The Open Exchange schema, built entirely from vendored files."""
+    if not DIAGRAM_XSD.is_file():
+        raise OracleError(f"missing oracle file: {DIAGRAM_XSD}")
+    document = etree.parse(str(DIAGRAM_XSD), parser=schema_parser())
+    return etree.XMLSchema(document)
 
 
 @lru_cache(maxsize=1)
