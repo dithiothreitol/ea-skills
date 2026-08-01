@@ -53,6 +53,16 @@ Baseline / Transition(s) / Target as Plateau elements with Gap elements in one m
 **AD-08 — Governance is records + gates + diffs, git-native.**
 PR review = compliance gate; CODEOWNERS = Architecture Board delegation; issue templates = Change Request / dispensation forms; tags = landscape snapshots.
 
+**AD-09 — The approved model doubles as a machine-consumable governance plane for development agents.**
+The repository's second audience (after humans) is the coding / requirements-definition agents working in downstream system repositories: principles, active standards (SIB), ADRs, requirements/constraints and integration context are served to them as scoped, generated extracts. This repositions the product from "EA repository maintained by agents" to "EA repository maintained by agents *and governing agents*". Deliberately staged by risk:
+
+* **`ea-context` (cheap, safe — Phase 4).** Read-only query over `approved/` → per-system / per-capability context pack (generated `AGENTS.md`/`CLAUDE.md` section, file in the consuming repo, or MCP answer): applicable principles, *active* standards, relevant ADRs, constraints, data owners. Agents never read the raw EA repo — scope-filtered extracts only. Respects AD-02 (approved-only reads). Every pack must surface model freshness (the mandatory `lastReviewed` metadata): a thin or stale model served as "binding constraints" carries false authority, which is worse than no context.
+* **`ea-check` (hard — deferred, decide after Phase 5).** Deterministic compliance lint in the consuming repo's CI. Honest constraint: full checking requires a model-element ↔ code-artifact correspondence (a CMDB-class mapping problem — the canonical failure point of commercial EA tools). Start narrow: dependency manifests (`package.json`/`pom.xml`) vs SIB lifecycle states. Anything requiring repos to maintain an integration manifest is a convention-adoption cost, not just an implementation cost — separate decision.
+* **Motivation layer in the DSL (Phase 2).** Requirement / Constraint / Principle / Goal become first-class DSL elements with an applicability selector (which capability/system they bind). Already covered by the vendored 3.2 matrix; this is completing ArchiMate, not extending the vision.
+* **Feedback path** is `ea-delta-ingest` (already catalogued): agents doing the work report drift back to `staging`. This may materially mitigate staleness; it is a process-discipline hypothesis, not a mechanism guarantee.
+
+Rationale: TOGAF dispensation-with-expiry mechanics map directly onto agent workflows (an agent that must violate a standard files a time-bounded waiver instead of drifting silently). Competitive note: for context *provisioning* alone, markdown-only governance (ArcKit) is sufficient — the model-backed moat exists only where something is deterministically *checked* (relationship matrix, standards lifecycle, provenance), i.e. the `ea-check` half. Sequencing guard: none of this may delay Phases 2–5 (§1: ship fast).
+
 ## 4. Skill catalog
 
 ### Phase D — Define & Document (pipeline order)
@@ -83,6 +93,9 @@ PR review = compliance gate; CODEOWNERS = Architecture Board delegation; issue t
 | `ea-kpi` | model + registers → model-quality metrics (completeness, freshness, orphans) + business metrics (apps per capability, obsolescence exposure, retirement savings) |
 | `ea-conformance-42010` | docs repo → ISO 42010 Clause 6 conformance check (every concern ↔ stakeholder ↔ viewpoint ↔ view; correspondences 6.9; decisions with rationale 6.10) — checkable from front matter |
 | `ea-board` | governance log → Architecture Board agenda/minutes per TOGAF standing agenda |
+| `ea-context` | scope (system/capability) + approved model + governance log → agent-consumable context pack (applicable principles, active standards, relevant ADRs, constraints, owners) with freshness metadata (AD-09) |
+
+Deliberately **not** a skill yet: `ea-check` (compliance lint inside consuming repos) — deferred per AD-09; decide after Phase 5, starting at most with dependency-manifest-vs-SIB linting.
 
 Orchestrator: `ea-run` — routes a request to the right skills, maintains pipeline state.
 
@@ -131,10 +144,12 @@ Letter legend for `relationships.xml` (from `relationships-keys.xml`): a=Access,
 
 1. **Phase 0 — Validation core**: YAML DSL schema + compiler to `.archimate`/AOEF + three-layer validator using the vendored oracle. *This is the technically defensible heart; nothing else matters if this is weak.*
 2. **Phase 1 — Intake + traceability**: `ea-intake` with chunking/gleaning/entity-resolution + mechanical provenance verification + `assumed` tagging. *The quality ceiling of the whole system.*
-3. **Phase 2 — Modeling pipeline**: capability map, per-layer modeling skills, validate-repair loop, two-zone approval.
+3. **Phase 2 — Modeling pipeline**: capability map, per-layer modeling skills, validate-repair loop, two-zone approval. Includes Motivation-layer elements (Requirement/Constraint/Principle/Goal) with applicability selectors in the DSL (AD-09).
 4. **Phase 3 — Views + docs**: viewpoint selection by stakeholder concerns, rendering, 42010-structured AD, audience outputs.
-5. **Phase 4 — Governance & maintenance**: compliance, dispensations, SIB, change triage, delta ingest, debt, staleness, KPIs, 42010 conformance checker. *The uniqueness anchor — do not cut.*
+5. **Phase 4 — Governance & maintenance**: compliance, dispensations, SIB, change triage, delta ingest, debt, staleness, KPIs, 42010 conformance checker, `ea-context` agent context packs (AD-09). *The uniqueness anchor — do not cut.*
 6. **Phase 5 — Eval harness + comparison table**: golden-set regression (potentially publishable), README capability matrix vs competitors.
+
+Deferred, decide after Phase 5: `ea-check` — deterministic EA-compliance linting inside consuming system repos (AD-09). Not scheduled; requires the correspondence mapping and a convention-adoption decision.
 
 Each phase ends with tests, plan update, memory update, clean close (per working convention).
 
@@ -173,6 +188,17 @@ Deviations from the plan above, and why: Open Exchange XML only (no native `.arc
 * Skill: `ea-intake` (chunk → extract → glean → resolve entities → validate ≤3 repairs → coverage → clarification questions).
 
 Design calls made in implementation: entity `kind` is an informal hint, not an ArchiMate type (typing is Phase 2, per AD-03 stage c); the coverage report is advisory by default (uncited ≠ defect) with an opt-in `--min-coverage` CI gate; chunking is line-accurate rather than sentence-accurate so a chunk can always be found in the file a human has open.
+
+**Phase 2 — complete (2026-08-01).** Modelling pipeline, per AD-02/AD-03/AD-09:
+
+* **Fact-referencing provenance**: model concepts may cite `provenance: [{fact: <id>}]`; the validator resolves the fact in the register and re-verifies the fact's quotes against the sources (`PROV007` for a dangling reference; resolved quotes report as PROV002/003/004 "via fact"). One evidence base, mechanically chained end to end.
+* **Motivation layer with applicability selectors (AD-09)**: `appliesTo: [element-ids]` on Requirement/Constraint/Principle/Goal; `MOT001` (unresolved binding), `MOT002` (selector outside the Motivation layer). Bindings count as connectivity for `SMELL001` and are surfaced in the exchange file as `appliesTo`/`provenance` properties, so they are visible in any ArchiMate tool and queryable by `ea-context` in Phase 4.
+* **Staging as overlay**: `validate --zone staging` loads staging *on top of* approved — proposals may reference approved elements, same-id concepts are update proposals. Skills model the delta instead of copying the world.
+* **Gated promotion**: `python -m easkills promote [--file ...] [--dry-run]` — the only staging→approved write path. The gate (`validate_promotion`) judges approved+staging merged by approved-zone standards (GOV rules become errors). On a clean gate, files move by rename; the git commit is the approval record. Deliberately no auto-stamping of `owner`/`lastReviewed` — the gate forces human-supplied review evidence to exist before the move. Partial promotion supported.
+* Worked example: +2 motivation elements (Requirement bound to data+ERP, Constraint bound to WMS), both evidenced by fact references — 17 elements, still zero findings. Negative fixture extended (PROV007, MOT001, MOT002).
+* Skills: `ea-capability-map` (the spine: 6–12 noun-phrase L1 capabilities, Realization attachments, weakness-as-property), `ea-approve` (explicitly human-gated; refuses autonomous promotion), and updates to `ea-model` (facts-first citation, motivation guidance, delta modelling) and `ea-validate` (zone semantics, promotion gate). 123 tests.
+
+Deviations from the catalog: the four per-layer skills (`ea-model-business/-application/-technology/-data`) were folded into the single `ea-model` skill plus `ea-capability-map` — the authoring discipline is identical across layers and the per-layer split would duplicate 90% of the text; revisit if layer-specific guidance actually accumulates.
 
 ## 9. Key sources (load-bearing)
 

@@ -48,6 +48,7 @@ language-model extraction.
 | `PROV004` | warning | The quote matches only approximately (similarity at or above `quoteMatchThreshold`, default 0.90). Quote verbatim text instead of paraphrasing. |
 | `PROV005` | error | Marked `assumed: true` with no rationale. |
 | `PROV006` | info | A declared assumption, listed so it can be confirmed or dropped at review. |
+| `PROV007` | error | Provenance references a fact (`fact:`) that is not in the fact register. A resolved fact's own quotes are re-verified here (as `PROV002`/`PROV003`/`PROV004`, marked "via fact"), so the evidence chain stays mechanical even if the register changed after intake. |
 
 ## Layer 1 -- governance metadata
 
@@ -71,6 +72,17 @@ actually die: content nobody owns, that nobody revisits. They are mandatory in t
 | `REL002` | error | Composition or aggregation closes a cycle. Structural containment must form a hierarchy. |
 | `REL003` | warning | Another relationship already has the same type, source and target. |
 
+## Layer 2 -- motivation and applicability (AD-09)
+
+`appliesTo` is the applicability selector on Motivation-layer elements: which
+capabilities or systems a requirement, constraint, principle or goal binds. It is what
+the agent context packs (`ea-context`, Phase 4) will be scoped by.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `MOT001` | error | An `appliesTo` entry does not resolve to an element. |
+| `MOT002` | error | `appliesTo` on an element outside the Motivation layer. A dependency between architecture elements is a relationship, not a selector. |
+
 ## Layer 2 -- conventions and smells
 
 | Code | Severity | Rule |
@@ -79,7 +91,17 @@ actually die: content nobody owns, that nobody revisits. They are mandatory in t
 | `NAME002` | warning | The name has leading, trailing or doubled whitespace. |
 | `NAME003` | warning | The name is shorter than three characters. |
 | `NAME004` | warning | Another element of the same type already has this name. Duplicate names are an EA smell and break traceability for anyone reading a view. |
-| `SMELL001` | warning | The element has no relationships (isolated element / dead component). |
+| `SMELL001` | warning | The element has no relationships (isolated element / dead component). `appliesTo` bindings count as connectivity, in both directions. |
+
+## Zone semantics
+
+`staging` is validated as an **overlay on `approved`**: staging is a proposed delta,
+so a staging relationship may reference approved elements, and a staging concept
+re-using an approved id is an update proposal, not `ID001`. Governance metadata
+(`GOV001`/`GOV002`) warns in staging and blocks at the promotion gate
+(`python -m easkills promote`), which validates approved + staging merged, by
+approved-zone standards. Promotion is the only write path into `approved` (AD-02);
+the git commit of the moved files is the approval record.
 
 ## Fact register -- structure and traceability
 

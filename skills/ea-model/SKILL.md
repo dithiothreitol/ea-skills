@@ -12,8 +12,16 @@ relationship matrix and you are recalling it.
 
 ## Non-negotiables
 
-**1. Nothing enters the model without evidence.** Every element and relationship gets
-either:
+**1. Nothing enters the model without evidence.** When a fact register exists
+(`facts/register/`), cite facts -- the validator resolves the fact and re-verifies its
+quotes, and the register stays the single evidence base:
+
+```yaml
+provenance:
+  - fact: fact-erp-role
+```
+
+Without a register (or for evidence not yet ingested), cite the source directly:
 
 ```yaml
 provenance:
@@ -21,7 +29,7 @@ provenance:
     quote: The ERP core holds the master order records and does the invoicing
 ```
 
-or an explicit assumption:
+or declare an explicit assumption:
 
 ```yaml
 assumed: true
@@ -38,8 +46,11 @@ supported state. Silently inventing a plausible element is the one unrecoverable
 mistake, because a reader cannot tell it from a real one.
 
 **2. Write to `model/staging/` unless told otherwise.** `approved/` is human-signed
-content. Proposing into `staging/` and letting a person promote it is the workflow; do
-not write directly to `approved/` on your own initiative.
+content; the only path into it is `python -m easkills promote` (see the `ea-approve`
+skill), on explicit human instruction. Staging validates as an *overlay* on approved:
+your proposed relationships may reference approved elements, and re-proposing an
+existing id is an update, not a duplicate -- so model the delta, do not copy approved
+content into staging.
 
 **3. Run the validator before you claim to be finished.**
 
@@ -113,6 +124,28 @@ rejects it. Use serving or realization, or introduce an Artifact.
 
 Composition and aggregation must form a hierarchy. A cycle is an error (`REL002`), not a
 style preference.
+
+## Motivation layer
+
+Requirements, constraints, principles and goals are first-class elements. What they
+bind is declared with the `appliesTo` applicability selector -- element ids, checked by
+the validator (`MOT001` unresolved target, `MOT002` selector on a non-motivation
+element):
+
+```yaml
+elements:
+  - id: req-po-retention
+    type: Requirement
+    name: Retain Purchase Orders for Seven Years
+    appliesTo: [data-order-record, app-erp-core]
+    provenance:
+      - fact: fact-po-retention
+```
+
+`appliesTo` is for motivation elements binding architecture; a dependency between two
+architecture elements is a relationship, never a selector. These bindings feed the
+agent context packs later (AD-09), so scope them honestly: a requirement that binds
+everything binds nothing.
 
 ## Views
 

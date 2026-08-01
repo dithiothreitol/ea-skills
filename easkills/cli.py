@@ -12,7 +12,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import aoef, facts as facts_mod, genschema, intake, oracle, validate as validate_mod
+from . import aoef, facts as facts_mod, genschema, intake, oracle, promote as promote_mod, validate as validate_mod
 
 
 def _add_common(parser: argparse.ArgumentParser) -> None:
@@ -46,6 +46,19 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="compile even if the validator reports errors (not recommended)",
     )
+
+    p_promote = sub.add_parser(
+        "promote", help="move staging files into approved after the promotion gate passes"
+    )
+    p_promote.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_promote.add_argument(
+        "--file",
+        dest="files",
+        type=Path,
+        action="append",
+        help="a staging file to promote (repeatable; default: everything in model/staging/)",
+    )
+    p_promote.add_argument("--dry-run", action="store_true", help="run the gate and show the plan, move nothing")
 
     p_facts = sub.add_parser("validate-facts", help="validate the fact register (facts/register + entities)")
     p_facts.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
@@ -111,6 +124,16 @@ def cmd_compile(args: argparse.Namespace) -> int:
         return 1
     print("Open Exchange XSD validation passed.")
     return 0
+
+
+def cmd_promote(args: argparse.Namespace) -> int:
+    try:
+        result = promote_mod.promote(args.root.resolve(), files=args.files, dry_run=args.dry_run)
+    except promote_mod.PromoteError as exc:
+        print(f"ERROR   {exc}")
+        return 1
+    print(result.render())
+    return 0 if result.ok else 1
 
 
 def cmd_validate_facts(args: argparse.Namespace) -> int:
@@ -199,6 +222,7 @@ def cmd_oracle_info(_args: argparse.Namespace) -> int:
 HANDLERS = {
     "validate": cmd_validate,
     "compile": cmd_compile,
+    "promote": cmd_promote,
     "validate-facts": cmd_validate_facts,
     "chunk": cmd_chunk,
     "coverage": cmd_coverage,

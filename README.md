@@ -16,10 +16,12 @@ weakest measured capability of language models on modelling tasks, and fabricate
 citations are a documented failure mode. Both are exactly the kind of thing a validator
 catches for free and a reviewer catches at 3pm on a Friday, if at all.
 
-**Status: Phase 1 complete.** The deterministic core -- DSL, three-layer validator,
-Open Exchange compiler -- and the intake stage -- fact register, chunker, coverage
-report -- work and are tested. The skills that drive them are being built on top,
-phase by phase (see [Roadmap](#roadmap)).
+**Status: Phase 2 complete.** The deterministic core (DSL, three-layer validator,
+Open Exchange compiler), the intake stage (fact register, chunker, coverage report)
+and the modelling pipeline (fact-referencing provenance, motivation layer with
+applicability selectors, staging-as-overlay validation, gated promotion) work and are
+tested. The skills that drive them are being built on top, phase by phase (see
+[Roadmap](#roadmap)).
 
 ## What exists today
 
@@ -35,8 +37,14 @@ python -m easkills validate-facts --root eval/example
 # Which parts of the sources produced no facts -- candidate clarification questions
 python -m easkills coverage --root eval/example
 
-# Validate a model repository (exit 1 on any error -- use it as a CI gate)
+# Validate a model repository (exit 1 on any error -- use it as a CI gate).
+# 'staging' validates as an overlay on 'approved': proposals may reference approved content.
 python -m easkills validate --root eval/example
+python -m easkills validate --root eval/example --zone staging
+
+# Promote staging into approved -- the only write path. The gate validates the merged
+# result by approved-zone standards; --dry-run shows the verdict and the plan.
+python -m easkills promote --root eval/example --dry-run
 
 # Compile to ArchiMate Open Exchange XML, validated against the Open Group XSDs
 python -m easkills compile --root eval/example
@@ -44,7 +52,7 @@ python -m easkills compile --root eval/example
 
 The worked example (`eval/example/`) is a small fictional B2B food manufacturer: a fact
 register of twenty-five facts and eleven entities covering 100% of the source
-statements, and fifteen elements from capability map down to database, every one
+statements, and seventeen elements from goal and capability map down to database, every one
 traceable to a quote in `facts/sources/`, two views, zero findings.
 `eval/fixtures/broken/` is its opposite -- every rule in the catalogue violated on
 purpose, so the test suite can prove each rule actually fires.
@@ -52,7 +60,7 @@ purpose, so the test suite can prove each rule actually fires.
 ```
 $ python -m easkills validate --root eval/example
 EA model validation -- zone 'approved' at .../eval/example
-ArchiMate oracle 3.2; 15 elements, 15 relationships, 2 views
+ArchiMate oracle 3.2; 17 elements, 15 relationships, 2 views
 
 INFO    PROV006  model/approved/strategy.yaml:elements[3] [goal-shorten-lead-time]
          assumed, pending confirmation: Inferred from operational pain described in the
@@ -79,9 +87,19 @@ reviewable at concept level. Open Exchange XML is a build artifact, never hand-e
 Identifiers are author-supplied stable slugs, so re-running a pipeline produces a
 reviewable diff rather than a rewrite.
 
-**Two zones.** `staging/` holds machine proposals; `approved/` holds human-signed
-content. Ownership and review dates are mandatory in `approved` and advisory in
-`staging`. Governance and reporting read only from `approved`.
+**Two zones, one write path.** `staging/` holds machine proposals; `approved/` holds
+human-signed content. Staging validates as an *overlay* on approved (a proposal may
+reference approved elements; re-using an id proposes an update), so skills model the
+delta rather than copying the world. The only way into `approved` is
+`python -m easkills promote`, whose gate validates the merged result by approved-zone
+standards -- ownership and review dates, advisory while drafting, block there. The git
+commit of the move is the approval record.
+
+**The motivation layer binds, mechanically.** Requirements, constraints, principles
+and goals carry an `appliesTo` selector naming the elements they bind; the validator
+checks every binding resolves and that selectors stay on motivation elements. Model
+concepts may cite facts (`provenance: [{fact: ...}]`) instead of repeating quotes --
+the validator resolves the fact and re-verifies its quotes, keeping one evidence base.
 
 **Intake comes first and is measured.** `ea-intake` extracts a **fact register**
 (`facts/register/*.yaml`) from raw sources chunk by chunk: atomic statements, each with
@@ -150,8 +168,8 @@ implements TOGAF where it is genuinely strong: governance mechanics.
 |---|---|---|
 | **0** | DSL + JSON Schema, three-layer validator, Open Exchange compiler, oracle pinning, worked example, negative fixtures, test suite | **done** |
 | **1** | `ea-intake`: chunked extraction with a gleaning pass, entity resolution, mechanically verified provenance, clarification questions where sources are thin | **done** |
-| **2** | Modelling skills per layer, capability map as spine, validate--repair loop capped at three iterations, two-zone approval | next |
-| **3** | Viewpoint selection driven by stakeholder concerns, rendering (Archi headless / PlantUML), ISO 42010-structured architecture description, audience one-pagers | planned |
+| **2** | Modelling pipeline: capability map as spine, fact-referencing provenance, motivation layer with `appliesTo` selectors (AD-09), staging-as-overlay validation, gated promotion (`ea-approve`) | **done** |
+| **3** | Viewpoint selection driven by stakeholder concerns, rendering (Archi headless / PlantUML), ISO 42010-structured architecture description, audience one-pagers | next |
 | **4** | Governance and maintenance: compliance assessment with TOGAF's six conformance levels, dispensations with mandatory expiry, standards information base, Phase H change triage, delta ingestion, EA-debt register, staleness and KPI reporting, 42010 conformance checker | planned |
 | **5** | Golden-set regression harness and a maintained capability comparison against neighbouring projects | planned |
 
@@ -194,7 +212,7 @@ docs/            BLUEPRINT.md (design + research), RULES.md (rule catalogue)
 
 ```bash
 python -m venv .venv && .venv/Scripts/python -m pip install -r requirements.txt
-.venv/Scripts/python -m pytest tests -q          # 107 tests
+.venv/Scripts/python -m pytest tests -q          # 123 tests
 .venv/Scripts/python -m easkills oracle-info     # oracle version + pin status
 .venv/Scripts/python -m easkills gen-schema      # regenerate the DSL schema
 ```

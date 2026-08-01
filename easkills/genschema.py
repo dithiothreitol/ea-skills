@@ -31,21 +31,39 @@ def build_schema() -> dict[str, Any]:
     relationship_types = sorted(oracle.relationship_types())
 
     provenance_item = {
-        "type": "object",
-        "additionalProperties": False,
-        "required": ["file", "quote"],
-        "properties": {
-            "file": {
-                "type": "string",
-                "minLength": 1,
-                "description": "Path to the source document, relative to the repository root.",
+        "oneOf": [
+            {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["file", "quote"],
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Path to the source document, relative to the repository root.",
+                    },
+                    "quote": {
+                        "type": "string",
+                        "minLength": 8,
+                        "description": "Verbatim excerpt from that document; verified mechanically.",
+                    },
+                },
             },
-            "quote": {
-                "type": "string",
-                "minLength": 8,
-                "description": "Verbatim excerpt from that document; verified mechanically.",
+            {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["fact"],
+                "properties": {
+                    "fact": {
+                        "$ref": "#/$defs/slug",
+                        "description": (
+                            "Id of a fact in facts/register/; the fact's own verified quotes "
+                            "become this concept's evidence."
+                        ),
+                    },
+                },
             },
-        },
+        ],
     }
 
     common_properties: dict[str, Any] = {
@@ -100,6 +118,15 @@ def build_schema() -> dict[str, Any]:
                 "properties": {
                     **common_properties,
                     "type": {"enum": element_types},
+                    "appliesTo": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {"$ref": "#/$defs/slug"},
+                        "description": (
+                            "Motivation-layer applicability selector (AD-09): element ids this "
+                            "requirement/constraint/principle/goal binds. Semantic checks: MOT001/MOT002."
+                        ),
+                    },
                 },
             },
             "relationship": {

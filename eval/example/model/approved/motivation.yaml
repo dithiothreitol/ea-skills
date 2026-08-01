@@ -1,0 +1,30 @@
+# Motivation layer (AD-09). `appliesTo` is the applicability selector: which
+# elements a requirement or constraint binds. Provenance here references facts in
+# the register (`fact:`); the validator resolves the fact and re-verifies its
+# quotes, so the evidence chain stays mechanical end to end.
+
+elements:
+  - id: req-po-retention
+    type: Requirement
+    name: Retain Purchase Orders for Seven Years
+    documentation: >
+      Auditors ask for the purchase order document itself; retention is a hard
+      requirement on the order record and the system of record holding it.
+    owner: ea@aurorafoods.example
+    lastReviewed: 2026-07-15
+    appliesTo: [data-order-record, app-erp-core]
+    provenance:
+      - fact: fact-po-retention
+
+  - id: constraint-wms-cloud-budget
+    type: Constraint
+    name: WMS Cloud Move Has No Approved Budget
+    documentation: >
+      The planned cloud migration of the warehouse management system cannot be
+      scheduled until a date is agreed and a budget approved. Binds the WMS
+      TIME disposition (Migrate) until lifted.
+    owner: ea@aurorafoods.example
+    lastReviewed: 2026-07-15
+    appliesTo: [app-wms]
+    provenance:
+      - fact: fact-wms-cloud-move-unfunded

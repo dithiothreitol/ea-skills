@@ -167,6 +167,38 @@ elements:
       - file: facts/sources/notes.md
         quote: The primary data centre hosts two application servers
 
+  # --- PROV007: provenance references a fact that is not in the register -------------
+  - id: fact-ref-missing
+    type: Requirement
+    name: Requirement Citing a Missing Fact
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    appliesTo: [app-finance]
+    provenance:
+      - fact: no-such-fact
+
+  # --- MOT001: appliesTo target does not exist ---------------------------------------
+  - id: motivation-dangling-applies
+    type: Constraint
+    name: Constraint Binding Nothing Real
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    appliesTo: [no-such-element]
+    provenance:
+      - file: facts/sources/notes.md
+        quote: Order records are held by the finance system
+
+  # --- MOT002: appliesTo on an element outside the Motivation layer -------------------
+  - id: applies-on-wrong-layer
+    type: ApplicationComponent
+    name: Component With An Applicability Selector
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    appliesTo: [node-a]
+    provenance:
+      - file: facts/sources/notes.md
+        quote: Order records are held by the finance system
+
 relationships:
   # --- REL001: DataObject -> BusinessActor permits Association only ------------------
   - id: rel-illegal

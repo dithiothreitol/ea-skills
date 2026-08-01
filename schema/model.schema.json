@@ -33,24 +33,41 @@
       "description": "Stable author-supplied identifier; never regenerated."
     },
     "provenance": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "file",
-        "quote"
-      ],
-      "properties": {
-        "file": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Path to the source document, relative to the repository root."
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file",
+            "quote"
+          ],
+          "properties": {
+            "file": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Path to the source document, relative to the repository root."
+            },
+            "quote": {
+              "type": "string",
+              "minLength": 8,
+              "description": "Verbatim excerpt from that document; verified mechanically."
+            }
+          }
         },
-        "quote": {
-          "type": "string",
-          "minLength": 8,
-          "description": "Verbatim excerpt from that document; verified mechanically."
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fact"
+          ],
+          "properties": {
+            "fact": {
+              "$ref": "#/$defs/slug",
+              "description": "Id of a fact in facts/register/; the fact's own verified quotes become this concept's evidence."
+            }
+          }
         }
-      }
+      ]
     },
     "element": {
       "type": "object",
@@ -170,6 +187,14 @@
             "ValueStream",
             "WorkPackage"
           ]
+        },
+        "appliesTo": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/slug"
+          },
+          "description": "Motivation-layer applicability selector (AD-09): element ids this requirement/constraint/principle/goal binds. Semantic checks: MOT001/MOT002."
         }
       }
     },

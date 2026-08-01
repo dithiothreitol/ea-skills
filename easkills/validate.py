@@ -273,11 +273,66 @@ def check_references(model: dsl.Model) -> list[Finding]:
 
 
 def check_provenance(model: dsl.Model) -> list[Finding]:
-    """Verify traceability mechanically: quotes must exist in the cited source."""
+    """Verify traceability mechanically: quotes must exist in the cited source.
+
+    A provenance item is either a direct citation (``file`` + ``quote``) or a
+    reference to a fact in the register (``fact:``). Fact references are resolved
+    and the *fact's* quotes re-verified here, so the chain from model concept to
+    source text stays mechanical even if the register was edited after intake.
+    """
+    from . import facts as facts_mod  # local import: facts.py imports Finding from here
+
     findings: list[Finding] = []
     threshold = float(model.config.get("quoteMatchThreshold", 0.90))
     facts_root = model.facts_root()
     cache: dict[Path, str | None] = {}
+    register, _register_docs, _entities_doc = facts_mod.load(model.root)
+
+    def verify_quote(concept: dsl.Concept, file: str, quote: str, via: str = "") -> None:
+        rel_file = _rel(model.root, concept.source_path)
+        suffix = f" (via fact '{via}')" if via else ""
+        source_path = (facts_root / file).resolve()
+        if source_path not in cache:
+            cache[source_path] = (
+                source_path.read_text(encoding="utf-8", errors="replace") if source_path.is_file() else None
+            )
+        text = cache[source_path]
+        if text is None:
+            findings.append(
+                Finding(
+                    "PROV002",
+                    SEVERITY_ERROR,
+                    f"provenance source file not found: {file}{suffix}",
+                    file=rel_file,
+                    locator=concept.locator,
+                    concept=concept.id,
+                )
+            )
+            return
+        verdict = _quote_match(_normalize(text), _normalize(quote), threshold)
+        if verdict == "missing":
+            findings.append(
+                Finding(
+                    "PROV003",
+                    SEVERITY_ERROR,
+                    f"provenance quote not found in {file}: {quote[:80]!r}{suffix} -- "
+                    "a citation that cannot be located is a fabricated citation",
+                    file=rel_file,
+                    locator=concept.locator,
+                    concept=concept.id,
+                )
+            )
+        elif verdict == "approx":
+            findings.append(
+                Finding(
+                    "PROV004",
+                    SEVERITY_WARNING,
+                    f"provenance quote matches {file} only approximately{suffix}; quote verbatim text",
+                    file=rel_file,
+                    locator=concept.locator,
+                    concept=concept.id,
+                )
+            )
 
     for concept in _iter_concepts(model):
         rel_file = _rel(model.root, concept.source_path)
@@ -319,48 +374,25 @@ def check_provenance(model: dsl.Model) -> list[Finding]:
             continue
 
         for provenance in concept.provenance:
-            source_path = (facts_root / provenance.file).resolve()
-            if source_path not in cache:
-                cache[source_path] = (
-                    source_path.read_text(encoding="utf-8", errors="replace") if source_path.is_file() else None
-                )
-            text = cache[source_path]
-            if text is None:
-                findings.append(
-                    Finding(
-                        "PROV002",
-                        SEVERITY_ERROR,
-                        f"provenance source file not found: {provenance.file}",
-                        file=rel_file,
-                        locator=concept.locator,
-                        concept=concept.id,
+            if provenance.fact:
+                fact = register.facts.get(provenance.fact)
+                if fact is None:
+                    findings.append(
+                        Finding(
+                            "PROV007",
+                            SEVERITY_ERROR,
+                            f"provenance references fact '{provenance.fact}' which is not in the "
+                            "fact register (facts/register/)",
+                            file=rel_file,
+                            locator=concept.locator,
+                            concept=concept.id,
+                        )
                     )
-                )
+                    continue
+                for fact_provenance in fact.provenance:
+                    verify_quote(concept, fact_provenance.file, fact_provenance.quote, via=fact.id)
                 continue
-            verdict = _quote_match(_normalize(text), _normalize(provenance.quote), threshold)
-            if verdict == "missing":
-                findings.append(
-                    Finding(
-                        "PROV003",
-                        SEVERITY_ERROR,
-                        f"provenance quote not found in {provenance.file}: {provenance.quote[:80]!r} -- "
-                        "a citation that cannot be located is a fabricated citation",
-                        file=rel_file,
-                        locator=concept.locator,
-                        concept=concept.id,
-                    )
-                )
-            elif verdict == "approx":
-                findings.append(
-                    Finding(
-                        "PROV004",
-                        SEVERITY_WARNING,
-                        f"provenance quote matches {provenance.file} only approximately; quote verbatim text",
-                        file=rel_file,
-                        locator=concept.locator,
-                        concept=concept.id,
-                    )
-                )
+            verify_quote(concept, provenance.file, provenance.quote)
     return findings
 
 
@@ -595,6 +627,40 @@ def check_naming(model: dsl.Model) -> list[Finding]:
     return findings
 
 
+def check_motivation(model: dsl.Model) -> list[Finding]:
+    """The AD-09 applicability selector: what a motivation element binds must be real."""
+    findings: list[Finding] = []
+    for element in sorted(model.elements.values(), key=lambda e: e.id):
+        if not element.applies_to:
+            continue
+        rel_file = _rel(model.root, element.source_path)
+        if oracle.layer_of(element.type) != "Motivation":
+            findings.append(
+                Finding(
+                    "MOT002",
+                    SEVERITY_ERROR,
+                    f"appliesTo is an applicability selector for Motivation-layer elements; "
+                    f"{element.type} is not one -- model this dependency as a relationship instead",
+                    file=rel_file,
+                    locator=element.locator,
+                    concept=element.id,
+                )
+            )
+        for ref in element.applies_to:
+            if ref not in model.elements:
+                findings.append(
+                    Finding(
+                        "MOT001",
+                        SEVERITY_ERROR,
+                        f"appliesTo references '{ref}' which does not resolve to an element",
+                        file=rel_file,
+                        locator=element.locator,
+                        concept=element.id,
+                    )
+                )
+    return findings
+
+
 def check_smells(model: dsl.Model) -> list[Finding]:
     """Starter subset of the EA smells catalogue, as deterministic graph queries."""
     findings: list[Finding] = []
@@ -602,6 +668,13 @@ def check_smells(model: dsl.Model) -> list[Finding]:
     for relationship in model.relationships.values():
         connected.add(relationship.source)
         connected.add(relationship.target)
+    # appliesTo bindings are connectivity too: a requirement that binds a system is
+    # not an isolated element, and neither is the system it binds.
+    for element in model.elements.values():
+        for ref in element.applies_to:
+            if ref in model.elements:
+                connected.add(element.id)
+                connected.add(ref)
     for element in sorted(model.elements.values(), key=lambda e: e.id):
         if element.id in connected:
             continue
@@ -630,14 +703,16 @@ CHECK_ORDER = (
     "matrix",
     "cycles",
     "duplicates",
+    "motivation",
     "naming",
     "smells",
 )
 
 
-def validate(root: Path, zone: str = "approved", today: date | None = None) -> Report:
+def _run_checks(
+    model: dsl.Model, documents: list[dsl.Document], root: Path, zone: str, today: date | None
+) -> Report:
     schema = genschema.load_schema()
-    model, documents, _config = dsl.load(root, zone)
 
     findings: list[Finding] = []
     findings += check_oracle()
@@ -649,6 +724,7 @@ def validate(root: Path, zone: str = "approved", today: date | None = None) -> R
     findings += check_relationship_matrix(model)
     findings += check_structural_cycles(model)
     findings += check_duplicate_relationships(model)
+    findings += check_motivation(model)
     findings += check_naming(model)
     findings += check_smells(model)
 
@@ -663,3 +739,24 @@ def validate(root: Path, zone: str = "approved", today: date | None = None) -> R
         "files": len(documents),
     }
     return report
+
+
+def validate(root: Path, zone: str = "approved", today: date | None = None) -> Report:
+    """Validate a zone. ``staging`` is validated as an overlay on ``approved``:
+    staging is a proposed delta, so its relationships may reference approved
+    elements and a same-id concept is an update proposal, not a duplicate."""
+    if zone == "staging":
+        model, documents, _config = dsl.load_merged(root, zone_label="staging")
+    else:
+        model, documents, _config = dsl.load(root, zone)
+    return _run_checks(model, documents, root, zone, today)
+
+
+def validate_promotion(
+    root: Path, staging_paths: list[Path] | None = None, today: date | None = None
+) -> Report:
+    """The promotion gate: approved plus (selected) staging, judged by *approved*
+    standards -- governance metadata is mandatory, exactly as it will be after the
+    move. This is what must pass before any file leaves staging."""
+    model, documents, _config = dsl.load_merged(root, staging_paths, zone_label="approved")
+    return _run_checks(model, documents, root, "approved+staging", today)

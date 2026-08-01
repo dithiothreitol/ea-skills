@@ -7,7 +7,9 @@ Model repository scaffolded from the `ea-skills` template. Copy this directory, 
 python -m easkills chunk          --root .            # split sources for extraction
 python -m easkills validate-facts --root .            # the fact register gate
 python -m easkills coverage       --root .            # what the facts do not cover yet
-python -m easkills validate --root . --zone staging   # while proposing
+python -m easkills validate --root . --zone staging   # proposals, overlaid on approved
+python -m easkills promote  --root . --dry-run        # the promotion gate, no move
+python -m easkills promote  --root .                  # staging -> approved (on human sign-off)
 python -m easkills validate --root . --zone approved  # the published model
 python -m easkills compile  --root . --zone approved  # -> build/model.xml
 ```

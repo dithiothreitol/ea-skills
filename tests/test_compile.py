@@ -22,7 +22,7 @@ def test_passes_open_group_xsd(compiled):
 
 
 def test_counts_match_the_source_model(compiled):
-    assert compiled.elements == 15
+    assert compiled.elements == 17
     assert compiled.relationships == 15
     assert compiled.views == 2
 
@@ -72,6 +72,23 @@ def test_governance_metadata_survives_into_the_exchange_file(compiled):
     }
     assert values[definitions["owner"]] == "ecommerce@aurorafoods.example"
     assert values[definitions["timeDisposition"]] == "Invest"
+
+
+def test_applicability_and_fact_provenance_survive_into_the_exchange_file(compiled):
+    """AD-09: what a requirement binds, and which fact evidences it, must be visible
+    to anyone opening the model in an ArchiMate tool."""
+    root = etree.fromstring(compiled.xml)
+    definitions = {
+        d.findtext("a:name", namespaces=NS): d.get("identifier")
+        for d in root.findall(".//a:propertyDefinitions/a:propertyDefinition", NS)
+    }
+    requirement = root.find(".//a:element[@identifier='id-req-po-retention']", NS)
+    values = {
+        p.get("propertyDefinitionRef"): p.findtext("a:value", namespaces=NS)
+        for p in requirement.findall(".//a:property", NS)
+    }
+    assert values[definitions["appliesTo"]] == "data-order-record, app-erp-core"
+    assert values[definitions["provenance"]] == "fact:fact-po-retention"
 
 
 def test_assumed_elements_are_flagged_in_the_exchange_file(compiled):

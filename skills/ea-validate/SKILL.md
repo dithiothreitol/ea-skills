@@ -16,6 +16,12 @@ Exit code 0 means no errors; 1 means errors (or, under `--strict`, warnings). Th
 compiler refuses to run on a model with errors, so this gate is what stands between a
 proposal and a published model.
 
+Zone semantics: `staging` validates as an **overlay on approved** -- staging is a
+proposed delta, so its relationships may reference approved elements and a same-id
+concept is an update proposal. The promotion gate (`python -m easkills promote
+--dry-run`) validates the merged result by approved-zone standards instead; content
+that merely warns in staging can block there (ownership, review dates).
+
 The full rule catalogue with severities is in `docs/RULES.md`. Read it rather than
 guessing what a code means.
 
@@ -77,9 +83,12 @@ often serving, association or flow.
 
 ## Before promoting staging to approved
 
-Run the validator against `staging` and confirm: zero errors, `GOV001`/`GOV002` warnings
-resolved (they become errors in `approved`), every `PROV006` assumption either confirmed
-into evidence or consciously accepted, and every warning either fixed or explained.
+Run `python -m easkills promote --root <repo> --dry-run` -- it validates the merged
+result by approved-zone standards, which is the actual bar. Confirm: zero errors,
+`GOV001`/`GOV002` resolved (warnings in staging, errors at the gate), every `PROV006`
+assumption either confirmed into evidence or consciously accepted, and every warning
+either fixed or explained. The promotion itself is the `ea-approve` skill's job and
+requires an explicit human decision.
 
 Then compile, because passing validation and producing an openable model are different
 claims:

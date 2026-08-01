@@ -38,8 +38,12 @@ DEFAULT_CONFIG: dict[str, Any] = {
 
 @dataclass(frozen=True)
 class Provenance:
-    file: str
-    quote: str
+    """Either a direct citation (``file`` + ``quote``) or a reference to a fact in
+    the register (``fact``), whose own quotes are already mechanically verified."""
+
+    file: str = ""
+    quote: str = ""
+    fact: str = ""
 
 
 @dataclass
@@ -62,7 +66,9 @@ class Concept:
 
 @dataclass
 class Element(Concept):
-    pass
+    # Motivation-layer applicability selector (AD-09): which elements this
+    # requirement/constraint/principle/goal binds. Validated by MOT001/MOT002.
+    applies_to: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -174,7 +180,13 @@ def _provenance(raw: Any) -> list[Provenance]:
     out: list[Provenance] = []
     for item in items:
         if isinstance(item, dict):
-            out.append(Provenance(file=str(item.get("file", "")), quote=str(item.get("quote", ""))))
+            out.append(
+                Provenance(
+                    file=str(item.get("file", "") or ""),
+                    quote=str(item.get("quote", "") or ""),
+                    fact=str(item.get("fact", "") or ""),
+                )
+            )
     return out
 
 
@@ -211,7 +223,11 @@ def build_model(root: Path, zone: str, documents: list[Document], config: dict[s
             if not isinstance(item, dict) or not item.get("id"):
                 continue
             locator = f"elements[{index}]"
-            element = Element(**_common_kwargs(item, doc.path, locator))
+            applies_raw = item.get("appliesTo") or []
+            element = Element(
+                **_common_kwargs(item, doc.path, locator),
+                applies_to=[str(x) for x in applies_raw if isinstance(x, (str, int))],
+            )
             _register(model, model.elements, element.id, element, doc.path)
         for index, item in enumerate(doc.data.get("relationships") or []):
             if not isinstance(item, dict) or not item.get("id"):
@@ -254,3 +270,31 @@ def load(root: Path, zone: str) -> tuple[Model, list[Document], dict[str, Any]]:
     documents = load_documents(root, zone)
     model = build_model(root, zone, documents, config)
     return model, documents, config
+
+
+def load_merged(
+    root: Path,
+    staging_paths: list[Path] | None = None,
+    zone_label: str = "staging",
+) -> tuple[Model, list[Document], dict[str, Any]]:
+    """Load ``staging`` overlaid on ``approved``: staging is a proposed *delta*.
+
+    A staging concept with the same id as an approved one replaces it (an update
+    proposal); a staging relationship may reference approved elements. Duplicates
+    *within* a zone are still errors. ``staging_paths`` restricts the overlay to
+    selected staging files, which is what partial promotion simulates.
+    """
+    config = load_config(root)
+    approved_docs = load_documents(root, "approved")
+    staging_docs = load_documents(root, "staging")
+    if staging_paths is not None:
+        wanted = {p.resolve() for p in staging_paths}
+        staging_docs = [d for d in staging_docs if d.path.resolve() in wanted]
+
+    model = build_model(root, zone_label, approved_docs, config)
+    overlay = build_model(root, zone_label, staging_docs, config)
+    model.duplicate_ids.extend(overlay.duplicate_ids)
+    model.elements.update(overlay.elements)
+    model.relationships.update(overlay.relationships)
+    model.views.update(overlay.views)
+    return model, approved_docs + staging_docs, config

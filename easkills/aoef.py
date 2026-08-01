@@ -101,7 +101,13 @@ def _governance_properties(concept: dsl.Concept) -> dict[str, str]:
         if concept.rationale:
             props.setdefault("assumptionRationale", concept.rationale)
     if concept.provenance:
-        props.setdefault("provenance", "; ".join(p.file for p in concept.provenance))
+        props.setdefault(
+            "provenance",
+            "; ".join(f"fact:{p.fact}" if p.fact else p.file for p in concept.provenance),
+        )
+    applies_to = getattr(concept, "applies_to", None)
+    if applies_to:
+        props.setdefault("appliesTo", ", ".join(applies_to))
     return props
 
 
