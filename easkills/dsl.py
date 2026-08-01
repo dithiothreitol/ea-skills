@@ -31,6 +31,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "quoteMatchThreshold": 0.90,
     # Directory (relative to root) that provenance file references resolve against.
     "factsRoot": ".",
+    # Directory (relative to root) holding the raw source documents ea-intake reads.
+    "sourcesDir": "facts/sources",
 }
 
 

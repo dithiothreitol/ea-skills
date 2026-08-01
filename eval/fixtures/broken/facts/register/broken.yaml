@@ -1,0 +1,57 @@
+# Each entry below is annotated with the rule code it is meant to trigger.
+
+facts:
+  # --- FACT002: same fact id twice ----------------------------------------------------
+  - id: fact-dup
+    statement: The primary data centre hosts two application servers.
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data centre hosts two application servers
+  - id: fact-dup
+    statement: Something else entirely, but the id is already taken.
+    provenance:
+      - file: facts/sources/notes.md
+        quote: Order records are held by the finance system
+
+  # --- FACT001: schema violation (wrong field name, required 'statement' missing) -----
+  - id: fact-schema-violation
+    claim: this field does not exist in the schema
+    provenance:
+      - file: facts/sources/notes.md
+        quote: Order records are held by the finance system
+
+  # --- FACT003: the cited source does not exist ---------------------------------------
+  - id: fact-missing-source
+    statement: Cites a source document that does not exist.
+    provenance:
+      - file: facts/sources/does-not-exist.md
+        quote: any quote at all goes here
+
+  # --- FACT004: the quote does not occur in the cited source --------------------------
+  - id: fact-fabricated-quote
+    statement: The board approved four million euro for the programme.
+    provenance:
+      - file: facts/sources/notes.md
+        quote: the board approved a budget of four million euro for this programme
+
+  # --- FACT005: quote is close but not verbatim ("center" vs "centre") ----------------
+  - id: fact-paraphrased-quote
+    statement: Two mirrored application servers run in the primary data centre.
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data center hosts two application servers
+
+  # --- FACT006: references an entity that is not in the table -------------------------
+  - id: fact-unknown-entity
+    statement: Order records are held by the finance system.
+    provenance:
+      - file: facts/sources/notes.md
+        quote: Order records are held by the finance system
+    entities: [no-such-entity]
+
+  # --- FACT007: duplicates the statement of fact-unknown-entity -----------------------
+  - id: fact-zz-duplicate-statement
+    statement: Order records are held by the finance system.
+    provenance:
+      - file: facts/sources/notes.md
+        quote: referenced by the customer portal

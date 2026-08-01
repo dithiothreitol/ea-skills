@@ -10,6 +10,10 @@ Severity meanings:
 * **warning** -- the model is questionable. Passes by default, fails under `--strict`.
 * **info** -- a declared, accepted state worth surfacing (currently: assumptions).
 
+Two validators share this catalogue: `python -m easkills validate` covers the model
+zones (`ORACLE`/`SCHEMA`/`ID`/`REF`/`PROV`/`GOV`/`REL`/`NAME`/`SMELL`), and
+`python -m easkills validate-facts` covers the fact register (`FACT`/`ENT`/`SRC`).
+
 ## Layer 0 -- oracle integrity
 
 | Code | Severity | Rule |
@@ -76,6 +80,36 @@ actually die: content nobody owns, that nobody revisits. They are mandatory in t
 | `NAME003` | warning | The name is shorter than three characters. |
 | `NAME004` | warning | Another element of the same type already has this name. Duplicate names are an EA smell and break traceability for anyone reading a view. |
 | `SMELL001` | warning | The element has no relationships (isolated element / dead component). |
+
+## Fact register -- structure and traceability
+
+Facts are what `ea-intake` extracts from raw sources, upstream of any ArchiMate
+typing. A fact has **no** `assumed` escape hatch: a statement that cannot cite a
+source is a clarification question, not a fact, so a missing `provenance` is a
+schema error rather than a distinct rule.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `FACT000` | error | A register file cannot be parsed, or its top level is not a mapping. |
+| `FACT001` | error | The file violates `schema/facts.schema.json` or `schema/entities.schema.json` -- unknown key, missing required field (including `provenance`), bad identifier pattern. |
+| `FACT002` | error | Duplicate fact id. Reported against the second definition, naming the file holding the first. |
+| `FACT003` | error | The cited source file does not exist. |
+| `FACT004` | error | The quote does not occur in the cited file (whitespace- and case-insensitive). A citation that cannot be located is a fabricated citation. |
+| `FACT005` | warning | The quote matches only approximately (similarity at or above `quoteMatchThreshold`, default 0.90). Quote verbatim text instead of paraphrasing. |
+| `FACT006` | error | The fact references an entity id that is not in `facts/entities.yaml`. |
+| `FACT007` | warning | Another fact already makes the same statement. Merge them and keep both quotes as provenance. |
+
+## Fact register -- entity resolution
+
+The entity table is what stops "the portal", "online order portal" and "Order
+Portal" from becoming three different applications downstream.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `ENT001` | error | Duplicate entity id. |
+| `ENT002` | error | A canonical name or alias resolves to more than one entity. One term, one entity -- a collision means downstream modelling would silently merge two things. |
+| `ENT003` | warning | The entity is never referenced by any fact. |
+| `SRC001` | warning | A file under `facts/sources/` is never cited by any fact -- it has not been ingested, or contains nothing extractable (which the intake report should say explicitly). |
 
 ## Not yet implemented
 

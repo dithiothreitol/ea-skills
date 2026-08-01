@@ -4,6 +4,9 @@ Model repository scaffolded from the `ea-skills` template. Copy this directory, 
 `ea.config.yaml`, and start with intake.
 
 ```bash
+python -m easkills chunk          --root .            # split sources for extraction
+python -m easkills validate-facts --root .            # the fact register gate
+python -m easkills coverage       --root .            # what the facts do not cover yet
 python -m easkills validate --root . --zone staging   # while proposing
 python -m easkills validate --root . --zone approved  # the published model
 python -m easkills compile  --root . --zone approved  # -> build/model.xml
@@ -14,7 +17,8 @@ python -m easkills compile  --root . --zone approved  # -> build/model.xml
 | Path | Holds |
 |---|---|
 | `facts/sources/` | Raw input, unedited: interview notes, exports, documents. Provenance quotes must be findable here verbatim. |
-| `facts/` | The fact register produced by intake. |
+| `facts/register/` | The fact register produced by intake: atomic statements, each with a mechanically verified quote. |
+| `facts/entities.yaml` | Canonical names and aliases for the things the sources mention. |
 | `model/staging/` | Machine-proposed concepts awaiting human approval. Ownership metadata is advisory here. |
 | `model/approved/` | Human-signed model. Ownership and review dates are mandatory. Everything downstream reads only from here. |
 | `landscape/` | Architecture landscape partitioned by scope: `strategic/`, `segments/`, `capabilities/`. Baseline, transition and target states are modelled as ArchiMate plateaus inside the model, not as copies of it. |

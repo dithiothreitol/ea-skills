@@ -13,3 +13,6 @@ quoteMatchThreshold: 0.90
 
 # Provenance file references resolve against this directory.
 factsRoot: .
+
+# Raw source documents that ea-intake ingests (chunking, coverage, SRC001).
+sourcesDir: facts/sources

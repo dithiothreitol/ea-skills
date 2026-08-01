@@ -16,14 +16,24 @@ weakest measured capability of language models on modelling tasks, and fabricate
 citations are a documented failure mode. Both are exactly the kind of thing a validator
 catches for free and a reviewer catches at 3pm on a Friday, if at all.
 
-**Status: Phase 0 complete.** The deterministic core -- DSL, three-layer validator,
-Open Exchange compiler -- works and is tested. The skills that drive it are being built
-on top, phase by phase (see [Roadmap](#roadmap)).
+**Status: Phase 1 complete.** The deterministic core -- DSL, three-layer validator,
+Open Exchange compiler -- and the intake stage -- fact register, chunker, coverage
+report -- work and are tested. The skills that drive them are being built on top,
+phase by phase (see [Roadmap](#roadmap)).
 
 ## What exists today
 
 ```bash
 python -m pip install -r requirements.txt
+
+# Split raw sources into deterministic extraction chunks (exact line numbers)
+python -m easkills chunk --root eval/example
+
+# Validate the fact register: every quote located in its source (exit 1 on any error)
+python -m easkills validate-facts --root eval/example
+
+# Which parts of the sources produced no facts -- candidate clarification questions
+python -m easkills coverage --root eval/example
 
 # Validate a model repository (exit 1 on any error -- use it as a CI gate)
 python -m easkills validate --root eval/example
@@ -32,11 +42,12 @@ python -m easkills validate --root eval/example
 python -m easkills compile --root eval/example
 ```
 
-The worked example (`eval/example/`) is a small fictional B2B food manufacturer: fifteen
-elements from capability map down to database, every one traceable to a quote in
-`facts/sources/`, two views, zero findings. `eval/fixtures/broken/` is its opposite --
-every rule in the catalogue violated on purpose, so the test suite can prove each rule
-actually fires.
+The worked example (`eval/example/`) is a small fictional B2B food manufacturer: a fact
+register of twenty-five facts and eleven entities covering 100% of the source
+statements, and fifteen elements from capability map down to database, every one
+traceable to a quote in `facts/sources/`, two views, zero findings.
+`eval/fixtures/broken/` is its opposite -- every rule in the catalogue violated on
+purpose, so the test suite can prove each rule actually fires.
 
 ```
 $ python -m easkills validate --root eval/example
@@ -72,7 +83,15 @@ reviewable diff rather than a rewrite.
 content. Ownership and review dates are mandatory in `approved` and advisory in
 `staging`. Governance and reporting read only from `approved`.
 
-**Every concept is evidenced or declared.** Each element and relationship carries
+**Intake comes first and is measured.** `ea-intake` extracts a **fact register**
+(`facts/register/*.yaml`) from raw sources chunk by chunk: atomic statements, each with
+a verbatim quote the validator locates mechanically, plus an entity table
+(`facts/entities.yaml`) so "the portal" and "Order Portal" stay one thing. Facts have
+no `assumed` escape hatch -- what the sources do not say becomes a clarification
+question, and the coverage report lists every source statement no fact cites, with
+line numbers, so "we ingested everything" is a checked claim rather than a felt one.
+
+**Every model concept is evidenced or declared.** Each element and relationship carries
 `provenance` (source file plus verbatim quote) which the validator locates in the actual
 file, or `assumed: true` with a rationale, which surfaces as an open question. There is
 no third option -- and no way to quietly invent an element.
@@ -130,8 +149,8 @@ implements TOGAF where it is genuinely strong: governance mechanics.
 | Phase | Scope | Status |
 |---|---|---|
 | **0** | DSL + JSON Schema, three-layer validator, Open Exchange compiler, oracle pinning, worked example, negative fixtures, test suite | **done** |
-| **1** | `ea-intake`: chunked extraction with a gleaning pass, entity resolution, mechanically verified provenance, clarification questions where sources are thin | next |
-| **2** | Modelling skills per layer, capability map as spine, validate--repair loop capped at three iterations, two-zone approval | planned |
+| **1** | `ea-intake`: chunked extraction with a gleaning pass, entity resolution, mechanically verified provenance, clarification questions where sources are thin | **done** |
+| **2** | Modelling skills per layer, capability map as spine, validate--repair loop capped at three iterations, two-zone approval | next |
 | **3** | Viewpoint selection driven by stakeholder concerns, rendering (Archi headless / PlantUML), ISO 42010-structured architecture description, audience one-pagers | planned |
 | **4** | Governance and maintenance: compliance assessment with TOGAF's six conformance levels, dispensations with mandatory expiry, standards information base, Phase H change triage, delta ingestion, EA-debt register, staleness and KPI reporting, 42010 conformance checker | planned |
 | **5** | Golden-set regression harness and a maintained capability comparison against neighbouring projects | planned |
@@ -175,7 +194,7 @@ docs/            BLUEPRINT.md (design + research), RULES.md (rule catalogue)
 
 ```bash
 python -m venv .venv && .venv/Scripts/python -m pip install -r requirements.txt
-.venv/Scripts/python -m pytest tests -q          # 64 tests
+.venv/Scripts/python -m pytest tests -q          # 107 tests
 .venv/Scripts/python -m easkills oracle-info     # oracle version + pin status
 .venv/Scripts/python -m easkills gen-schema      # regenerate the DSL schema
 ```

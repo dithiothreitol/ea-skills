@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ea-skills:schema:facts",
+  "title": "EA Skills fact register file",
+  "description": "One fragment of the fact register: atomic, source-verified statements extracted from raw inputs before any ArchiMate typing happens.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "facts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fact"
+      }
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+      "maxLength": 80,
+      "description": "Stable author-supplied identifier; never regenerated."
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file",
+        "quote"
+      ],
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the source document, relative to the repository root."
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 8,
+          "description": "Verbatim excerpt from that document; verified mechanically."
+        }
+      }
+    },
+    "fact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "statement",
+        "provenance"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/slug"
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 500,
+          "description": "One atomic claim, in the register's own words."
+        },
+        "provenance": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/provenance"
+          }
+        },
+        "entities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slug"
+          },
+          "description": "Entity ids (facts/entities.yaml) this fact mentions."
+        },
+        "topics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slug"
+          },
+          "description": "Free grouping tags, e.g. business, application, technology."
+        },
+        "confidence": {
+          "enum": [
+            "stated",
+            "implied"
+          ],
+          "description": "'stated' when the quote says it directly; 'implied' when the quote supports it only indirectly and a reviewer should look twice."
+        }
+      }
+    }
+  }
+}

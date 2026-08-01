@@ -1,0 +1,71 @@
+# Canonical names for things the sources mention, with the aliases they are
+# mentioned by. ea-intake maintains this table; the validator enforces that one
+# term resolves to exactly one entity (ENT002). Kinds are informal hints -- real
+# ArchiMate typing happens in the modelling phase.
+
+entities:
+  - id: customer
+    name: Customer
+    kind: actor
+    aliases:
+      - wholesalers and retail chains
+      - B2B customers
+    documentation: Aurora Foods sells B2B only; there are no consumer customers.
+
+  - id: service-desk
+    name: Service Desk
+    kind: actor
+
+  - id: order-portal
+    name: Order Portal
+    kind: application
+    aliases:
+      - online order portal
+      - the order portal
+
+  - id: erp-core
+    name: ERP Core
+    kind: application
+    aliases:
+      - the ERP
+      - ERP
+
+  - id: wms
+    name: Warehouse Management System
+    kind: application
+
+  - id: order-api
+    name: Order API
+    kind: integration
+    aliases:
+      - the order API
+
+  - id: erp-server
+    name: ERP Application Server
+    kind: technology
+    aliases:
+      - dedicated application server
+
+  - id: erp-database
+    name: ERP Database
+    kind: technology
+    aliases:
+      - PostgreSQL 16 database instance
+
+  - id: order-record
+    name: Purchase Order Record
+    kind: data
+    aliases:
+      - order records
+      - master order records
+      - purchase order document
+
+  - id: process-order-fulfilment
+    name: Order Fulfilment
+    kind: process
+    aliases:
+      - order fulfilment process
+
+  - id: cap-customer-service
+    name: Customer Service
+    kind: capability

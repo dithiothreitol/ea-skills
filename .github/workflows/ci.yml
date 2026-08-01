@@ -29,6 +29,13 @@ jobs:
       - name: Validate worked example (strict)
         run: python -m easkills validate --root eval/example --strict
 
+      - name: Validate worked example fact register (strict)
+        run: python -m easkills validate-facts --root eval/example --strict
+
+      # The example's sources are documented as 100% cited by the fact register.
+      - name: Fact coverage of the worked example
+        run: python -m easkills coverage --root eval/example --min-coverage 100 --strict
+
       - name: Compile worked example
         run: python -m easkills compile --root eval/example
 
@@ -38,6 +45,13 @@ jobs:
         run: |
           if python -m easkills validate --root eval/fixtures/broken; then
             echo "::error::the broken fixture validated cleanly -- the validator is not catching violations"
+            exit 1
+          fi
+
+      - name: Negative fact-register fixture must fail
+        run: |
+          if python -m easkills validate-facts --root eval/fixtures/broken; then
+            echo "::error::the broken fact register validated cleanly -- the validator is not catching violations"
             exit 1
           fi
 

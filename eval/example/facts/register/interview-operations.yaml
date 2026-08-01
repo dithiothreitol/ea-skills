@@ -1,0 +1,136 @@
+# Facts extracted from the operations interview. Every quote is verbatim and is
+# located mechanically in the source file (FACT004 fails the build otherwise).
+
+facts:
+  - id: fact-customer-segments
+    statement: Customers are wholesalers and retail chains; there are no direct consumer sales.
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: Our customers are wholesalers and retail chains, never consumers directly.
+    entities: [customer]
+    topics: [business]
+
+  - id: fact-portal-order-channel
+    statement: B2B customers place orders through the online order portal.
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: B2B customers place orders through the online order portal
+    entities: [customer, order-portal]
+    topics: [business, application]
+
+  - id: fact-manual-order-entry
+    statement: The largest accounts still send order spreadsheets by e-mail, which the service desk keys in manually.
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: a handful of the largest accounts still send spreadsheets by e-mail that our service desk keys in manually
+    entities: [customer, service-desk]
+    topics: [business]
+
+  - id: fact-fulfilment-trigger
+    statement: The order fulfilment process starts when an order lands in the portal.
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The order fulfilment process starts the moment an order lands in the portal.
+    entities: [process-order-fulfilment, order-portal]
+    topics: [business]
+
+  - id: fact-fulfilment-steps
+    statement: Fulfilment checks stock, confirms the delivery window with the customer, then releases the order to the warehouse for picking.
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: We check stock, confirm the delivery window with the customer, then release the order to the warehouse for picking.
+    entities: [process-order-fulfilment, customer]
+    topics: [business]
+
+  - id: fact-po-retention
+    statement: Purchase order documents are retained for seven years for audit purposes.
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The purchase order document itself is what auditors ask for, so we keep it for seven years.
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: Retention is seven years for audit purposes.
+    entities: [order-record]
+    topics: [data, governance]
+
+  - id: fact-portal-role
+    statement: The order portal is where customers see prices and place orders.
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The order portal is where customers see prices and place orders.
+    entities: [order-portal, customer]
+    topics: [application]
+
+  - id: fact-erp-role
+    statement: The ERP core holds the master order records and performs invoicing.
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The ERP core holds the master order records and does the invoicing.
+    entities: [erp-core, order-record]
+    topics: [application]
+
+  - id: fact-wms-role
+    statement: The warehouse management system runs picking and dispatch on the warehouse floor.
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The warehouse management system runs picking and dispatch on the floor.
+    entities: [wms]
+    topics: [application]
+
+  - id: fact-portal-calls-order-api
+    statement: The order portal holds no stock levels itself; it calls an order API published by the ERP.
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The order portal does not hold stock levels itself; it calls an order API that the ERP publishes.
+    entities: [order-portal, order-api, erp-core]
+    topics: [application, integration]
+
+  - id: fact-api-outage-impact
+    statement: When the order API is down, customers cannot order at all; operations call it their single worst outage scenario.
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: When that API is down, customers cannot order at all, which is our single worst outage scenario.
+    entities: [order-api, customer]
+    topics: [application, risk]
+
+  - id: fact-erp-single-point-of-failure
+    statement: The ERP core is a single point of failure for order capture.
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: When that API is down, customers cannot order at all, which is our single worst outage scenario.
+    entities: [erp-core, order-api]
+    topics: [risk]
+    confidence: implied
+
+  - id: fact-wms-supports-fulfilment
+    statement: The warehouse management system supports the order fulfilment process directly.
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: The warehouse management system supports the order fulfilment process directly.
+    entities: [wms, process-order-fulfilment]
+    topics: [application, business]
+
+  - id: fact-wms-picker-screens
+    statement: Warehouse pickers work from the warehouse management system's screens.
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: Pickers work from its screens.
+    entities: [wms]
+    topics: [application]
+
+  - id: fact-wms-receives-released-orders
+    statement: The warehouse management system receives released orders from the ERP every few minutes.
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: It receives released orders from the ERP every few minutes.
+    entities: [wms, erp-core]
+    topics: [integration]
+
+  - id: fact-customer-service-gap
+    statement: Customer service is a capability gap; answering "where is my order" requires opening three systems.
+    provenance:
+      - file: facts/sources/interview-operations-2026-07-15.md
+        quote: >-
+          Customer service is the weak spot. We can take an order and we can ship it, but
+          answering "where is my order" still means someone opening three systems.
+    entities: [cap-customer-service]
+    topics: [capability]

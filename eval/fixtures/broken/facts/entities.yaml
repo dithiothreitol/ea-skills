@@ -1,0 +1,20 @@
+# Each entry below is annotated with the rule code it is meant to trigger.
+
+entities:
+  # --- ENT001: duplicate entity id -----------------------------------------------------
+  - id: ent-dup
+    name: Finance System
+  - id: ent-dup
+    name: Finance System Again
+
+  # --- ENT002: the alias of one entity collides with the name of another ---------------
+  - id: ent-portal
+    name: Customer Portal
+  - id: ent-portal-clone
+    name: Portal Clone
+    aliases:
+      - customer portal
+
+  # --- ENT003: never referenced by any fact --------------------------------------------
+  - id: ent-unreferenced
+    name: Nobody References This

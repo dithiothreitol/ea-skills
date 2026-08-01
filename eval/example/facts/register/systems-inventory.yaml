@@ -1,0 +1,80 @@
+# Facts extracted from the systems inventory. Table rows are quoted verbatim,
+# pipes included -- the quote matcher normalizes whitespace, nothing else.
+
+facts:
+  - id: fact-inventory-provenance
+    statement: The systems inventory is an IT asset register export reconciled with the infrastructure team on 2026-06-30.
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: "Source: IT asset register export, reconciled with the infrastructure team on 2026-06-30."
+    topics: [governance]
+
+  - id: fact-portal-inventory-entry
+    statement: The order portal is a customer-facing ordering web application owned by the e-commerce team and hosted in managed cloud.
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: "| Order Portal | Customer-facing ordering web application | e-commerce team | Managed cloud |"
+    entities: [order-portal]
+    topics: [application, governance]
+
+  - id: fact-erp-inventory-entry
+    statement: The ERP core covers order master data, invoicing and finance; it is owned by the finance systems team and hosted on-premise.
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: "| ERP Core | Order master data, invoicing, finance | finance systems team | On-premise |"
+    entities: [erp-core]
+    topics: [application, governance]
+
+  - id: fact-wms-inventory-entry
+    statement: The warehouse management system covers picking, packing and dispatch; it is owned by logistics IT and hosted on-premise.
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: "| Warehouse Management System | Picking, packing and dispatch | logistics IT | On-premise |"
+    entities: [wms]
+    topics: [application, governance]
+
+  - id: fact-erp-runs-on-dedicated-server
+    statement: The ERP core runs on a dedicated application server in the primary data centre.
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: The ERP core runs on a dedicated application server in the primary data centre.
+    entities: [erp-core, erp-server]
+    topics: [technology]
+
+  - id: fact-erp-database-dedicated
+    statement: The ERP application server also hosts a PostgreSQL 16 database instance that only the ERP uses.
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: >-
+          That server also hosts the PostgreSQL 16 database instance that the ERP depends on;
+          the database is not shared with any other system.
+    entities: [erp-server, erp-database, erp-core]
+    topics: [technology]
+
+  - id: fact-order-api-only-integration
+    statement: The order API, published by the ERP core and consumed by the order portal, is the only integration point between the two systems.
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: >-
+          The order API is published by the ERP core and consumed by the order portal. It is
+          the only integration point between the two systems.
+    entities: [order-api, erp-core, order-portal]
+    topics: [integration]
+
+  - id: fact-order-records-in-erp-database
+    statement: Order records are stored in the ERP database and represent the purchase orders the business works with.
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: Order records are stored in the ERP database and represent the purchase orders that the business works with.
+    entities: [order-record, erp-database]
+    topics: [data]
+
+  - id: fact-wms-cloud-move-unfunded
+    statement: A cloud move for the warehouse management system is planned, but no date has been agreed and no budget approved.
+    provenance:
+      - file: facts/sources/systems-inventory-2026-06.md
+        quote: >-
+          Deployment of the warehouse management system is planned to move to the cloud, but no
+          date has been agreed and no budget has been approved.
+    entities: [wms]
+    topics: [technology, roadmap]
