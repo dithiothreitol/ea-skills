@@ -1,0 +1,37 @@
+# ISO 42010 apparatus: who has an interest in this architecture and what they
+# actually want answered. Views declare which of these concerns they frame; the
+# ISO* rules keep the three-way mapping (stakeholder <-> concern <-> view) closed.
+
+stakeholders:
+  - id: stakeholder-cio
+    name: CIO
+    description: Owns the application portfolio and its budget.
+    concerns:
+      - concern-portfolio-rationalisation
+      - concern-ordering-availability
+
+  - id: stakeholder-head-of-operations
+    name: Head of Operations
+    description: Runs order-to-delivery; interviewed 2026-07-15.
+    concerns:
+      - concern-ordering-availability
+      - concern-order-status-effort
+
+  - id: stakeholder-auditor
+    name: External Auditor
+    description: Verifies purchase-order retention during the annual audit.
+    concerns:
+      - concern-audit-retention
+
+concerns:
+  - id: concern-portfolio-rationalisation
+    statement: Which applications support which capability, and where is investment or retirement due?
+
+  - id: concern-ordering-availability
+    statement: How exposed is order capture to a single point of failure?
+
+  - id: concern-order-status-effort
+    statement: Why does answering "where is my order" require opening three systems?
+
+  - id: concern-audit-retention
+    statement: Are purchase orders retained for the required seven years, and where?

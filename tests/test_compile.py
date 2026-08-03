@@ -24,7 +24,7 @@ def test_passes_open_group_xsd(compiled):
 def test_counts_match_the_source_model(compiled):
     assert compiled.elements == 17
     assert compiled.relationships == 15
-    assert compiled.views == 2
+    assert compiled.views == 4
 
 
 def test_identifiers_are_valid_xml_ids(compiled):

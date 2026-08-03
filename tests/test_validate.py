@@ -37,7 +37,7 @@ def test_example_model_is_clean(example_report):
 def test_example_model_counts(example_report):
     assert example_report.counts["elements"] == 17
     assert example_report.counts["relationships"] == 15
-    assert example_report.counts["views"] == 2
+    assert example_report.counts["views"] == 4
 
 
 def test_example_model_declares_its_assumptions(example_report):
@@ -69,6 +69,8 @@ EXPECTED_ERROR_CODES = [
     "PROV007",  # provenance references a fact missing from the register
     "MOT001",  # appliesTo target does not exist
     "MOT002",  # appliesTo on a non-Motivation element
+    "ISO001",  # view frames an unknown concern
+    "ISO002",  # stakeholder holds an unknown concern
     "GOV001",  # no owner in approved zone
     "GOV002",  # no review date in approved zone
     "GOV003",  # unparseable review date
@@ -84,6 +86,10 @@ EXPECTED_WARNING_CODES = [
     "REL003",  # duplicate relationship
     "REF003",  # empty view
     "SMELL001",  # isolated element
+    "ISO003",  # concern framed by no view
+    "ISO004",  # stakeholder with no concerns
+    "ISO005",  # view frames no declared concern
+    "ISO006",  # concern held by no stakeholder
 ]
 
 

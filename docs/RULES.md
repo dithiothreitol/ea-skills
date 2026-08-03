@@ -83,6 +83,22 @@ the agent context packs (`ea-context`, Phase 4) will be scoped by.
 | `MOT001` | error | An `appliesTo` entry does not resolve to an element. |
 | `MOT002` | error | `appliesTo` on an element outside the Motivation layer. A dependency between architecture elements is a relationship, not a selector. |
 
+## Layer 2 -- ISO 42010 alignment
+
+The checkable half of ISO/IEC/IEEE 42010 6.3-6.4: stakeholders hold concerns, views
+frame them, and the loop is closed. Reference errors are always on; the coverage
+warnings fire only once the repository declares stakeholders or concerns, so a model
+that has not started the documentation apparatus is not nagged about it.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `ISO001` | error | A view frames a concern that is not declared. |
+| `ISO002` | error | A stakeholder holds a concern that is not declared. |
+| `ISO003` | warning | A concern is framed by no view -- a documented gap in the architecture description. |
+| `ISO004` | warning | A stakeholder holds no concerns. |
+| `ISO005` | warning | A view frames no declared concern -- a view that answers no stakeholder question is a view nobody reads. |
+| `ISO006` | warning | No stakeholder holds the concern -- an ownerless concern cannot be prioritised or confirmed. |
+
 ## Layer 2 -- conventions and smells
 
 | Code | Severity | Rule |

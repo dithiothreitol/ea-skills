@@ -200,6 +200,16 @@ Design calls made in implementation: entity `kind` is an informal hint, not an A
 
 Deviations from the catalog: the four per-layer skills (`ea-model-business/-application/-technology/-data`) were folded into the single `ea-model` skill plus `ea-capability-map` — the authoring discipline is identical across layers and the per-layer split would duplicate 90% of the text; revisit if layer-specific guidance actually accumulates.
 
+**Phase 3 — complete (2026-08-03).** Views + docs, per the ISO 42010 frame:
+
+* **Stakeholder/concern register in the model DSL** (`stakeholders:`/`concerns:` sections, views gain `concerns:`): the 6.3–6.4 loop (stakeholder ↔ concern ↔ view) is enforced by six new rules — `ISO001/002` (dangling references, errors) and `ISO003–006` (coverage gaps, warnings that fire only once the repository declares the apparatus). The register rides the same two-zone staging→promotion flow as everything else.
+* **`easkills/render.py`** — dependency-free SVG renderer reusing the compiler's deterministic layered layout: Archi-like layer colours, derived connections with arrowheads (dashed Realization/Specialization), `appliesTo` bindings drawn dotted so selector links cannot be misread as ArchiMate semantics. Byte-stable.
+* **`easkills/docgen.py`** — architecture description generator (Clause 6 shape): stakeholders → concern-coverage table (open loop shown as bold **nobody**/**no view**) → views with element tables and embedded SVGs → application portfolio with TIME quadrants → capability support (including "nothing realizes this") → declared assumptions as open questions. Reads `approved/` only (AD-02). Deterministic: "as of" = newest `lastReviewed`, no wall clock.
+* CLI: `render` (`--zone` for previewing staging), `docs` (refuses a model with validation errors). Generated outputs (`docs/architecture-description.md`, `docs/views/*.svg`) are **committed in the example and freshness-checked by a test and CI** — the same stale-artifact contract as the generated schemas.
+* Worked example: +2 views (Customer Service Gap, Retention Obligations with dotted bindings), 3 stakeholders / 4 concerns, loop fully closed, still zero findings. Negative fixture fires all six ISO rules. 144 tests.
+
+Deviations from the plan: rendering is native SVG instead of Archi-headless-docker/pyArchimate — Phase 0's lxml-only decision extends here (no GPL dependency, no docker requirement, byte-stable output, testable in CI); the Archi CLI route remains documented in the toolchain table for full-notation needs. Rendered views land in `docs/views/` rather than `build/` so the committed architecture description is self-contained. Audience one-pagers are a skill discipline (`ea-docs`), not a generator feature — extracts vary too much to template honestly.
+
 ## 9. Key sources (load-bearing)
 
 Standards: Archi relationship matrix — github.com/archimatetool/archi/blob/master/com.archimatetool.model/model/relationships.xml (+ relationships-keys.xml) · Open Group XSDs — opengroup.org/xsd/archimate/ · ISO/IEC/IEEE 42010:2022 — iso.org/standard/74393.html · TOGAF 10 (SSO-gated) — pubs.opengroup.org/togaf-standard/ · ArchiMate viewpoints — Appendix C of spec · SHACL ontology — github.com/AlbertoDMendoza/archimate_ontology

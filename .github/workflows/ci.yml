@@ -39,6 +39,13 @@ jobs:
       - name: Compile worked example
         run: python -m easkills compile --root eval/example
 
+      # The generated architecture description and SVG views are committed; a change
+      # to the model or the generators without regeneration must fail here.
+      - name: Generated documentation must be fresh
+        run: |
+          python -m easkills docs --root eval/example
+          git diff --exit-code eval/example/docs
+
       # The negative fixture must keep failing. A green run here would mean the
       # validator has stopped catching things.
       - name: Negative fixture must fail

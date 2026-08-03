@@ -261,6 +261,7 @@ relationships:
 
 views:
   # --- REF002: view refers to an element that is not in the model --------------------
+  # --- ISO005: frames no declared concern (concerns exist in this repository) --------
   - id: view-bad-reference
     name: Broken View
     include:
@@ -271,3 +272,25 @@ views:
   - id: view-empty
     name: Empty View
     include: []
+
+  # --- ISO001: frames a concern that is not declared ---------------------------------
+  - id: view-unknown-concern
+    name: View With Unknown Concern
+    concerns: [no-such-concern]
+    include:
+      - node-a
+
+stakeholders:
+  # --- ISO002: holds a concern that is not declared ----------------------------------
+  - id: stakeholder-bad-concern
+    name: Stakeholder With Unknown Concern
+    concerns: [no-such-concern]
+
+  # --- ISO004: holds no concerns ------------------------------------------------------
+  - id: stakeholder-empty
+    name: Stakeholder With Nothing To Say
+
+concerns:
+  # --- ISO003 + ISO006: framed by no view, held by no stakeholder ---------------------
+  - id: concern-orphan
+    statement: Does anything address or own this concern at all?

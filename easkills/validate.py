@@ -661,6 +661,104 @@ def check_motivation(model: dsl.Model) -> list[Finding]:
     return findings
 
 
+def check_iso_alignment(model: dsl.Model) -> list[Finding]:
+    """ISO/IEC/IEEE 42010 6.3-6.4: stakeholders hold concerns, views frame them.
+
+    These are the checkable halves of the standard's conformance list. Reference
+    errors are always on; the coverage warnings fire only once the repository has
+    started declaring concerns -- a model that does not use the apparatus yet is
+    not nagged about it.
+    """
+    findings: list[Finding] = []
+    uses_apparatus = bool(model.concerns) or bool(model.stakeholders)
+
+    for stakeholder in sorted(model.stakeholders.values(), key=lambda s: s.id):
+        rel_file = _rel(model.root, stakeholder.source_path)
+        for ref in stakeholder.concerns:
+            if ref not in model.concerns:
+                findings.append(
+                    Finding(
+                        "ISO002",
+                        SEVERITY_ERROR,
+                        f"stakeholder holds unknown concern '{ref}'",
+                        file=rel_file,
+                        locator=stakeholder.locator,
+                        concept=stakeholder.id,
+                    )
+                )
+        if not stakeholder.concerns:
+            findings.append(
+                Finding(
+                    "ISO004",
+                    SEVERITY_WARNING,
+                    f"stakeholder '{stakeholder.name}' holds no concerns -- either capture what "
+                    "they care about or leave them out of the architecture description",
+                    file=rel_file,
+                    locator=stakeholder.locator,
+                    concept=stakeholder.id,
+                )
+            )
+
+    framed: set[str] = set()
+    for view in sorted(model.views.values(), key=lambda v: v.id):
+        rel_file = _rel(model.root, view.source_path)
+        for ref in view.concerns:
+            if ref not in model.concerns:
+                findings.append(
+                    Finding(
+                        "ISO001",
+                        SEVERITY_ERROR,
+                        f"view frames unknown concern '{ref}'",
+                        file=rel_file,
+                        locator=view.locator,
+                        concept=view.id,
+                    )
+                )
+            else:
+                framed.add(ref)
+        if uses_apparatus and not view.concerns:
+            findings.append(
+                Finding(
+                    "ISO005",
+                    SEVERITY_WARNING,
+                    f"view '{view.name}' frames no declared concern -- a view that answers "
+                    "no stakeholder question is a view nobody reads",
+                    file=rel_file,
+                    locator=view.locator,
+                    concept=view.id,
+                )
+            )
+
+    held = {ref for s in model.stakeholders.values() for ref in s.concerns}
+    for concern in sorted(model.concerns.values(), key=lambda c: c.id):
+        rel_file = _rel(model.root, concern.source_path)
+        if concern.id not in framed:
+            findings.append(
+                Finding(
+                    "ISO003",
+                    SEVERITY_WARNING,
+                    f"concern is framed by no view: {concern.statement!r} -- an unaddressed "
+                    "concern is a documented gap in the architecture description",
+                    file=rel_file,
+                    locator=concern.locator,
+                    concept=concern.id,
+                )
+            )
+        if concern.id not in held:
+            findings.append(
+                Finding(
+                    "ISO006",
+                    SEVERITY_WARNING,
+                    f"no stakeholder holds concern {concern.statement!r} -- concerns belong "
+                    "to someone; an ownerless concern cannot be prioritised or confirmed",
+                    file=rel_file,
+                    locator=concern.locator,
+                    concept=concern.id,
+                )
+            )
+    return findings
+
+
 def check_smells(model: dsl.Model) -> list[Finding]:
     """Starter subset of the EA smells catalogue, as deterministic graph queries."""
     findings: list[Finding] = []
@@ -704,6 +802,7 @@ CHECK_ORDER = (
     "cycles",
     "duplicates",
     "motivation",
+    "iso",
     "naming",
     "smells",
 )
@@ -725,6 +824,7 @@ def _run_checks(
     findings += check_structural_cycles(model)
     findings += check_duplicate_relationships(model)
     findings += check_motivation(model)
+    findings += check_iso_alignment(model)
     findings += check_naming(model)
     findings += check_smells(model)
 
@@ -736,6 +836,8 @@ def _run_checks(
         "elements": len(model.elements),
         "relationships": len(model.relationships),
         "views": len(model.views),
+        "stakeholders": len(model.stakeholders),
+        "concerns": len(model.concerns),
         "files": len(documents),
     }
     return report

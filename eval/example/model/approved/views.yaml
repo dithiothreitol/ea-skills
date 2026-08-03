@@ -1,13 +1,16 @@
 # Views declare which elements to show. Geometry is computed by the compiler, so layout
-# is reproducible and diffs stay about content rather than pixels.
+# is reproducible and diffs stay about content rather than pixels. Every view names the
+# concerns it frames (ISO 42010); a view that answers no stakeholder question is a view
+# nobody reads.
 
 views:
   - id: layered-overview
     name: Layered Overview
     viewpoint: Layered
+    concerns: [concern-ordering-availability]
     documentation: >
-      Whole-model overview from capabilities down to infrastructure. Frames the
-      "how does the portfolio support what we do" concern for architects.
+      Whole-model overview from capabilities down to infrastructure. Shows the single
+      integration path (portal -> order API -> ERP) whose failure stops order capture.
     include:
       - cap-order-management
       - cap-warehouse-operations
@@ -27,6 +30,7 @@ views:
   - id: capability-realization
     name: Capability Realization
     viewpoint: Capability Map
+    concerns: [concern-portfolio-rationalisation]
     documentation: >
       Which application supports which capability. Frames the portfolio-rationalisation
       concern for the CIO: one capability with a Tolerate-rated system behind it.
@@ -35,5 +39,34 @@ views:
       - cap-warehouse-operations
       - cap-customer-service
       - app-order-portal
+      - app-erp-core
+      - app-wms
+
+  - id: customer-service-gap
+    name: Customer Service Gap
+    viewpoint: Application Usage
+    concerns: [concern-order-status-effort]
+    documentation: >
+      The three systems a service agent opens to answer "where is my order", against
+      the capability the interview called the weak spot. The gap is the absence of a
+      single order-status service in front of them.
+    include:
+      - cap-customer-service
+      - app-order-portal
+      - app-erp-core
+      - app-wms
+
+  - id: retention-obligations
+    name: Retention Obligations
+    viewpoint: Motivation
+    concerns: [concern-audit-retention]
+    documentation: >
+      What the seven-year retention requirement binds: the order record and the ERP
+      core that stores it. Applicability bindings are drawn dotted; they are selector
+      links, not ArchiMate relationships.
+    include:
+      - req-po-retention
+      - constraint-wms-cloud-budget
+      - data-order-record
       - app-erp-core
       - app-wms

@@ -84,6 +84,31 @@ class View:
     viewpoint: str = ""
     documentation: str = ""
     include: list[str] = field(default_factory=list)
+    # ISO 42010: the concerns this view frames. Checked by the ISO* rules.
+    concerns: list[str] = field(default_factory=list)
+    source_path: Path | None = None
+    locator: str = ""
+
+
+@dataclass
+class Stakeholder:
+    """ISO 42010 §6.3: someone with an interest in the architecture. Part of the
+    architecture-description apparatus, not an ArchiMate model element."""
+
+    id: str
+    name: str
+    description: str = ""
+    concerns: list[str] = field(default_factory=list)
+    source_path: Path | None = None
+    locator: str = ""
+
+
+@dataclass
+class Concern:
+    """ISO 42010 §6.4: an interest in the system relevant to a stakeholder."""
+
+    id: str
+    statement: str
     source_path: Path | None = None
     locator: str = ""
 
@@ -103,6 +128,8 @@ class Model:
     elements: dict[str, Element] = field(default_factory=dict)
     relationships: dict[str, Relationship] = field(default_factory=dict)
     views: dict[str, View] = field(default_factory=dict)
+    stakeholders: dict[str, Stakeholder] = field(default_factory=dict)
+    concerns: dict[str, Concern] = field(default_factory=dict)
     duplicate_ids: list[tuple[str, Path, Path]] = field(default_factory=list)
 
     @property
@@ -243,16 +270,41 @@ def build_model(root: Path, zone: str, documents: list[Document], config: dict[s
             if not isinstance(item, dict) or not item.get("id"):
                 continue
             include = item.get("include") or []
+            concerns = item.get("concerns") or []
             view = View(
                 id=str(item.get("id", "")),
                 name=str(item.get("name", "") or ""),
                 viewpoint=str(item.get("viewpoint", "") or ""),
                 documentation=str(item.get("documentation", "") or ""),
                 include=[str(x) for x in include if isinstance(x, (str, int))],
+                concerns=[str(x) for x in concerns if isinstance(x, (str, int))],
                 source_path=doc.path,
                 locator=f"views[{index}]",
             )
             _register(model, model.views, view.id, view, doc.path)
+        for index, item in enumerate(doc.data.get("stakeholders") or []):
+            if not isinstance(item, dict) or not item.get("id"):
+                continue
+            concerns = item.get("concerns") or []
+            stakeholder = Stakeholder(
+                id=str(item.get("id", "")),
+                name=str(item.get("name", "") or ""),
+                description=str(item.get("description", "") or ""),
+                concerns=[str(x) for x in concerns if isinstance(x, (str, int))],
+                source_path=doc.path,
+                locator=f"stakeholders[{index}]",
+            )
+            _register(model, model.stakeholders, stakeholder.id, stakeholder, doc.path)
+        for index, item in enumerate(doc.data.get("concerns") or []):
+            if not isinstance(item, dict) or not item.get("id"):
+                continue
+            concern = Concern(
+                id=str(item.get("id", "")),
+                statement=str(item.get("statement", "") or ""),
+                source_path=doc.path,
+                locator=f"concerns[{index}]",
+            )
+            _register(model, model.concerns, concern.id, concern, doc.path)
     return model
 
 
@@ -297,4 +349,6 @@ def load_merged(
     model.elements.update(overlay.elements)
     model.relationships.update(overlay.relationships)
     model.views.update(overlay.views)
+    model.stakeholders.update(overlay.stakeholders)
+    model.concerns.update(overlay.concerns)
     return model, approved_docs + staging_docs, config

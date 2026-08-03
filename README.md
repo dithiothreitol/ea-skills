@@ -16,12 +16,12 @@ weakest measured capability of language models on modelling tasks, and fabricate
 citations are a documented failure mode. Both are exactly the kind of thing a validator
 catches for free and a reviewer catches at 3pm on a Friday, if at all.
 
-**Status: Phase 2 complete.** The deterministic core (DSL, three-layer validator,
-Open Exchange compiler), the intake stage (fact register, chunker, coverage report)
-and the modelling pipeline (fact-referencing provenance, motivation layer with
-applicability selectors, staging-as-overlay validation, gated promotion) work and are
-tested. The skills that drive them are being built on top, phase by phase (see
-[Roadmap](#roadmap)).
+**Status: Phase 3 complete.** The deterministic core (DSL, three-layer validator,
+Open Exchange compiler), the intake stage (fact register, chunker, coverage report),
+the modelling pipeline (fact-referencing provenance, motivation layer, overlay
+staging, gated promotion) and the documentation stage (stakeholder/concern register,
+dependency-free SVG rendering, ISO 42010-shaped architecture description) work and
+are tested. The skills that drive them are built alongside (see [Roadmap](#roadmap)).
 
 ## What exists today
 
@@ -48,19 +48,25 @@ python -m easkills promote --root eval/example --dry-run
 
 # Compile to ArchiMate Open Exchange XML, validated against the Open Group XSDs
 python -m easkills compile --root eval/example
+
+# Render views to deterministic SVG and generate the architecture description
+# (ISO 42010 Clause 6 shape, application portfolio with TIME quadrants, open
+# assumptions) -- from the approved zone only.
+python -m easkills docs --root eval/example
 ```
 
 The worked example (`eval/example/`) is a small fictional B2B food manufacturer: a fact
 register of twenty-five facts and eleven entities covering 100% of the source
 statements, and seventeen elements from goal and capability map down to database, every one
-traceable to a quote in `facts/sources/`, two views, zero findings.
+traceable to a quote in `facts/sources/`, four concern-framed views, a generated
+architecture description, zero findings.
 `eval/fixtures/broken/` is its opposite -- every rule in the catalogue violated on
 purpose, so the test suite can prove each rule actually fires.
 
 ```
 $ python -m easkills validate --root eval/example
 EA model validation -- zone 'approved' at .../eval/example
-ArchiMate oracle 3.2; 17 elements, 15 relationships, 2 views
+ArchiMate oracle 3.2; 17 elements, 15 relationships, 4 views
 
 INFO    PROV006  model/approved/strategy.yaml:elements[3] [goal-shorten-lead-time]
          assumed, pending confirmation: Inferred from operational pain described in the
@@ -129,9 +135,19 @@ elements:
         quote: The ERP core holds the master order records and does the invoicing
 ```
 
-**Views declare content, not geometry.** A view lists which elements to show; the
-compiler computes a deterministic layered layout. Neither a person nor a model
-hand-places coordinates, so diffs stay about architecture.
+**Views declare content, not geometry -- and a purpose.** A view lists which elements
+to show and which declared stakeholder concerns it frames (ISO 42010's loop:
+stakeholder ↔ concern ↔ view, closed by the `ISO*` rules). The compiler computes a
+deterministic layered layout; the renderer draws the same layout as dependency-free,
+byte-stable SVG. Neither a person nor a model hand-places coordinates, so diffs stay
+about architecture.
+
+**Documentation is generated, committed, and provably fresh.** `python -m easkills
+docs` produces the architecture description (Clause 6 shape: stakeholders → concerns
+→ views, plus portfolio TIME quadrants, capability support and every open assumption)
+from `model/approved/` only. Output is deterministic -- the "as of" date is the newest
+`lastReviewed` in the model, not the wall clock -- so the generated files are
+committed and CI fails when they go stale.
 
 **The oracle is vendored and hash-pinned.** Semantic rules come from Archi's
 `relationships.xml` (the ArchiMate 3.2 permitted-relationship matrix, 11 569
@@ -169,8 +185,8 @@ implements TOGAF where it is genuinely strong: governance mechanics.
 | **0** | DSL + JSON Schema, three-layer validator, Open Exchange compiler, oracle pinning, worked example, negative fixtures, test suite | **done** |
 | **1** | `ea-intake`: chunked extraction with a gleaning pass, entity resolution, mechanically verified provenance, clarification questions where sources are thin | **done** |
 | **2** | Modelling pipeline: capability map as spine, fact-referencing provenance, motivation layer with `appliesTo` selectors (AD-09), staging-as-overlay validation, gated promotion (`ea-approve`) | **done** |
-| **3** | Viewpoint selection driven by stakeholder concerns, rendering (Archi headless / PlantUML), ISO 42010-structured architecture description, audience one-pagers | next |
-| **4** | Governance and maintenance: compliance assessment with TOGAF's six conformance levels, dispensations with mandatory expiry, standards information base, Phase H change triage, delta ingestion, EA-debt register, staleness and KPI reporting, 42010 conformance checker | planned |
+| **3** | Stakeholder/concern register with the ISO 42010 loop enforced (`ISO001`-`006`), dependency-free byte-stable SVG rendering, generated architecture description with portfolio and capability outputs (`ea-stakeholders`, `ea-views`, `ea-docs`) | **done** |
+| **4** | Governance and maintenance: compliance assessment with TOGAF's six conformance levels, dispensations with mandatory expiry, standards information base, Phase H change triage, delta ingestion, EA-debt register, staleness and KPI reporting, 42010 conformance checker, `ea-context` agent context packs (AD-09) | next |
 | **5** | Golden-set regression harness and a maintained capability comparison against neighbouring projects | planned |
 
 Phase 4 is the point of the project, not an afterthought. Model *generation* is
@@ -212,7 +228,7 @@ docs/            BLUEPRINT.md (design + research), RULES.md (rule catalogue)
 
 ```bash
 python -m venv .venv && .venv/Scripts/python -m pip install -r requirements.txt
-.venv/Scripts/python -m pytest tests -q          # 123 tests
+.venv/Scripts/python -m pytest tests -q          # 144 tests
 .venv/Scripts/python -m easkills oracle-info     # oracle version + pin status
 .venv/Scripts/python -m easkills gen-schema      # regenerate the DSL schema
 ```

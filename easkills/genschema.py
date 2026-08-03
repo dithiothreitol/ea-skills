@@ -102,6 +102,8 @@ def build_schema() -> dict[str, Any]:
             "elements": {"type": "array", "items": {"$ref": "#/$defs/element"}},
             "relationships": {"type": "array", "items": {"$ref": "#/$defs/relationship"}},
             "views": {"type": "array", "items": {"$ref": "#/$defs/view"}},
+            "stakeholders": {"type": "array", "items": {"$ref": "#/$defs/stakeholder"}},
+            "concerns": {"type": "array", "items": {"$ref": "#/$defs/concern"}},
         },
         "$defs": {
             "slug": {
@@ -157,6 +159,42 @@ def build_schema() -> dict[str, Any]:
                         "type": "array",
                         "items": {"$ref": "#/$defs/slug"},
                         "description": "Element ids to show; connections are derived from the model.",
+                    },
+                    "concerns": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {"$ref": "#/$defs/slug"},
+                        "description": "ISO 42010: the declared concerns this view frames (ISO001/ISO005).",
+                    },
+                },
+            },
+            "stakeholder": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["id", "name"],
+                "properties": {
+                    "id": {"$ref": "#/$defs/slug"},
+                    "name": {"type": "string", "minLength": 1, "maxLength": 120},
+                    "description": {"type": "string"},
+                    "concerns": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {"$ref": "#/$defs/slug"},
+                        "description": "Concern ids this stakeholder holds (ISO 42010 6.3-6.4).",
+                    },
+                },
+            },
+            "concern": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["id", "statement"],
+                "properties": {
+                    "id": {"$ref": "#/$defs/slug"},
+                    "statement": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 300,
+                        "description": "The interest, phrased as the question the views must answer.",
                     },
                 },
             },

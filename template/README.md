@@ -12,6 +12,7 @@ python -m easkills promote  --root . --dry-run        # the promotion gate, no m
 python -m easkills promote  --root .                  # staging -> approved (on human sign-off)
 python -m easkills validate --root . --zone approved  # the published model
 python -m easkills compile  --root . --zone approved  # -> build/model.xml
+python -m easkills docs     --root .                  # -> docs/ (AD + SVG views)
 ```
 
 ## Layout

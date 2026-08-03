@@ -12,7 +12,17 @@ import json
 import sys
 from pathlib import Path
 
-from . import aoef, facts as facts_mod, genschema, intake, oracle, promote as promote_mod, validate as validate_mod
+from . import (
+    aoef,
+    docgen,
+    facts as facts_mod,
+    genschema,
+    intake,
+    oracle,
+    promote as promote_mod,
+    render as render_mod,
+    validate as validate_mod,
+)
 
 
 def _add_common(parser: argparse.ArgumentParser) -> None:
@@ -45,6 +55,21 @@ def build_parser() -> argparse.ArgumentParser:
         "--skip-validation",
         action="store_true",
         help="compile even if the validator reports errors (not recommended)",
+    )
+
+    p_render = sub.add_parser("render", help="render views to deterministic SVG")
+    _add_common(p_render)
+    p_render.add_argument("--out", type=Path, help="output directory (default: <root>/docs/views)")
+
+    p_docs = sub.add_parser(
+        "docs", help="generate the architecture description (ISO 42010 shape) from the approved zone"
+    )
+    p_docs.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_docs.add_argument("--out", type=Path, help="output file (default: <root>/docs/architecture-description.md)")
+    p_docs.add_argument(
+        "--skip-validation",
+        action="store_true",
+        help="generate even if the validator reports errors (not recommended)",
     )
 
     p_promote = sub.add_parser(
@@ -123,6 +148,37 @@ def cmd_compile(args: argparse.Namespace) -> int:
             print(f"  {error}")
         return 1
     print("Open Exchange XSD validation passed.")
+    return 0
+
+
+def cmd_render(args: argparse.Namespace) -> int:
+    root = args.root.resolve()
+    try:
+        result = render_mod.render_all(root, zone=args.zone, out_dir=args.out)
+    except render_mod.RenderError as exc:
+        print(f"ERROR   {exc}")
+        return 1
+    for view_id, path in result.views:
+        print(f"Rendered {view_id} -> {path}")
+    if not result.views:
+        print("No views to render.")
+    return 0
+
+
+def cmd_docs(args: argparse.Namespace) -> int:
+    root = args.root.resolve()
+    if not args.skip_validation:
+        report = validate_mod.validate(root, zone="approved")
+        if not report.ok:
+            print(report.render())
+            print("\nRefusing to document a model with validation errors (use --skip-validation to override).")
+            return 1
+    try:
+        result = docgen.generate(root, out=args.out)
+    except render_mod.RenderError as exc:
+        print(f"ERROR   {exc}")
+        return 1
+    print(f"Rendered {len(result.views_rendered)} view(s); wrote {result.path}")
     return 0
 
 
@@ -222,6 +278,8 @@ def cmd_oracle_info(_args: argparse.Namespace) -> int:
 HANDLERS = {
     "validate": cmd_validate,
     "compile": cmd_compile,
+    "render": cmd_render,
+    "docs": cmd_docs,
     "promote": cmd_promote,
     "validate-facts": cmd_validate_facts,
     "chunk": cmd_chunk,
