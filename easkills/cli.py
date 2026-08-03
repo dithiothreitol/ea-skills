@@ -14,15 +14,26 @@ from pathlib import Path
 
 from . import (
     aoef,
+    contextpack,
     docgen,
     facts as facts_mod,
     genschema,
+    govern,
     intake,
     oracle,
     promote as promote_mod,
     render as render_mod,
+    reports,
     validate as validate_mod,
 )
+
+
+def _parse_as_of(value: str | None):
+    from datetime import date, datetime
+
+    if not value:
+        return None
+    return datetime.strptime(value, "%Y-%m-%d").date()
 
 
 def _add_common(parser: argparse.ArgumentParser) -> None:
@@ -84,6 +95,37 @@ def build_parser() -> argparse.ArgumentParser:
         help="a staging file to promote (repeatable; default: everything in model/staging/)",
     )
     p_promote.add_argument("--dry-run", action="store_true", help="run the gate and show the plan, move nothing")
+
+    p_gov = sub.add_parser(
+        "validate-gov", help="validate the governance log and standards base (SIB/DEC/DISP/COMP rules)"
+    )
+    p_gov.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_gov.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+    p_gov.add_argument("--strict", action="store_true", help="treat warnings as failures too")
+    p_gov.add_argument("--as-of", dest="as_of", help="evaluate expiries against this date (YYYY-MM-DD)")
+
+    for name, help_text in (
+        ("staleness", "review-age report over the approved model"),
+        ("kpi", "model-quality and portfolio metrics"),
+        ("debt", "EA-debt register from deterministic smell queries"),
+        ("conformance", "ISO 42010 Clause 6 conformance checklist (checkable subset)"),
+        ("delta", "what the fact register knows that the approved model does not"),
+    ):
+        p_report = sub.add_parser(name, help=help_text)
+        p_report.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+        p_report.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+        if name != "delta":
+            p_report.add_argument("--as-of", dest="as_of", help="evaluate against this date (YYYY-MM-DD)")
+        if name == "conformance":
+            p_report.add_argument("--strict", action="store_true", help="exit 1 if any clause fails")
+
+    p_context = sub.add_parser(
+        "context", help="generate an agent context pack for one element or capability (AD-09)"
+    )
+    p_context.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_context.add_argument("--scope", required=True, help="element id to scope the pack to")
+    p_context.add_argument("--out", type=Path, help="write to a file instead of stdout")
+    p_context.add_argument("--as-of", dest="as_of", help="evaluate freshness against this date (YYYY-MM-DD)")
 
     p_facts = sub.add_parser("validate-facts", help="validate the fact register (facts/register + entities)")
     p_facts.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
@@ -192,6 +234,71 @@ def cmd_promote(args: argparse.Namespace) -> int:
     return 0 if result.ok else 1
 
 
+def cmd_validate_gov(args: argparse.Namespace) -> int:
+    report = govern.validate_governance(args.root.resolve(), today=_parse_as_of(args.as_of))
+    print(report.render())
+    if args.json_out:
+        args.json_out.parent.mkdir(parents=True, exist_ok=True)
+        args.json_out.write_text(json.dumps(report.as_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"\nJSON report written to {args.json_out}")
+    if not report.ok:
+        return 1
+    return 1 if args.strict and report.warnings else 0
+
+
+def _emit_report(args: argparse.Namespace, data: dict, rendered: str) -> None:
+    print(rendered)
+    if args.json_out:
+        args.json_out.parent.mkdir(parents=True, exist_ok=True)
+        args.json_out.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"\nJSON report written to {args.json_out}")
+
+
+def cmd_staleness(args: argparse.Namespace) -> int:
+    data = reports.staleness(args.root.resolve(), today=_parse_as_of(args.as_of))
+    _emit_report(args, data, reports.render_staleness(data))
+    return 0
+
+
+def cmd_kpi(args: argparse.Namespace) -> int:
+    data = reports.kpi(args.root.resolve(), today=_parse_as_of(args.as_of))
+    _emit_report(args, data, reports.render_kpi(data))
+    return 0
+
+
+def cmd_debt(args: argparse.Namespace) -> int:
+    data = reports.debt(args.root.resolve(), today=_parse_as_of(args.as_of))
+    _emit_report(args, data, reports.render_debt(data))
+    return 0
+
+
+def cmd_conformance(args: argparse.Namespace) -> int:
+    data = reports.conformance(args.root.resolve(), today=_parse_as_of(args.as_of))
+    _emit_report(args, data, reports.render_conformance(data))
+    return 1 if getattr(args, "strict", False) and data["failed"] else 0
+
+
+def cmd_delta(args: argparse.Namespace) -> int:
+    data = reports.delta(args.root.resolve())
+    _emit_report(args, data, reports.render_delta(data))
+    return 0
+
+
+def cmd_context(args: argparse.Namespace) -> int:
+    try:
+        pack = contextpack.build(args.root.resolve(), scope=args.scope, today=_parse_as_of(args.as_of))
+    except contextpack.ContextError as exc:
+        print(f"ERROR   {exc}")
+        return 1
+    if args.out:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(pack.markdown, encoding="utf-8", newline="\n")
+        print(f"Context pack for {pack.scope} written to {args.out}")
+    else:
+        print(pack.markdown)
+    return 0
+
+
 def cmd_validate_facts(args: argparse.Namespace) -> int:
     report = facts_mod.validate_facts(args.root.resolve())
     print(report.render())
@@ -281,6 +388,13 @@ HANDLERS = {
     "render": cmd_render,
     "docs": cmd_docs,
     "promote": cmd_promote,
+    "validate-gov": cmd_validate_gov,
+    "staleness": cmd_staleness,
+    "kpi": cmd_kpi,
+    "debt": cmd_debt,
+    "conformance": cmd_conformance,
+    "delta": cmd_delta,
+    "context": cmd_context,
     "validate-facts": cmd_validate_facts,
     "chunk": cmd_chunk,
     "coverage": cmd_coverage,
@@ -291,6 +405,10 @@ HANDLERS = {
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows consoles default to a legacy codepage (cp1250/cp437) that cannot print
+    # arrows or the warning sign used in reports; never let encoding crash a gate.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(errors="replace")
     args = build_parser().parse_args(argv)
     return HANDLERS[args.command](args)
 

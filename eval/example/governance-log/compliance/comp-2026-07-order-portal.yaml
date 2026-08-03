@@ -1,0 +1,10 @@
+# Compliance assessment with TOGAF's six-level verdict -- a spectrum, not pass/fail.
+id: comp-2026-07-order-portal
+subject: Order portal hosting review, July 2026
+date: 2026-07-22
+assessor: ea@aurorafoods.example
+verdict: conformant
+findings:
+  - Hosted in managed cloud, per std-cloud-hosting.
+  - Consumes the order API only; no direct database access (per decision-order-api-single-integration).
+relatedElements: [app-order-portal]

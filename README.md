@@ -16,12 +16,14 @@ weakest measured capability of language models on modelling tasks, and fabricate
 citations are a documented failure mode. Both are exactly the kind of thing a validator
 catches for free and a reviewer catches at 3pm on a Friday, if at all.
 
-**Status: Phase 3 complete.** The deterministic core (DSL, three-layer validator,
-Open Exchange compiler), the intake stage (fact register, chunker, coverage report),
-the modelling pipeline (fact-referencing provenance, motivation layer, overlay
-staging, gated promotion) and the documentation stage (stakeholder/concern register,
-dependency-free SVG rendering, ISO 42010-shaped architecture description) work and
-are tested. The skills that drive them are built alongside (see [Roadmap](#roadmap)).
+**Status: Phase 4 complete.** The deterministic core (DSL, three-layer validator,
+Open Exchange compiler), intake (fact register, chunker, coverage), modelling
+(fact-referencing provenance, motivation layer, overlay staging, gated promotion),
+documentation (stakeholder/concern register, SVG rendering, ISO 42010-shaped
+description) **and governance** (standards base with lifecycle enforcement,
+dispensations that expire loudly, decision and compliance records, health reports,
+agent context packs) work and are tested. The skills that drive them are built
+alongside (see [Roadmap](#roadmap)).
 
 ## What exists today
 
@@ -53,6 +55,20 @@ python -m easkills compile --root eval/example
 # (ISO 42010 Clause 6 shape, application portfolio with TIME quadrants, open
 # assumptions) -- from the approved zone only.
 python -m easkills docs --root eval/example
+
+# Governance: validate the standards base and governance log (dispensations that
+# expire loudly, decisions with mandatory rationale, six-level compliance verdicts)
+python -m easkills validate-gov --root eval/example
+
+# Maintenance: health reports and the continuous-ingestion delta
+python -m easkills kpi --root eval/example
+python -m easkills debt --root eval/example
+python -m easkills staleness --root eval/example
+python -m easkills conformance --root eval/example   # ISO 42010 Clause 6 checklist
+python -m easkills delta --root eval/example         # fact register vs model
+
+# AD-09: a scoped, freshness-labelled context pack for agents working downstream
+python -m easkills context --root eval/example --scope app-erp-core
 ```
 
 The worked example (`eval/example/`) is a small fictional B2B food manufacturer: a fact
@@ -142,6 +158,20 @@ deterministic layered layout; the renderer draws the same layout as dependency-f
 byte-stable SVG. Neither a person nor a model hand-places coordinates, so diffs stay
 about architecture.
 
+**Governance is records + gates + diffs, git-native.** Standards live one per file
+with a lifecycle; an element referencing a retired standard is an *error* unless an
+open dispensation covers it -- and dispensations carry a schema-mandatory expiry that
+turns into an error the day it passes, so exceptions stay governed instead of silent.
+Decisions are MADR-shaped with mandatory rationale (ISO 42010 §6.10); compliance
+verdicts use TOGAF's six levels, and a non-conformant verdict with no follow-up is
+flagged. The git commit of any record is its audit trail.
+
+**The model governs agents, not just people (AD-09).** `python -m easkills context
+--scope <system>` produces a scoped extract for coding agents in downstream repos:
+binding requirements via `appliesTo`, standards with lifecycle and waivers, applicable
+decisions, integration neighbours -- opened by a mandatory freshness label, because a
+stale model served as binding constraints carries false authority.
+
 **Documentation is generated, committed, and provably fresh.** `python -m easkills
 docs` produces the architecture description (Clause 6 shape: stakeholders → concerns
 → views, plus portfolio TIME quadrants, capability support and every open assumption)
@@ -186,8 +216,8 @@ implements TOGAF where it is genuinely strong: governance mechanics.
 | **1** | `ea-intake`: chunked extraction with a gleaning pass, entity resolution, mechanically verified provenance, clarification questions where sources are thin | **done** |
 | **2** | Modelling pipeline: capability map as spine, fact-referencing provenance, motivation layer with `appliesTo` selectors (AD-09), staging-as-overlay validation, gated promotion (`ea-approve`) | **done** |
 | **3** | Stakeholder/concern register with the ISO 42010 loop enforced (`ISO001`-`006`), dependency-free byte-stable SVG rendering, generated architecture description with portfolio and capability outputs (`ea-stakeholders`, `ea-views`, `ea-docs`) | **done** |
-| **4** | Governance and maintenance: compliance assessment with TOGAF's six conformance levels, dispensations with mandatory expiry, standards information base, Phase H change triage, delta ingestion, EA-debt register, staleness and KPI reporting, 42010 conformance checker, `ea-context` agent context packs (AD-09) | next |
-| **5** | Golden-set regression harness and a maintained capability comparison against neighbouring projects | planned |
+| **4** | Governance and maintenance: standards base with lifecycle enforcement (`STD*`/`SIB*`), dispensations with mandatory, loud expiry (`DISP*`), MADR decisions (`DEC*`), six-level compliance (`COMP*`), Phase H change triage, delta ingestion, EA-debt register, staleness + KPI reports, 42010 conformance checklist, `ea-context` agent packs (AD-09) | **done** |
+| **5** | Golden-set regression harness and a maintained capability comparison against neighbouring projects | next |
 
 Phase 4 is the point of the project, not an afterthought. Model *generation* is
 crowded; governing and maintaining a validated ArchiMate repository over time is not.
@@ -228,7 +258,7 @@ docs/            BLUEPRINT.md (design + research), RULES.md (rule catalogue)
 
 ```bash
 python -m venv .venv && .venv/Scripts/python -m pip install -r requirements.txt
-.venv/Scripts/python -m pytest tests -q          # 144 tests
+.venv/Scripts/python -m pytest tests -q          # 189 tests
 .venv/Scripts/python -m easkills oracle-info     # oracle version + pin status
 .venv/Scripts/python -m easkills gen-schema      # regenerate the DSL schema
 ```

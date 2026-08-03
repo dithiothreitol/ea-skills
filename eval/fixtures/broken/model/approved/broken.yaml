@@ -188,6 +188,39 @@ elements:
       - file: facts/sources/notes.md
         quote: Order records are held by the finance system
 
+  # --- STD001: references a standard that is not in the SIB ---------------------------
+  - id: std-ref-unknown
+    type: Node
+    name: Node With Unknown Standard
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    standards: [no-such-standard]
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data centre hosts two application servers
+
+  # --- STD002: references a retired standard, no dispensation covers it ---------------
+  - id: std-ref-retired
+    type: Node
+    name: Node On Retired Standard
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    standards: [std-dead]
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data centre hosts two application servers
+
+  # --- STD003: references a deprecated standard ---------------------------------------
+  - id: std-ref-deprecated
+    type: Node
+    name: Node On Deprecated Standard
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    standards: [std-old]
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data centre hosts two application servers
+
   # --- MOT002: appliesTo on an element outside the Motivation layer -------------------
   - id: applies-on-wrong-layer
     type: ApplicationComponent

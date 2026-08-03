@@ -32,6 +32,12 @@ jobs:
       - name: Validate worked example fact register (strict)
         run: python -m easkills validate-facts --root eval/example --strict
 
+      # Governance gate. Note: the example's dispensation expires 2027-06-30; this
+      # step failing after that date is the mechanism working -- renew or close the
+      # record, do not weaken the gate.
+      - name: Validate worked example governance log (strict)
+        run: python -m easkills validate-gov --root eval/example --strict
+
       # The example's sources are documented as 100% cited by the fact register.
       - name: Fact coverage of the worked example
         run: python -m easkills coverage --root eval/example --min-coverage 100 --strict
@@ -59,6 +65,13 @@ jobs:
         run: |
           if python -m easkills validate-facts --root eval/fixtures/broken; then
             echo "::error::the broken fact register validated cleanly -- the validator is not catching violations"
+            exit 1
+          fi
+
+      - name: Negative governance fixture must fail
+        run: |
+          if python -m easkills validate-gov --root eval/fixtures/broken; then
+            echo "::error::the broken governance log validated cleanly -- the validator is not catching violations"
             exit 1
           fi
 

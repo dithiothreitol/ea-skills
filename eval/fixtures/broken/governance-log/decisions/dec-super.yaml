@@ -1,0 +1,8 @@
+# --- DEC003: supersededBy names a record that does not exist -----------------------
+id: dec-super
+title: Decision With Dangling Successor
+status: superseded
+date: 2026-07-01
+decision: Replaced by a record nobody wrote.
+rationale: Exists to trigger DEC003.
+supersededBy: no-such-decision

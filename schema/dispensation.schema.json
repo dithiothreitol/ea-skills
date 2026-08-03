@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ea-skills:schema:dispensation",
+  "title": "EA Skills dispensation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "waives",
+    "appliesTo",
+    "rationale",
+    "grantedBy",
+    "granted",
+    "expires"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+      "maxLength": 80
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "waives": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "standard": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+          "maxLength": 80,
+          "description": "Standard whose retirement/deprecation is waived for the listed elements."
+        },
+        "rule": {
+          "type": "string",
+          "maxLength": 40,
+          "description": "Validator rule code being waived (documented in the assessment)."
+        }
+      }
+    },
+    "appliesTo": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+        "maxLength": 80
+      }
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 8
+    },
+    "grantedBy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "granted": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "expires": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "status": {
+      "enum": [
+        "open",
+        "closed"
+      ]
+    }
+  }
+}

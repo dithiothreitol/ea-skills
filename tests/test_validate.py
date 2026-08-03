@@ -71,6 +71,8 @@ EXPECTED_ERROR_CODES = [
     "MOT002",  # appliesTo on a non-Motivation element
     "ISO001",  # view frames an unknown concern
     "ISO002",  # stakeholder holds an unknown concern
+    "STD001",  # references a standard that is not in the SIB
+    "STD002",  # references a retired standard without a dispensation
     "GOV001",  # no owner in approved zone
     "GOV002",  # no review date in approved zone
     "GOV003",  # unparseable review date
@@ -90,7 +92,17 @@ EXPECTED_WARNING_CODES = [
     "ISO004",  # stakeholder with no concerns
     "ISO005",  # view frames no declared concern
     "ISO006",  # concern held by no stakeholder
+    "STD003",  # references a deprecated standard
 ]
+
+
+def test_dispensation_coverage_is_informational(example_report):
+    """A retired standard covered by an open dispensation reports STD004 (info),
+    not an error -- the waiver is the governance mechanism working."""
+    findings = [f for f in example_report.findings if f.code == "STD004"]
+    assert len(findings) == 2
+    assert all(f.severity == validate.SEVERITY_INFO for f in findings)
+    assert "disp-onprem-legacy" in findings[0].message
 
 
 @pytest.mark.parametrize("code", EXPECTED_ERROR_CODES)

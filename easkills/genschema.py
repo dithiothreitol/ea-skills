@@ -21,6 +21,23 @@ SCHEMA_DIR = Path(__file__).resolve().parent.parent / "schema"
 SCHEMA_PATH = SCHEMA_DIR / "model.schema.json"
 FACTS_SCHEMA_PATH = SCHEMA_DIR / "facts.schema.json"
 ENTITIES_SCHEMA_PATH = SCHEMA_DIR / "entities.schema.json"
+STANDARD_SCHEMA_PATH = SCHEMA_DIR / "standard.schema.json"
+DECISION_SCHEMA_PATH = SCHEMA_DIR / "decision.schema.json"
+DISPENSATION_SCHEMA_PATH = SCHEMA_DIR / "dispensation.schema.json"
+COMPLIANCE_SCHEMA_PATH = SCHEMA_DIR / "compliance.schema.json"
+
+STANDARD_TYPES = ["legal", "industry", "organisation"]
+STANDARD_LIFECYCLES = ["proposed", "trial", "active", "deprecated", "retired"]
+DECISION_STATUSES = ["proposed", "accepted", "rejected", "deprecated", "superseded"]
+# TOGAF's six architecture-compliance levels -- a spectrum, not pass/fail.
+COMPLIANCE_VERDICTS = [
+    "irrelevant",
+    "consistent",
+    "compliant",
+    "conformant",
+    "fully-conformant",
+    "non-conformant",
+]
 
 SLUG_PATTERN = "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$"
 DATE_PATTERN = "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
@@ -127,6 +144,15 @@ def build_schema() -> dict[str, Any]:
                         "description": (
                             "Motivation-layer applicability selector (AD-09): element ids this "
                             "requirement/constraint/principle/goal binds. Semantic checks: MOT001/MOT002."
+                        ),
+                    },
+                    "standards": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {"$ref": "#/$defs/slug"},
+                        "description": (
+                            "Ids of SIB entries (standards/) this element follows. Lifecycle is "
+                            "checked: deprecated warns, retired blocks unless a dispensation covers it."
                         ),
                     },
                 },
@@ -335,6 +361,151 @@ def build_entities_schema() -> dict[str, Any]:
     }
 
 
+def _slug_def() -> dict[str, Any]:
+    return {
+        "type": "string",
+        "pattern": SLUG_PATTERN,
+        "maxLength": 80,
+    }
+
+
+def build_standard_schema() -> dict[str, Any]:
+    """One SIB entry per file under standards/ -- type, lifecycle, succession."""
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:ea-skills:schema:standard",
+        "title": "EA Skills standard (SIB entry)",
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["id", "name", "type", "lifecycle"],
+        "properties": {
+            "id": _slug_def(),
+            "name": {"type": "string", "minLength": 1, "maxLength": 120},
+            "type": {"enum": STANDARD_TYPES},
+            "lifecycle": {
+                "enum": STANDARD_LIFECYCLES,
+                "description": "Referencing a deprecated standard warns; retired blocks unless a dispensation covers it.",
+            },
+            "description": {"type": "string"},
+            "owner": {"type": "string", "minLength": 1},
+            "url": {"type": "string", "minLength": 1},
+            "successor": {
+                **_slug_def(),
+                "description": "The standard that replaces this one (expected once deprecated/retired).",
+            },
+            "lastReviewed": {"type": "string", "pattern": DATE_PATTERN},
+        },
+    }
+
+
+def build_decision_schema() -> dict[str, Any]:
+    """One MADR-shaped architecture decision record per file (ISO 42010 6.10 needs
+    the rationale, so it is required, not polite)."""
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:ea-skills:schema:decision",
+        "title": "EA Skills architecture decision record",
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["id", "title", "status", "date", "decision", "rationale"],
+        "properties": {
+            "id": _slug_def(),
+            "title": {"type": "string", "minLength": 1, "maxLength": 200},
+            "status": {"enum": DECISION_STATUSES},
+            "date": {"type": "string", "pattern": DATE_PATTERN},
+            "context": {"type": "string"},
+            "decision": {"type": "string", "minLength": 8},
+            "rationale": {"type": "string", "minLength": 8},
+            "consequences": {"type": "string"},
+            "options": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["option"],
+                    "properties": {
+                        "option": {"type": "string", "minLength": 1},
+                        "pros": {"type": "string"},
+                        "cons": {"type": "string"},
+                    },
+                },
+            },
+            "supersededBy": _slug_def(),
+            "relatedElements": {"type": "array", "items": _slug_def()},
+        },
+    }
+
+
+def build_dispensation_schema() -> dict[str, Any]:
+    """A time-bounded waiver. ``expires`` is required by schema, deliberately:
+    a dispensation without an expiry is the tell of fake governance."""
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:ea-skills:schema:dispensation",
+        "title": "EA Skills dispensation",
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["id", "waives", "appliesTo", "rationale", "grantedBy", "granted", "expires"],
+        "properties": {
+            "id": _slug_def(),
+            "title": {"type": "string", "maxLength": 200},
+            "waives": {
+                "type": "object",
+                "additionalProperties": False,
+                "minProperties": 1,
+                "properties": {
+                    "standard": {
+                        **_slug_def(),
+                        "description": "Standard whose retirement/deprecation is waived for the listed elements.",
+                    },
+                    "rule": {
+                        "type": "string",
+                        "maxLength": 40,
+                        "description": "Validator rule code being waived (documented in the assessment).",
+                    },
+                },
+            },
+            "appliesTo": {"type": "array", "minItems": 1, "items": _slug_def()},
+            "rationale": {"type": "string", "minLength": 8},
+            "grantedBy": {"type": "string", "minLength": 1},
+            "granted": {"type": "string", "pattern": DATE_PATTERN},
+            "expires": {"type": "string", "pattern": DATE_PATTERN},
+            "status": {"enum": ["open", "closed"]},
+        },
+    }
+
+
+def build_compliance_schema() -> dict[str, Any]:
+    """A compliance assessment with TOGAF's six-level verdict."""
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:ea-skills:schema:compliance",
+        "title": "EA Skills compliance assessment",
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["id", "subject", "date", "assessor", "verdict"],
+        "properties": {
+            "id": _slug_def(),
+            "subject": {"type": "string", "minLength": 1, "maxLength": 200},
+            "date": {"type": "string", "pattern": DATE_PATTERN},
+            "assessor": {"type": "string", "minLength": 1},
+            "verdict": {"enum": COMPLIANCE_VERDICTS},
+            "findings": {"type": "array", "items": {"type": "string", "minLength": 1}},
+            "followUp": {
+                "type": "object",
+                "additionalProperties": False,
+                "minProperties": 1,
+                "properties": {
+                    "dispensation": _slug_def(),
+                    "decision": _slug_def(),
+                    "notes": {"type": "string"},
+                },
+            },
+            "relatedElements": {"type": "array", "items": _slug_def()},
+        },
+    }
+
+
 def _write_json(target: Path, payload: dict[str, Any]) -> Path:
     target.parent.mkdir(parents=True, exist_ok=True)
     # newline="\n" so regenerating on Windows does not rewrite every line ending and
@@ -356,6 +527,10 @@ def write_all_schemas() -> list[Path]:
         _write_json(SCHEMA_PATH, build_schema()),
         _write_json(FACTS_SCHEMA_PATH, build_facts_schema()),
         _write_json(ENTITIES_SCHEMA_PATH, build_entities_schema()),
+        _write_json(STANDARD_SCHEMA_PATH, build_standard_schema()),
+        _write_json(DECISION_SCHEMA_PATH, build_decision_schema()),
+        _write_json(DISPENSATION_SCHEMA_PATH, build_dispensation_schema()),
+        _write_json(COMPLIANCE_SCHEMA_PATH, build_compliance_schema()),
     ]
 
 
@@ -375,3 +550,19 @@ def load_facts_schema(path: Path | None = None) -> dict[str, Any]:
 
 def load_entities_schema(path: Path | None = None) -> dict[str, Any]:
     return _load(path or ENTITIES_SCHEMA_PATH, build_entities_schema)
+
+
+def load_standard_schema(path: Path | None = None) -> dict[str, Any]:
+    return _load(path or STANDARD_SCHEMA_PATH, build_standard_schema)
+
+
+def load_decision_schema(path: Path | None = None) -> dict[str, Any]:
+    return _load(path or DECISION_SCHEMA_PATH, build_decision_schema)
+
+
+def load_dispensation_schema(path: Path | None = None) -> dict[str, Any]:
+    return _load(path or DISPENSATION_SCHEMA_PATH, build_dispensation_schema)
+
+
+def load_compliance_schema(path: Path | None = None) -> dict[str, Any]:
+    return _load(path or COMPLIANCE_SCHEMA_PATH, build_compliance_schema)

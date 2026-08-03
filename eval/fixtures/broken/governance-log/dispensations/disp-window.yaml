@@ -1,0 +1,10 @@
+# --- DISP007: expires before it was granted ----------------------------------------
+id: disp-window
+waives:
+  standard: std-dup
+appliesTo: [node-a]
+rationale: The validity window is inverted on purpose.
+grantedBy: someone@example.test
+granted: 2098-01-01
+expires: 2097-01-01
+status: open

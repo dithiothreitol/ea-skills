@@ -1,0 +1,7 @@
+# --- COMP003 (non-conformant, no follow-up) + COMP005 (unknown element) ------------
+id: comp-bad
+subject: Assessment that failed and went nowhere
+date: 2026-07-01
+assessor: someone@example.test
+verdict: non-conformant
+relatedElements: [no-such-element]

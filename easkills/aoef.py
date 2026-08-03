@@ -108,6 +108,9 @@ def _governance_properties(concept: dsl.Concept) -> dict[str, str]:
     applies_to = getattr(concept, "applies_to", None)
     if applies_to:
         props.setdefault("appliesTo", ", ".join(applies_to))
+    standards = getattr(concept, "standards", None)
+    if standards:
+        props.setdefault("standards", ", ".join(standards))
     return props
 
 

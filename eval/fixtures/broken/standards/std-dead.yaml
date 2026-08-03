@@ -1,0 +1,5 @@
+# --- SIB004: retired with no successor ------------------------------------------
+id: std-dead
+name: Dead Standard
+type: organisation
+lifecycle: retired

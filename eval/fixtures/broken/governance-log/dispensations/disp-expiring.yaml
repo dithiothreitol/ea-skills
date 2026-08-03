@@ -1,0 +1,10 @@
+# --- DISP006: expires within the 30-day review window (as of 2026-07-30) -----------
+id: disp-expiring
+waives:
+  standard: std-dup
+appliesTo: [node-a]
+rationale: Expires soon; the review should already be scheduled.
+grantedBy: someone@example.test
+granted: 2026-07-01
+expires: 2026-08-15
+status: open

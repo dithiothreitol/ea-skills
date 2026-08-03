@@ -1,0 +1,5 @@
+# --- SIB002: duplicate standard id (see std-dup-a.yaml) --------------------------
+id: std-dup
+name: Duplicated Standard Again
+type: organisation
+lifecycle: active

@@ -1,0 +1,9 @@
+# --- COMP004: followUp references records that do not exist ------------------------
+id: comp-bad-ref
+subject: Assessment with dangling follow-up
+date: 2026-07-01
+assessor: someone@example.test
+verdict: non-conformant
+followUp:
+  dispensation: no-such-dispensation
+  decision: no-such-decision

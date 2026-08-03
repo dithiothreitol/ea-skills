@@ -1,0 +1,6 @@
+# --- SIB003: successor is not a standard in the SIB -----------------------------
+id: std-old
+name: Old Standard
+type: organisation
+lifecycle: deprecated
+successor: no-such-standard

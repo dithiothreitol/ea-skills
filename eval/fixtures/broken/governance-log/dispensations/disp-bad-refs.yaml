@@ -1,0 +1,10 @@
+# --- DISP004 + DISP005: unknown element, unknown standard --------------------------
+id: disp-bad-refs
+waives:
+  standard: no-such-standard
+appliesTo: [no-such-element]
+rationale: References things that do not exist anywhere.
+grantedBy: someone@example.test
+granted: 2026-07-01
+expires: 2099-01-01
+status: open

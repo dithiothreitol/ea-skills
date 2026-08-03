@@ -1,0 +1,6 @@
+# --- DEC001: schema violation -- no rationale (ISO 42010 6.10 requires one) --------
+id: dec-invalid
+title: Decision Without Rationale
+status: accepted
+date: 2026-07-01
+decision: Something was decided but nobody recorded why.

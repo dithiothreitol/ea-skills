@@ -1,0 +1,8 @@
+# --- DEC004 (superseded without successor) + DEC005 (unknown element) --------------
+id: dec-bad
+title: Superseded Decision Pointing Nowhere
+status: superseded
+date: 2026-07-01
+decision: This decision was replaced but does not say by what.
+rationale: Exists to trigger DEC004 and DEC005.
+relatedElements: [no-such-element]

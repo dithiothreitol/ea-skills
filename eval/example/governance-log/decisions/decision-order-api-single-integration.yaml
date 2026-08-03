@@ -1,0 +1,30 @@
+# MADR-shaped decision record. The rationale is schema-mandatory: ISO 42010 6.10
+# requires decisions *with* rationale, and a decision without one is folklore.
+id: decision-order-api-single-integration
+title: The order API stays the only integration between portal and ERP
+status: accepted
+date: 2026-07-20
+context: >
+  The portal and the ERP could integrate point-to-point for stock, pricing and
+  order status separately. The interview and the inventory both describe a single
+  order API as the only integration point today.
+decision: >
+  Keep the ERP-published order API as the single integration point between the
+  order portal and the ERP core. New data needs extend the API; they do not add
+  parallel channels.
+rationale: >
+  One integration point keeps the outage surface understood (it is already the
+  documented single point of failure) and avoids the portal growing hidden
+  dependencies on ERP internals. The known risk is concentration, which is
+  accepted and monitored rather than traded for sprawl.
+consequences: >
+  The order API needs an availability target and capacity headroom; any future
+  order-status service consumes it rather than reading the ERP database.
+options:
+  - option: Single order API (chosen)
+    pros: One contract, one failure mode, already in place.
+    cons: Concentration risk on one endpoint.
+  - option: Point-to-point integrations per data need
+    pros: Independent failure domains.
+    cons: Hidden coupling to ERP internals; three contracts to govern.
+relatedElements: [service-order-api, app-order-portal, app-erp-core]

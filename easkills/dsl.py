@@ -69,6 +69,9 @@ class Element(Concept):
     # Motivation-layer applicability selector (AD-09): which elements this
     # requirement/constraint/principle/goal binds. Validated by MOT001/MOT002.
     applies_to: list[str] = field(default_factory=list)
+    # SIB references: standards this element claims to follow. Validated by STD001-004
+    # against standards/ lifecycle states and open dispensations.
+    standards: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -251,9 +254,11 @@ def build_model(root: Path, zone: str, documents: list[Document], config: dict[s
                 continue
             locator = f"elements[{index}]"
             applies_raw = item.get("appliesTo") or []
+            standards_raw = item.get("standards") or []
             element = Element(
                 **_common_kwargs(item, doc.path, locator),
                 applies_to=[str(x) for x in applies_raw if isinstance(x, (str, int))],
+                standards=[str(x) for x in standards_raw if isinstance(x, (str, int))],
             )
             _register(model, model.elements, element.id, element, doc.path)
         for index, item in enumerate(doc.data.get("relationships") or []):

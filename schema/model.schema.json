@@ -207,6 +207,14 @@
             "$ref": "#/$defs/slug"
           },
           "description": "Motivation-layer applicability selector (AD-09): element ids this requirement/constraint/principle/goal binds. Semantic checks: MOT001/MOT002."
+        },
+        "standards": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/slug"
+          },
+          "description": "Ids of SIB entries (standards/) this element follows. Lifecycle is checked: deprecated warns, retired blocks unless a dispensation covers it."
         }
       }
     },

@@ -1,0 +1,10 @@
+# One SIB entry per file: the git history of a standard is its lifecycle record.
+id: std-postgresql-16
+name: PostgreSQL 16 for relational storage
+type: organisation
+lifecycle: active
+description: >
+  Relational databases run PostgreSQL 16. Chosen for the ERP replatforming;
+  reconciled with the infrastructure team 2026-06-30.
+owner: infrastructure@aurorafoods.example
+lastReviewed: 2026-06-30

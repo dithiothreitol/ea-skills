@@ -13,6 +13,10 @@ python -m easkills promote  --root .                  # staging -> approved (on 
 python -m easkills validate --root . --zone approved  # the published model
 python -m easkills compile  --root . --zone approved  # -> build/model.xml
 python -m easkills docs     --root .                  # -> docs/ (AD + SVG views)
+python -m easkills validate-gov --root .              # standards + governance log gate
+python -m easkills kpi      --root .                  # health: also debt, staleness,
+                                                      #   conformance, delta
+python -m easkills context  --root . --scope <id>     # agent context pack (AD-09)
 ```
 
 ## Layout

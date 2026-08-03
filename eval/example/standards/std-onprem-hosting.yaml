@@ -1,0 +1,10 @@
+id: std-onprem-hosting
+name: On-premise hosting in the primary data centre
+type: organisation
+lifecycle: retired
+successor: std-cloud-hosting
+description: >
+  Retired 2026-06: workloads move to managed cloud as they are replatformed.
+  Systems still on-premise need a time-bounded dispensation, not silence.
+owner: infrastructure@aurorafoods.example
+lastReviewed: 2026-06-30

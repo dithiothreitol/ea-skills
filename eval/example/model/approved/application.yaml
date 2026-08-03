@@ -14,6 +14,7 @@ elements:
       functionalFit: good
       technicalFit: good
       hosting: managed cloud
+    standards: [std-cloud-hosting]
     provenance:
       - file: facts/sources/systems-inventory-2026-06.md
         quote: Customer-facing ordering web application
@@ -32,6 +33,8 @@ elements:
       functionalFit: adequate
       technicalFit: poor
       hosting: on-premise
+    # Retired standard, covered by disp-onprem-legacy until 2027-06-30 (STD004).
+    standards: [std-onprem-hosting]
     provenance:
       - file: facts/sources/interview-operations-2026-07-15.md
         quote: The ERP core holds the master order records and does the invoicing
@@ -48,6 +51,8 @@ elements:
       functionalFit: good
       technicalFit: adequate
       hosting: on-premise
+    # Retired standard, covered by disp-onprem-legacy until 2027-06-30 (STD004).
+    standards: [std-onprem-hosting]
     provenance:
       - file: facts/sources/systems-inventory-2026-06.md
         quote: Picking, packing and dispatch

@@ -1,0 +1,9 @@
+id: std-cloud-hosting
+name: Managed cloud hosting for customer-facing applications
+type: organisation
+lifecycle: active
+description: >
+  New and customer-facing workloads run in managed cloud. Successor to the
+  on-premise hosting standard.
+owner: infrastructure@aurorafoods.example
+lastReviewed: 2026-06-30

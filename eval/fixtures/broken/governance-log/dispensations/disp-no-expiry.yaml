@@ -1,0 +1,8 @@
+# --- DISP001: no expiry -- the tell of fake governance; schema rejects it ----------
+id: disp-no-expiry
+waives:
+  standard: std-dup
+appliesTo: [node-a]
+rationale: A dispensation that never expires is not a dispensation.
+grantedBy: someone@example.test
+granted: 2026-07-01

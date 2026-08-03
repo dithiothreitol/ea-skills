@@ -1,0 +1,15 @@
+# A dispensation is a time-bounded waiver. The expiry is mandatory and loud:
+# once it passes, validation fails until a human renews or closes the record.
+id: disp-onprem-legacy
+title: ERP Core and WMS may remain on-premise pending replatforming
+waives:
+  standard: std-onprem-hosting
+appliesTo: [app-erp-core, app-wms]
+rationale: >
+  The ERP core is scheduled for replatforming assessment and the WMS cloud move
+  has no approved budget (see constraint-wms-cloud-budget). Forcing an immediate
+  migration would put order capture at risk during peak season.
+grantedBy: architecture-board@aurorafoods.example
+granted: 2026-07-01
+expires: 2027-06-30
+status: open

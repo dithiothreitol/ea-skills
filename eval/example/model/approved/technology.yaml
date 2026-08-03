@@ -17,6 +17,7 @@ elements:
     documentation: Database instance the ERP core depends on. Not shared with other systems.
     owner: infrastructure@aurorafoods.example
     lastReviewed: 2026-06-30
+    standards: [std-postgresql-16]
     provenance:
       - file: facts/sources/systems-inventory-2026-06.md
         quote: >

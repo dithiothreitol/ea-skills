@@ -10,9 +10,11 @@ Severity meanings:
 * **warning** -- the model is questionable. Passes by default, fails under `--strict`.
 * **info** -- a declared, accepted state worth surfacing (currently: assumptions).
 
-Two validators share this catalogue: `python -m easkills validate` covers the model
-zones (`ORACLE`/`SCHEMA`/`ID`/`REF`/`PROV`/`GOV`/`REL`/`NAME`/`SMELL`), and
-`python -m easkills validate-facts` covers the fact register (`FACT`/`ENT`/`SRC`).
+Three validators share this catalogue: `python -m easkills validate` covers the model
+zones (`ORACLE`/`SCHEMA`/`ID`/`REF`/`PROV`/`GOV`/`MOT`/`STD`/`ISO`/`REL`/`NAME`/`SMELL`),
+`python -m easkills validate-facts` covers the fact register (`FACT`/`ENT`/`SRC`), and
+`python -m easkills validate-gov` covers the standards base and governance log
+(`SIB`/`DEC`/`DISP`/`COMP`).
 
 ## Layer 0 -- oracle integrity
 
@@ -83,6 +85,19 @@ the agent context packs (`ea-context`, Phase 4) will be scoped by.
 | `MOT001` | error | An `appliesTo` entry does not resolve to an element. |
 | `MOT002` | error | `appliesTo` on an element outside the Motivation layer. A dependency between architecture elements is a relationship, not a selector. |
 
+## Layer 2 -- standards references (SIB lifecycle)
+
+Elements declare what they follow with `standards: [std-...]`; the SIB
+(`standards/`, one record per file) carries each standard's lifecycle. Deviation is
+allowed only through a time-bounded dispensation -- never through silence.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `STD001` | error | The element references a standard that is not in the SIB. |
+| `STD002` | error | The element references a **retired** standard and no open dispensation covers the pair. Migrate or file a waiver. |
+| `STD003` | warning | The element references a **deprecated** standard -- plan the migration before retirement. |
+| `STD004` | info | A retired/deprecated reference is covered by an open dispensation; reported with the waiver id and its expiry. |
+
 ## Layer 2 -- ISO 42010 alignment
 
 The checkable half of ISO/IEC/IEEE 42010 6.3-6.4: stakeholders hold concerns, views
@@ -149,6 +164,55 @@ Portal" from becoming three different applications downstream.
 | `ENT003` | warning | The entity is never referenced by any fact. |
 | `SRC001` | warning | A file under `facts/sources/` is never cited by any fact -- it has not been ingested, or contains nothing extractable (which the intake report should say explicitly). |
 
+## Governance log -- standards base
+
+| Code | Severity | Rule |
+|---|---|---|
+| `SIB000` | error | A standards file cannot be parsed, or is not a single mapping. |
+| `SIB001` | error | The file violates `schema/standard.schema.json`. |
+| `SIB002` | error | Duplicate standard id. |
+| `SIB003` | error | `successor` names something that is not a standard in the SIB. |
+| `SIB004` | warning | A deprecated/retired standard names no successor -- teams being moved off a standard need to know what to move to. |
+
+## Governance log -- dispensations
+
+A dispensation is a time-bounded waiver. `expires` is required by schema: a
+dispensation without an expiry is the tell of fake governance -- and an expiry
+nobody acts on is equally fake, so expiry is an error, not a shrug.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `DISP000` | error | File cannot be parsed / not a single mapping. |
+| `DISP001` | error | Violates `schema/dispensation.schema.json` (this is where a missing `expires` fails). |
+| `DISP002` | error | Duplicate dispensation id. |
+| `DISP003` | error | Expired and still open -- expiry re-triggers review: renew with a fresh grant or set `status: closed`. |
+| `DISP004` | error | `appliesTo` names an element that is not in the approved model. |
+| `DISP005` | error | `waives.standard` names an unknown standard. |
+| `DISP006` | warning | Expires within 30 days -- schedule the review now. |
+| `DISP007` | error | `expires` is before `granted`. |
+
+## Governance log -- decisions
+
+| Code | Severity | Rule |
+|---|---|---|
+| `DEC000` | error | File cannot be parsed / not a single mapping. |
+| `DEC001` | error | Violates `schema/decision.schema.json` (rationale is mandatory -- ISO 42010 6.10). |
+| `DEC002` | error | Duplicate decision id. |
+| `DEC003` | error | `supersededBy` names a record that does not exist. |
+| `DEC004` | warning | Status is `superseded` but no successor record is named. |
+| `DEC005` | error | `relatedElements` names an element that is not in the approved model. |
+
+## Governance log -- compliance assessments
+
+| Code | Severity | Rule |
+|---|---|---|
+| `COMP000` | error | File cannot be parsed / not a single mapping. |
+| `COMP001` | error | Violates `schema/compliance.schema.json` (verdict is one of TOGAF's six levels). |
+| `COMP002` | error | Duplicate assessment id. |
+| `COMP003` | warning | `non-conformant` with no `followUp` -- a failed assessment must lead to a dispensation, a decision, or documented remediation. |
+| `COMP004` | error | `followUp` references a dispensation or decision that does not exist. |
+| `COMP005` | error | `relatedElements` names an element that is not in the approved model. |
+
 ## Not yet implemented
 
 Stated so nobody mistakes silence for a clean bill of health:
@@ -157,10 +221,13 @@ Stated so nobody mistakes silence for a clean bill of health:
   Appendix B of the specification, and the Appendix B.4 restrictions on cross-domain
   derivation. The direct-relationship matrix is enforced; derived relationships are not
   yet checked.
-* **The wider EA smells catalogue.** One structural smell of roughly sixty-three
-  catalogued ones is implemented (`SMELL001`), plus duplicate naming. Cyclic dependency
-  beyond composition, strict-layer violations and portfolio-level smells are Phase 4.
+* **The wider EA smells catalogue.** The gate implements `SMELL001` plus duplicate
+  naming; the debt register (`python -m easkills debt`) adds unsupported capabilities,
+  hub elements, stale content and dead-standard references as report-level queries.
+  Cyclic dependency beyond composition and strict-layer violations remain unchecked.
 * **Verb-phrase naming for behaviour elements.** The convention (noun phrases for
   structure, verb phrases for behaviour) is real but needs more than a regex to check
   honestly, so it is not pretended at.
-* **ISO/IEC/IEEE 42010:2022 conformance** of the documentation set. Phase 4.
+* **ISO/IEC/IEEE 42010:2022 clause 6.9 (correspondences).** The conformance checklist
+  (`python -m easkills conformance`) covers 6.2-6.8 and 6.10 and reports 6.9 as an
+  explicit `gap` -- never as silent conformance.

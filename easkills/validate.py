@@ -661,6 +661,76 @@ def check_motivation(model: dsl.Model) -> list[Finding]:
     return findings
 
 
+def check_standards(model: dsl.Model, today: date | None = None) -> list[Finding]:
+    """SIB lifecycle enforcement: what an element claims to follow must exist, and
+    following a dead standard needs either a migration or a time-bounded waiver."""
+    from . import govern  # local import: govern.py imports Finding from here
+
+    findings: list[Finding] = []
+    if not any(e.standards for e in model.elements.values()):
+        return findings
+    today = today or date.today()
+    governance = govern.load(model.root)
+
+    for element in sorted(model.elements.values(), key=lambda e: e.id):
+        rel_file = _rel(model.root, element.source_path)
+        for ref in element.standards:
+            standard = governance.standards.get(ref)
+            if standard is None:
+                findings.append(
+                    Finding(
+                        "STD001",
+                        SEVERITY_ERROR,
+                        f"references standard '{ref}' which is not in the SIB (standards/)",
+                        file=rel_file,
+                        locator=element.locator,
+                        concept=element.id,
+                    )
+                )
+                continue
+            if standard.lifecycle not in {"deprecated", "retired"}:
+                continue
+            successor = f" -- successor: {standard.successor}" if standard.successor else ""
+            dispensation = governance.covering(element.id, ref, today)
+            if dispensation is not None:
+                findings.append(
+                    Finding(
+                        "STD004",
+                        SEVERITY_INFO,
+                        f"{standard.lifecycle} standard '{ref}' is covered by dispensation "
+                        f"'{dispensation.id}' until {dispensation.expires}{successor}",
+                        file=rel_file,
+                        locator=element.locator,
+                        concept=element.id,
+                    )
+                )
+            elif standard.lifecycle == "retired":
+                findings.append(
+                    Finding(
+                        "STD002",
+                        SEVERITY_ERROR,
+                        f"references retired standard '{ref}'{successor} -- migrate, or file a "
+                        "time-bounded dispensation (governance-log/dispensations/)",
+                        file=rel_file,
+                        locator=element.locator,
+                        concept=element.id,
+                    )
+                )
+            else:
+                findings.append(
+                    Finding(
+                        "STD003",
+                        SEVERITY_WARNING,
+                        f"references deprecated standard '{ref}'{successor} -- plan the migration "
+                        "before it is retired",
+                        file=rel_file,
+                        locator=element.locator,
+                        concept=element.id,
+                    )
+                )
+    return findings
+
+
 def check_iso_alignment(model: dsl.Model) -> list[Finding]:
     """ISO/IEC/IEEE 42010 6.3-6.4: stakeholders hold concerns, views frame them.
 
@@ -802,6 +872,7 @@ CHECK_ORDER = (
     "cycles",
     "duplicates",
     "motivation",
+    "standards",
     "iso",
     "naming",
     "smells",
@@ -824,6 +895,7 @@ def _run_checks(
     findings += check_structural_cycles(model)
     findings += check_duplicate_relationships(model)
     findings += check_motivation(model)
+    findings += check_standards(model, today=today)
     findings += check_iso_alignment(model)
     findings += check_naming(model)
     findings += check_smells(model)

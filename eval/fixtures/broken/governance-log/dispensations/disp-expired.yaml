@@ -1,0 +1,10 @@
+# --- DISP003: expired and still open ----------------------------------------------
+id: disp-expired
+waives:
+  standard: std-dead
+appliesTo: [node-a]
+rationale: This waiver expired long ago and nobody reviewed it.
+grantedBy: someone@example.test
+granted: 2019-01-01
+expires: 2020-01-01
+status: open
