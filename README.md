@@ -16,14 +16,14 @@ weakest measured capability of language models on modelling tasks, and fabricate
 citations are a documented failure mode. Both are exactly the kind of thing a validator
 catches for free and a reviewer catches at 3pm on a Friday, if at all.
 
-**Status: Phase 4 complete.** The deterministic core (DSL, three-layer validator,
-Open Exchange compiler), intake (fact register, chunker, coverage), modelling
-(fact-referencing provenance, motivation layer, overlay staging, gated promotion),
-documentation (stakeholder/concern register, SVG rendering, ISO 42010-shaped
-description) **and governance** (standards base with lifecycle enforcement,
+**Status: all five planned phases complete.** The deterministic core (DSL,
+three-layer validator, Open Exchange compiler), intake (fact register, chunker,
+coverage), modelling (fact-referencing provenance, motivation layer, overlay staging,
+gated promotion), documentation (stakeholder/concern register, SVG rendering, ISO
+42010-shaped description), governance (standards base with lifecycle enforcement,
 dispensations that expire loudly, decision and compliance records, health reports,
-agent context packs) work and are tested. The skills that drive them are built
-alongside (see [Roadmap](#roadmap)).
+agent context packs) and the golden-set evaluation harness all work and are tested;
+nineteen skills drive them (see [Roadmap](#roadmap)).
 
 ## What exists today
 
@@ -69,6 +69,9 @@ python -m easkills delta --root eval/example         # fact register vs model
 
 # AD-09: a scoped, freshness-labelled context pack for agents working downstream
 python -m easkills context --root eval/example --scope app-erp-core
+
+# Regression harness: score a pipeline run against a golden case (P/R/F1 + gates)
+python -m easkills score --root <candidate> --gold eval/golden/clinic --min-f1 90
 ```
 
 The worked example (`eval/example/`) is a small fictional B2B food manufacturer: a fact
@@ -217,7 +220,13 @@ implements TOGAF where it is genuinely strong: governance mechanics.
 | **2** | Modelling pipeline: capability map as spine, fact-referencing provenance, motivation layer with `appliesTo` selectors (AD-09), staging-as-overlay validation, gated promotion (`ea-approve`) | **done** |
 | **3** | Stakeholder/concern register with the ISO 42010 loop enforced (`ISO001`-`006`), dependency-free byte-stable SVG rendering, generated architecture description with portfolio and capability outputs (`ea-stakeholders`, `ea-views`, `ea-docs`) | **done** |
 | **4** | Governance and maintenance: standards base with lifecycle enforcement (`STD*`/`SIB*`), dispensations with mandatory, loud expiry (`DISP*`), MADR decisions (`DEC*`), six-level compliance (`COMP*`), Phase H change triage, delta ingestion, EA-debt register, staleness + KPI reports, 42010 conformance checklist, `ea-context` agent packs (AD-09) | **done** |
-| **5** | Golden-set regression harness and a maintained capability comparison against neighbouring projects | next |
+| **5** | Golden-set regression harness (`score` with P/R/F1 per category and a `--min-f1` gate, `eval/golden/`), `ea-eval` + `ea-run` skills, and the maintained capability comparison above | **done** |
+
+All planned phases are complete. Open items carried deliberately: `ea-check`
+(compliance linting inside consuming repositories) stays deferred per AD-09 pending
+the correspondence-mapping decision; ISO 42010 §6.9 correspondences remain an
+explicit gap in the conformance checklist; the comparison table above has a monthly
+re-check obligation.
 
 Phase 4 is the point of the project, not an afterthought. Model *generation* is
 crowded; governing and maintaining a validated ArchiMate repository over time is not.
@@ -229,16 +238,26 @@ that manipulate Archi models, tools that lint architecture-as-code in bespoke YA
 markdown-only governance frameworks, and commercial platforms with real ingestion
 agents. Several close neighbours appeared in mid-2026 and are moving quickly.
 
-What is not otherwise available, as of the July 2026 survey behind
-[`docs/BLUEPRINT.md`](docs/BLUEPRINT.md), is the *combination*: skills-packaged,
-ingesting unstructured input, emitting real ArchiMate exchange files with generated
-views, per-element source traceability that is mechanically verified, deterministic
-semantic validation, standards-shaped documentation, **and** the governance and
-maintenance half of the lifecycle. Each capability exists somewhere; the integration is
-the contribution, and the governance end is where it is thinnest elsewhere.
+What is not otherwise available is the *combination*. The eight capabilities from the
+design research, against the closest neighbours:
 
-That is a claim with a shelf life, and it is stated as a comparison rather than a boast
-so it can be checked and, when it stops being true, corrected.
+| Capability | ea-skills | mcp-archimate | 7bots / archimate-deep-agent | Transitrix | ArcKit | Ardoq |
+|---|---|---|---|---|---|---|
+| Packaged as agent skills | ✓ | — (MCP server) | — (platform) | partial (plugins) | ✓ | — (SaaS) |
+| Unstructured-input ingestion | ✓ verified quotes | — | ✓ | ✓ | partial | ✓ |
+| Real ArchiMate model files (Open Exchange) | ✓ XSD-validated | ✓ | ✓ | — (custom YAML) | — (markdown) | — |
+| Generated views | ✓ deterministic SVG | ✓ | — | — | — | ✓ |
+| Per-element source traceability | ✓ mechanically verified | — | ✓ claimed | partial | ✓ doc-level | partial |
+| Deterministic semantic validation | ✓ vendored 3.2 matrix | ✓ | — | ✓ (own rules) | — | partial |
+| Standards-shaped documentation (ISO 42010) | ✓ + conformance checklist | — | — | — | — | — |
+| Governance + maintenance (SIB, dispensations with expiry, debt, staleness, agent context packs) | ✓ | — | — | partial (PR gate) | partial (docs) | partial |
+
+Verified against the 2026-07-29 competitive survey behind
+[`docs/BLUEPRINT.md`](docs/BLUEPRINT.md) (§8 lists the projects and what each is
+strongest at); the ea-skills column reflects this repository as of 2026-08-03.
+Neighbours move fast -- **re-check monthly**, and correct this table when a claim
+stops being true. Each capability exists somewhere; the integration is the
+contribution, and the governance end is where it is thinnest elsewhere.
 
 ## Repository layout
 
@@ -248,7 +267,8 @@ oracle/          vendored, hash-pinned rule data + NOTICE.md
 schema/          model.schema.json -- generated from the oracle
 skills/          the Claude Code skills
 template/        scaffold to copy for a new enterprise
-eval/example/    worked example, clean
+eval/example/    worked example, clean (doubles as the largest golden case)
+eval/golden/     golden-set cases for the regression harness (see its README)
 eval/fixtures/   negative fixtures, deliberately broken
 tests/           pytest suite
 docs/            BLUEPRINT.md (design + research), RULES.md (rule catalogue)
@@ -258,7 +278,7 @@ docs/            BLUEPRINT.md (design + research), RULES.md (rule catalogue)
 
 ```bash
 python -m venv .venv && .venv/Scripts/python -m pip install -r requirements.txt
-.venv/Scripts/python -m pytest tests -q          # 189 tests
+.venv/Scripts/python -m pytest tests -q          # 201 tests
 .venv/Scripts/python -m easkills oracle-info     # oracle version + pin status
 .venv/Scripts/python -m easkills gen-schema      # regenerate the DSL schema
 ```

@@ -1,0 +1,54 @@
+---
+name: ea-run
+description: Orchestrate the EA pipeline - route a request to the right ea-* skill and keep the stage order honest. Use when a request spans multiple stages ("model our architecture from these documents"), when unsure which ea-* skill applies, or when resuming work in an EA repository whose state you have not inspected yet.
+---
+
+# Routing the pipeline
+
+The stages depend on each other; the most common failure is starting downstream of
+missing input. Establish the repository's state first, then route.
+
+## State check (one minute, always)
+
+```bash
+python -m easkills validate-facts --root .   # is there a verified fact register?
+python -m easkills validate --root . --zone approved
+python -m easkills validate --root . --zone staging
+python -m easkills validate-gov --root .     # governance records healthy?
+python -m easkills delta --root .            # unmodelled entities / unused facts
+```
+
+## Routing table
+
+| Situation | Skill |
+|---|---|
+| New raw documents; empty or stale fact register | `ea-intake` |
+| Facts exist, no capability map | `ea-capability-map` (the spine comes first) |
+| Facts + capability map; elements/relations to add | `ea-model` |
+| Staging has content; human asks to publish | `ea-approve` (never on your own initiative) |
+| Who is this for / concerns unclear / ISO findings | `ea-stakeholders` |
+| Views needed or stale | `ea-views`; then `ea-docs` for the description |
+| New info against an existing model | `ea-delta-ingest` |
+| A change request arrives | `ea-change-triage` first, then its route |
+| Standards, waivers, decisions, assessments | `ea-standards-base` / `ea-dispensation` / `ea-adr` / `ea-compliance` |
+| Downstream repo needs its constraints | `ea-context` |
+| Periodic health / board preparation | `ea-health` / `ea-board` |
+| Skill behaviour changed | `ea-eval` |
+
+## Order for a from-scratch engagement
+
+`ea-intake` → `ea-stakeholders` → `ea-capability-map` → `ea-model` (layer by layer,
+staging) → `ea-validate` → human review → `ea-approve` → `ea-views` → `ea-docs` →
+governance records as they arise. Do not compress stages: modelling without a fact
+register produces unevidenced concepts the validator will reject; views before
+stakeholders produce diagrams nobody asked for.
+
+## Rules that hold across every route
+
+* Deterministic gates decide, skills propose. If a gate blocks, fix inputs -- never
+  bypass flags in anything you present as done.
+* Three-repair cap everywhere; after that, escalate the open question.
+* `approved/` changes only via `promote`, on explicit human instruction.
+* Report at the end of any multi-skill run: which stages ran, gate verdicts, what is
+  staged awaiting review, and the open questions -- one consolidated summary, not one
+  per skill.

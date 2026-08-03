@@ -1,0 +1,31 @@
+entities:
+  - id: patient
+    name: Patient
+    kind: actor
+
+  - id: front-desk
+    name: Front Desk
+    kind: actor
+
+  - id: booking-portal
+    name: Booking Portal
+    kind: application
+    aliases:
+      - online booking portal
+
+  - id: ehr
+    name: EHR
+    kind: application
+    aliases:
+      - electronic health record system
+      - the EHR
+
+  - id: scheduling-interface
+    name: Scheduling Interface
+    kind: integration
+
+  - id: ehr-server
+    name: EHR Server
+    kind: technology
+    aliases:
+      - server in the back office

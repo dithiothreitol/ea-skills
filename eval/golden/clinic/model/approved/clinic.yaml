@@ -1,0 +1,101 @@
+# Gold model for the clinic case. Six elements, five relationships, every concept
+# citing a fact from the register.
+
+elements:
+  - id: actor-patient
+    type: BusinessActor
+    name: Patient
+    owner: practice-manager@novakclinic.example
+    lastReviewed: 2026-07-01
+    provenance:
+      - fact: fact-booking-channels
+
+  - id: actor-front-desk
+    type: BusinessActor
+    name: Front Desk
+    documentation: Takes bookings by phone alongside the portal.
+    owner: practice-manager@novakclinic.example
+    lastReviewed: 2026-07-01
+    provenance:
+      - fact: fact-booking-channels
+
+  - id: app-booking-portal
+    type: ApplicationComponent
+    name: Booking Portal
+    documentation: Externally hosted appointment booking web application.
+    owner: practice-manager@novakclinic.example
+    lastReviewed: 2026-07-01
+    properties:
+      hosting: external provider
+    provenance:
+      - fact: fact-booking-channels
+      - fact: fact-portal-hosting
+
+  - id: app-ehr
+    type: ApplicationComponent
+    name: EHR
+    documentation: >
+      Electronic health record system: patient charts, treatment notes, and the
+      billing module (no separate billing system exists).
+    owner: practice-manager@novakclinic.example
+    lastReviewed: 2026-07-01
+    provenance:
+      - fact: fact-ehr-role
+      - fact: fact-billing-inside-ehr
+
+  - id: service-scheduling
+    type: ApplicationService
+    name: Scheduling Interface
+    documentation: Provided by the EHR; the portal writes confirmed appointments through it.
+    owner: practice-manager@novakclinic.example
+    lastReviewed: 2026-07-01
+    provenance:
+      - fact: fact-portal-ehr-integration
+
+  - id: node-ehr-server
+    type: Node
+    name: EHR Server
+    documentation: >
+      Back-office server. Backup restore has never been tested -- recorded as a risk
+      by the practice manager.
+    owner: practice-manager@novakclinic.example
+    lastReviewed: 2026-07-01
+    provenance:
+      - fact: fact-ehr-server
+      - fact: fact-backup-untested
+
+relationships:
+  - id: rel-ehr-realizes-scheduling
+    type: Realization
+    source: app-ehr
+    target: service-scheduling
+    provenance:
+      - fact: fact-portal-ehr-integration
+
+  - id: rel-scheduling-serves-portal
+    type: Serving
+    source: service-scheduling
+    target: app-booking-portal
+    provenance:
+      - fact: fact-portal-ehr-integration
+
+  - id: rel-server-serves-ehr
+    type: Serving
+    source: node-ehr-server
+    target: app-ehr
+    provenance:
+      - fact: fact-ehr-server
+
+  - id: rel-portal-serves-patient
+    type: Serving
+    source: app-booking-portal
+    target: actor-patient
+    provenance:
+      - fact: fact-booking-channels
+
+  - id: rel-frontdesk-serves-patient
+    type: Serving
+    source: actor-front-desk
+    target: actor-patient
+    provenance:
+      - fact: fact-booking-channels

@@ -52,6 +52,15 @@ jobs:
           python -m easkills docs --root eval/example
           git diff --exit-code eval/example/docs
 
+      # Gold that does not pass its own gates is not gold, and the scorer must
+      # report a perfect self-score or its matching logic has drifted.
+      - name: Golden set stays gold
+        run: |
+          python -m easkills validate --root eval/golden/clinic --strict
+          python -m easkills validate-facts --root eval/golden/clinic --strict
+          python -m easkills score --root eval/golden/clinic --gold eval/golden/clinic --min-f1 100
+          python -m easkills score --root eval/example --gold eval/example --min-f1 100
+
       # The negative fixture must keep failing. A green run here would mean the
       # validator has stopped catching things.
       - name: Negative fixture must fail

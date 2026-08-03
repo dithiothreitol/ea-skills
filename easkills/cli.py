@@ -24,6 +24,7 @@ from . import (
     promote as promote_mod,
     render as render_mod,
     reports,
+    score as score_mod,
     validate as validate_mod,
 )
 
@@ -126,6 +127,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_context.add_argument("--scope", required=True, help="element id to scope the pack to")
     p_context.add_argument("--out", type=Path, help="write to a file instead of stdout")
     p_context.add_argument("--as-of", dest="as_of", help="evaluate freshness against this date (YYYY-MM-DD)")
+
+    p_score = sub.add_parser("score", help="score a candidate repository against a golden one (P/R/F1)")
+    p_score.add_argument("--root", type=Path, default=Path.cwd(), help="candidate repository root (default: cwd)")
+    p_score.add_argument("--gold", type=Path, required=True, help="golden repository root")
+    p_score.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+    p_score.add_argument(
+        "--min-f1",
+        type=float,
+        metavar="PCT",
+        help="exit 1 if the minimum F1 across categories falls below this percentage (0-100), "
+        "or if the candidate fails its own validation gates",
+    )
 
     p_facts = sub.add_parser("validate-facts", help="validate the fact register (facts/register + entities)")
     p_facts.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
@@ -299,6 +312,23 @@ def cmd_context(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_score(args: argparse.Namespace) -> int:
+    report = score_mod.score(args.root.resolve(), args.gold.resolve())
+    print(report.render())
+    if args.json_out:
+        args.json_out.parent.mkdir(parents=True, exist_ok=True)
+        args.json_out.write_text(json.dumps(report.as_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"\nJSON report written to {args.json_out}")
+    if args.min_f1 is not None:
+        if not report.gates_ok:
+            print("\nCandidate fails its own validation gates.")
+            return 1
+        if report.min_f1 * 100 < args.min_f1:
+            print(f"\nMinimum F1 {report.min_f1:.0%} is below the required {args.min_f1:.0f}%")
+            return 1
+    return 0
+
+
 def cmd_validate_facts(args: argparse.Namespace) -> int:
     report = facts_mod.validate_facts(args.root.resolve())
     print(report.render())
@@ -395,6 +425,7 @@ HANDLERS = {
     "conformance": cmd_conformance,
     "delta": cmd_delta,
     "context": cmd_context,
+    "score": cmd_score,
     "validate-facts": cmd_validate_facts,
     "chunk": cmd_chunk,
     "coverage": cmd_coverage,

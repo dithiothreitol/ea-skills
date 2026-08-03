@@ -1,0 +1,11 @@
+# Golden case: a deliberately tiny repository. The harness scores a candidate
+# produced by the skills against this gold standard (python -m easkills score).
+name: Novak Family Clinic Enterprise Architecture
+documentation: >
+  Golden-set case for the extraction and modelling pipeline: one interview, seven
+  facts, six elements. Small enough to diff by eye, real enough to exercise entity
+  resolution, an integration relationship and a risk statement.
+stalenessDays: 365
+quoteMatchThreshold: 0.90
+factsRoot: .
+sourcesDir: facts/sources

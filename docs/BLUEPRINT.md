@@ -222,6 +222,15 @@ Deviations from the plan: rendering is native SVG instead of Archi-headless-dock
 
 Deviations from the catalog: `ea-debt`/`ea-staleness`/`ea-kpi` folded into one `ea-health` skill (three reports, one review discipline); change requests stay git-native (issues per AD-08) rather than gaining a record type; correspondences (42010 §6.9) remain an honest gap. `ea-check` stays deferred per AD-09.
 
+**Phase 5 — complete (2026-08-03). All planned phases done.**
+
+* **Golden-set harness** (`easkills/score.py`, `score` CLI): a candidate repository is scored against a gold one — P/R/F1 per category with literature-grounded matching: entities by term-set overlap (name+aliases, normalized), facts by normalized-statement similarity ≥0.85 (one-to-one greedy), elements by (ArchiMate type, normalized name), relationships by type + endpoints mapped through element matches. The candidate's own validation gates run alongside — matching gold while failing provenance verification is fabrication that happens to be right, and `--min-f1` refuses it regardless of the numbers. Degradation tests prove each category moves independently (dropped fact → fact recall only; renamed element → elements + its relationships; invented element → precision not recall).
+* **Golden set**: `eval/golden/clinic/` (1 source, 7 facts, 6 entities, 6 elements, 5 relationships — zero findings, self-score 100%) + `eval/example/` doubling as the largest case; `eval/golden/README.md` documents the evaluation procedure (run the pipeline blind on a case's sources into a scratch repo, score, compare against the previous run, never edit gold to pass).
+* **Capability comparison table** now lives in the README: the 8 §1 capabilities vs mcp-archimate, 7bots/archimate-deep-agent, Transitrix, ArcKit, Ardoq — dated (research 2026-07-29, ea-skills column 2026-08-03) with the monthly re-check obligation stated in place.
+* Skills: `ea-eval` (regression discipline: all cases, spread over cherry-picks, gold changes never land with skill changes) and `ea-run` (the orchestrator: state check first, routing table, from-scratch stage order). Skill catalog complete at 19. 201 tests.
+
+Open items carried deliberately beyond the roadmap: `ea-check` decision now due (AD-09 said "decide after Phase 5"); 42010 §6.9 correspondences; monthly competitive re-check of the README table; the worked example's scheduled failures (dispensation expiry 2027-06-30, staleness horizon mid-2027) are maintenance rehearsals, not defects.
+
 ## 9. Key sources (load-bearing)
 
 Standards: Archi relationship matrix — github.com/archimatetool/archi/blob/master/com.archimatetool.model/model/relationships.xml (+ relationships-keys.xml) · Open Group XSDs — opengroup.org/xsd/archimate/ · ISO/IEC/IEEE 42010:2022 — iso.org/standard/74393.html · TOGAF 10 (SSO-gated) — pubs.opengroup.org/togaf-standard/ · ArchiMate viewpoints — Appendix C of spec · SHACL ontology — github.com/AlbertoDMendoza/archimate_ontology

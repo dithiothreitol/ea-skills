@@ -1,0 +1,62 @@
+facts:
+  - id: fact-booking-channels
+    statement: Patients book appointments through the online booking portal or by calling the front desk.
+    provenance:
+      - file: facts/sources/interview-clinic-2026-07-01.md
+        quote: >-
+          Patients book appointments through the online booking portal or by calling the front
+          desk.
+    entities: [patient, booking-portal, front-desk]
+    topics: [business]
+
+  - id: fact-ehr-role
+    statement: The electronic health record system holds all patient charts and treatment notes.
+    provenance:
+      - file: facts/sources/interview-clinic-2026-07-01.md
+        quote: The electronic health record system holds all patient charts and treatment notes.
+    entities: [ehr]
+    topics: [application]
+
+  - id: fact-portal-ehr-integration
+    statement: The booking portal writes confirmed appointments into the EHR through a scheduling interface the EHR provides.
+    provenance:
+      - file: facts/sources/interview-clinic-2026-07-01.md
+        quote: >-
+          The booking portal writes confirmed appointments into the EHR through a scheduling
+          interface that the EHR provides.
+    entities: [booking-portal, ehr, scheduling-interface]
+    topics: [integration]
+
+  - id: fact-billing-inside-ehr
+    statement: Invoices are produced by the billing module inside the EHR; there is no separate billing system.
+    provenance:
+      - file: facts/sources/interview-clinic-2026-07-01.md
+        quote: >-
+          Invoices are produced by the billing module inside the EHR; we do not run a separate
+          billing system.
+    entities: [ehr]
+    topics: [application]
+
+  - id: fact-portal-hosting
+    statement: The booking portal is hosted by an external provider.
+    provenance:
+      - file: facts/sources/interview-clinic-2026-07-01.md
+        quote: The booking portal is hosted by an external provider.
+    entities: [booking-portal]
+    topics: [technology]
+
+  - id: fact-ehr-server
+    statement: The EHR runs on a server in the back office.
+    provenance:
+      - file: facts/sources/interview-clinic-2026-07-01.md
+        quote: The EHR runs on a server in the back office
+    entities: [ehr, ehr-server]
+    topics: [technology]
+
+  - id: fact-backup-untested
+    statement: Nobody has tested the backup restore of the EHR server.
+    provenance:
+      - file: facts/sources/interview-clinic-2026-07-01.md
+        quote: the practice manager worries that nobody has tested its backup restore.
+    entities: [ehr-server]
+    topics: [risk]
