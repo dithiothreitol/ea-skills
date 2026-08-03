@@ -23,7 +23,7 @@ from typing import Any
 import yaml
 from jsonschema import Draft202012Validator
 
-from . import dsl, genschema
+from . import dsl, genschema, ui
 from .validate import SEVERITY_ERROR, SEVERITY_INFO, SEVERITY_WARNING, Finding
 
 STANDARDS_DIR = Path("standards")
@@ -159,23 +159,21 @@ class GovReport:
 
     def render(self) -> str:
         lines = [
-            f"Governance validation at {self.root}",
-            f"{self.counts.get('standards', 0)} standards, "
-            f"{self.counts.get('decisions', 0)} decisions, "
-            f"{self.counts.get('dispensations', 0)} dispensations, "
-            f"{self.counts.get('assessments', 0)} assessments",
+            ui.bold(f"Governance validation at {self.root}"),
+            ui.dim(
+                f"{self.counts.get('standards', 0)} standards, "
+                f"{self.counts.get('decisions', 0)} decisions, "
+                f"{self.counts.get('dispensations', 0)} dispensations, "
+                f"{self.counts.get('assessments', 0)} assessments"
+            ),
             "",
         ]
         if not self.findings:
-            lines.append("No findings.")
+            lines.append(ui.dim("No findings."))
         else:
             for finding in self.findings:
                 lines.append(finding.render())
-        lines += [
-            "",
-            f"{len(self.errors)} error(s), {len(self.warnings)} warning(s) -- "
-            + ("PASS" if self.ok else "FAIL"),
-        ]
+        lines += ["", ui.verdict(self.ok, len(self.errors), len(self.warnings))]
         return "\n".join(lines)
 
 

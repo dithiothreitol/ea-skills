@@ -25,8 +25,17 @@ from . import (
     render as render_mod,
     reports,
     score as score_mod,
+    ui,
     validate as validate_mod,
 )
+
+
+def _ok(message: str) -> str:
+    return f"{ui.green(ui.check())} {message}"
+
+
+def _error(message: str) -> str:
+    return f"{ui.red(ui.bold('ERROR'))}   {message}"
 
 
 def _parse_as_of(value: str | None):
@@ -191,18 +200,20 @@ def cmd_compile(args: argparse.Namespace) -> int:
     try:
         result = aoef.compile_model(root, zone=args.zone, out=args.out)
     except aoef.CompileError as exc:
-        print(f"ERROR   {exc}")
+        print(_error(str(exc)))
         return 1
     print(
-        f"Compiled {result.elements} elements, {result.relationships} relationships, "
-        f"{result.views} view(s) -> {result.path}"
+        _ok(
+            f"Compiled {result.elements} elements, {result.relationships} relationships, "
+            f"{result.views} view(s) {ui.arrow()} {ui.bold(str(result.path))}"
+        )
     )
     if result.schema_errors:
         print("\nOpen Exchange XSD validation FAILED:")
         for error in result.schema_errors[:20]:
             print(f"  {error}")
         return 1
-    print("Open Exchange XSD validation passed.")
+    print(_ok("Open Exchange XSD validation passed."))
     return 0
 
 
@@ -211,10 +222,10 @@ def cmd_render(args: argparse.Namespace) -> int:
     try:
         result = render_mod.render_all(root, zone=args.zone, out_dir=args.out)
     except render_mod.RenderError as exc:
-        print(f"ERROR   {exc}")
+        print(_error(str(exc)))
         return 1
     for view_id, path in result.views:
-        print(f"Rendered {view_id} -> {path}")
+        print(_ok(f"Rendered {ui.bold(view_id)} {ui.arrow()} {path}"))
     if not result.views:
         print("No views to render.")
     return 0
@@ -231,9 +242,9 @@ def cmd_docs(args: argparse.Namespace) -> int:
     try:
         result = docgen.generate(root, out=args.out)
     except render_mod.RenderError as exc:
-        print(f"ERROR   {exc}")
+        print(_error(str(exc)))
         return 1
-    print(f"Rendered {len(result.views_rendered)} view(s); wrote {result.path}")
+    print(_ok(f"Rendered {len(result.views_rendered)} view(s); wrote {ui.bold(str(result.path))}"))
     return 0
 
 
@@ -241,7 +252,7 @@ def cmd_promote(args: argparse.Namespace) -> int:
     try:
         result = promote_mod.promote(args.root.resolve(), files=args.files, dry_run=args.dry_run)
     except promote_mod.PromoteError as exc:
-        print(f"ERROR   {exc}")
+        print(_error(str(exc)))
         return 1
     print(result.render())
     return 0 if result.ok else 1
@@ -301,12 +312,12 @@ def cmd_context(args: argparse.Namespace) -> int:
     try:
         pack = contextpack.build(args.root.resolve(), scope=args.scope, today=_parse_as_of(args.as_of))
     except contextpack.ContextError as exc:
-        print(f"ERROR   {exc}")
+        print(_error(str(exc)))
         return 1
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(pack.markdown, encoding="utf-8", newline="\n")
-        print(f"Context pack for {pack.scope} written to {args.out}")
+        print(_ok(f"Context pack for {ui.bold(pack.scope)} written to {args.out}"))
     else:
         print(pack.markdown)
     return 0
@@ -380,7 +391,7 @@ def cmd_coverage(args: argparse.Namespace) -> int:
 
 def cmd_gen_schema(_args: argparse.Namespace) -> int:
     for path in genschema.write_all_schemas():
-        print(f"Wrote {path}")
+        print(_ok(f"Wrote {path}"))
     print(f"(ArchiMate {oracle.matrix_version()}, {len(oracle.element_types())} element types)")
     return 0
 
@@ -407,7 +418,7 @@ def cmd_oracle_info(_args: argparse.Namespace) -> int:
     print(f"Concepts without layer : {', '.join(sorted(unmapped)) if unmapped else 'none'}")
     print("Checksum pins:")
     for result in oracle.verify_checksums():
-        status = "OK  " if result.ok else "FAIL"
+        status = ui.green("OK  ") if result.ok else ui.red("FAIL")
         print(f"  {status} {result.name}")
     return 0
 
@@ -440,6 +451,7 @@ def main(argv: list[str] | None = None) -> int:
     # arrows or the warning sign used in reports; never let encoding crash a gate.
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(errors="replace")
+    ui.enable_windows_vt()
     args = build_parser().parse_args(argv)
     return HANDLERS[args.command](args)
 

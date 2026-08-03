@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from . import dsl, facts as facts_mod
+from . import dsl, facts as facts_mod, ui
 from . import validate as validate_mod
 from .validate import _normalize
 
@@ -170,24 +170,30 @@ class ScoreReport:
 
     def render(self) -> str:
         lines = [
-            f"Golden-set score: candidate {self.candidate_root}",
-            f"           gold: {self.gold_root}",
+            ui.bold(f"Golden-set score: candidate {self.candidate_root}"),
+            ui.dim(f"           gold: {self.gold_root}"),
             "",
-            f"{'category':<15} {'gold':>5} {'cand':>5} {'match':>6} {'prec':>7} {'recall':>7} {'F1':>7}",
+            ui.dim(f"{'category':<15} {'gold':>5} {'cand':>5} {'match':>6} {'prec':>7} {'recall':>7} {'F1':>7}"),
         ]
         for name, score in self.categories.items():
+            f1_field = f"{score.f1:>7.2%}"
+            f1_styled = ui.green(f1_field) if score.f1 >= 1.0 else ui.yellow(f1_field)
             lines.append(
-                f"{name:<15} {score.gold:>5} {score.candidate:>5} {score.matched:>6} "
-                f"{score.precision:>7.2%} {score.recall:>7.2%} {score.f1:>7.2%}"
+                f"{ui.bold(f'{name:<15}')} {score.gold:>5} {score.candidate:>5} {score.matched:>6} "
+                f"{score.precision:>7.2%} {score.recall:>7.2%} {f1_styled}"
             )
         lines.append("")
         for gate, counts in self.gates.items():
-            verdict = "PASS" if counts["errors"] == 0 else "FAIL"
-            lines.append(f"candidate gate {gate}: {counts['errors']} error(s), {counts['warnings']} warning(s) -- {verdict}")
+            verdict = ui.status("PASS") if counts["errors"] == 0 else ui.status("FAIL")
+            lines.append(
+                f"candidate gate {gate}: {counts['errors']} error(s), "
+                f"{counts['warnings']} warning(s) -- {verdict}"
+            )
+        summary = f"min F1 across categories: {self.min_f1:.2%}"
         lines += [
             "",
-            f"min F1 across categories: {self.min_f1:.2%}"
-            + ("" if self.gates_ok else "  (candidate fails its own gates -- matching numbers are not trustworthy)"),
+            (ui.green(summary) if self.min_f1 >= 1.0 else ui.yellow(summary))
+            + ("" if self.gates_ok else ui.red("  (candidate fails its own gates -- matching numbers are not trustworthy)")),
         ]
         return "\n".join(lines)
 

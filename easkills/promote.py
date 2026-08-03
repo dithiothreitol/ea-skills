@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
-from . import dsl
+from . import dsl, ui
 from . import validate as validate_mod
 
 
@@ -42,17 +42,17 @@ class PromoteResult:
     def render(self) -> str:
         lines = [self.report.render(), ""]
         if not self.ok:
-            lines.append("Promotion blocked: the merged result must validate cleanly first.")
+            lines.append(ui.red(ui.bold("Promotion blocked: the merged result must validate cleanly first.")))
             return "\n".join(lines)
         verb = "Would move" if not self.moved else "Moved"
         for source, target in self.moves:
-            lines.append(f"{verb}  {source}  ->  {target}")
+            lines.append(f"{ui.green(verb)}  {ui.dim(source)}  {ui.arrow()}  {ui.bold(target)}")
         if not self.moved:
-            lines.append("Dry run: nothing was moved.")
+            lines.append(ui.dim("Dry run: nothing was moved."))
         else:
             lines.append(
-                f"{len(self.moves)} file(s) promoted. Review the diff and commit -- "
-                "the commit is the approval record."
+                ui.green(f"{ui.check()} {len(self.moves)} file(s) promoted.")
+                + " Review the diff and commit -- the commit is the approval record."
             )
         return "\n".join(lines)
 

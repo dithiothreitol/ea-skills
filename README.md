@@ -74,6 +74,11 @@ python -m easkills context --root eval/example --scope app-erp-core
 python -m easkills score --root <candidate> --gold eval/golden/clinic --min-f1 90
 ```
 
+Output is colorized on interactive terminals (severity-coded findings, green/red
+verdicts, dimmed paths) and degrades to plain text in pipes, CI logs and captures --
+colour is display, never data, so exit codes and grep-ability stay the interface.
+`NO_COLOR` disables styling, `FORCE_COLOR` forces it.
+
 The worked example (`eval/example/`) is a small fictional B2B food manufacturer: a fact
 register of twenty-five facts and eleven entities covering 100% of the source
 statements, and seventeen elements from goal and capability map down to database, every one
@@ -278,7 +283,7 @@ docs/            BLUEPRINT.md (design + research), RULES.md (rule catalogue)
 
 ```bash
 python -m venv .venv && .venv/Scripts/python -m pip install -r requirements.txt
-.venv/Scripts/python -m pytest tests -q          # 201 tests
+.venv/Scripts/python -m pytest tests -q          # 209 tests
 .venv/Scripts/python -m easkills oracle-info     # oracle version + pin status
 .venv/Scripts/python -m easkills gen-schema      # regenerate the DSL schema
 ```

@@ -19,7 +19,7 @@ from typing import Any
 import yaml
 from jsonschema import Draft202012Validator
 
-from . import dsl, genschema
+from . import dsl, genschema, ui
 from .validate import (
     SEVERITY_ERROR,
     SEVERITY_INFO,
@@ -106,22 +106,20 @@ class FactsReport:
 
     def render(self) -> str:
         lines = [
-            f"Fact register validation at {self.root}",
-            f"{self.counts.get('facts', 0)} facts, "
-            f"{self.counts.get('entities', 0)} entities, "
-            f"{self.counts.get('sources', 0)} source file(s)",
+            ui.bold(f"Fact register validation at {self.root}"),
+            ui.dim(
+                f"{self.counts.get('facts', 0)} facts, "
+                f"{self.counts.get('entities', 0)} entities, "
+                f"{self.counts.get('sources', 0)} source file(s)"
+            ),
             "",
         ]
         if not self.findings:
-            lines.append("No findings.")
+            lines.append(ui.dim("No findings."))
         else:
             for finding in self.findings:
                 lines.append(finding.render())
-        lines += [
-            "",
-            f"{len(self.errors)} error(s), {len(self.warnings)} warning(s) -- "
-            + ("PASS" if self.ok else "FAIL"),
-        ]
+        lines += ["", ui.verdict(self.ok, len(self.errors), len(self.warnings))]
         return "\n".join(lines)
 
 

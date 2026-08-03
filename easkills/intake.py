@@ -18,7 +18,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-from . import facts as facts_mod
+from . import facts as facts_mod, ui
 from .validate import _normalize
 
 DEFAULT_MAX_CHARS = 2000
@@ -130,11 +130,13 @@ def render_chunks(chunks: list[Chunk]) -> str:
     lines: list[str] = []
     for chunk in chunks:
         lines.append(
-            f"-- {chunk.file} {chunk.id}  lines {chunk.start_line}-{chunk.end_line}  ({len(chunk.text)} chars)"
+            ui.dim("-- ")
+            + ui.bold(f"{chunk.file} {chunk.id}")
+            + ui.dim(f"  lines {chunk.start_line}-{chunk.end_line}  ({len(chunk.text)} chars)")
         )
         lines.append(chunk.text)
         lines.append("")
-    lines.append(f"{len(chunks)} chunk(s)")
+    lines.append(ui.dim(f"{len(chunks)} chunk(s)"))
     return "\n".join(lines)
 
 
@@ -201,21 +203,28 @@ class CoverageReport:
         }
 
     def render(self) -> str:
-        lines = [f"Source coverage at {self.root}", ""]
+        lines = [ui.bold(f"Source coverage at {self.root}"), ""]
         if not self.files:
-            lines.append("No source files found.")
+            lines.append(ui.dim("No source files found."))
         for coverage in self.files:
+            ratio = f"{coverage.ratio:.0%}"
+            ratio_styled = ui.green(ratio) if coverage.ratio >= 1.0 else ui.yellow(ratio)
             lines.append(
-                f"{coverage.file}: {coverage.covered}/{coverage.sentences} statements cited "
-                f"({coverage.ratio:.0%}), {coverage.facts} fact(s)"
+                f"{ui.bold(coverage.file)}: {coverage.covered}/{coverage.sentences} statements cited "
+                f"({ratio_styled}), {coverage.facts} fact(s)"
             )
             for sentence in coverage.uncovered:
                 text = sentence.text if len(sentence.text) <= 100 else sentence.text[:97] + "..."
-                lines.append(f"  uncited  lines {sentence.start_line}-{sentence.end_line}: {text}")
+                lines.append(
+                    f"  {ui.yellow('uncited')}  "
+                    + ui.dim(f"lines {sentence.start_line}-{sentence.end_line}: ")
+                    + text
+                )
+        total = f"TOTAL {self.covered}/{self.sentences} ({self.ratio:.0%})"
         lines += [
             "",
-            f"TOTAL {self.covered}/{self.sentences} ({self.ratio:.0%}) -- "
-            "uncited statements are candidate clarification questions, not automatic defects",
+            (ui.green(total) if self.ratio >= 1.0 else ui.yellow(total))
+            + ui.dim(" -- uncited statements are candidate clarification questions, not automatic defects"),
         ]
         return "\n".join(lines)
 

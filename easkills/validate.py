@@ -24,7 +24,7 @@ from typing import Any, Iterable
 
 from jsonschema import Draft202012Validator
 
-from . import dsl, genschema, oracle
+from . import dsl, genschema, oracle, ui
 
 SEVERITY_ERROR = "error"
 SEVERITY_WARNING = "warning"
@@ -51,7 +51,10 @@ class Finding:
         if self.locator:
             where = f"{where}:{self.locator}"
         subject = f" [{self.concept}]" if self.concept else ""
-        return f"{self.severity.upper():<7} {self.code}  {where}{subject}\n         {self.message}"
+        return (
+            f"{ui.severity(f'{self.severity.upper():<7}')} {ui.bold(self.code)}  "
+            f"{ui.dim(where)}{ui.cyan(subject)}\n         {self.message}"
+        )
 
 
 @dataclass
@@ -89,23 +92,21 @@ class Report:
 
     def render(self) -> str:
         lines = [
-            f"EA model validation -- zone '{self.zone}' at {self.root}",
-            f"ArchiMate oracle {oracle.matrix_version()}; "
-            f"{self.counts.get('elements', 0)} elements, "
-            f"{self.counts.get('relationships', 0)} relationships, "
-            f"{self.counts.get('views', 0)} views",
+            ui.bold(f"EA model validation -- zone '{self.zone}' at {self.root}"),
+            ui.dim(
+                f"ArchiMate oracle {oracle.matrix_version()}; "
+                f"{self.counts.get('elements', 0)} elements, "
+                f"{self.counts.get('relationships', 0)} relationships, "
+                f"{self.counts.get('views', 0)} views"
+            ),
             "",
         ]
         if not self.findings:
-            lines.append("No findings.")
+            lines.append(ui.dim("No findings."))
         else:
             for finding in self.findings:
                 lines.append(finding.render())
-        lines += [
-            "",
-            f"{len(self.errors)} error(s), {len(self.warnings)} warning(s) -- "
-            + ("PASS" if self.ok else "FAIL"),
-        ]
+        lines += ["", ui.verdict(self.ok, len(self.errors), len(self.warnings))]
         return "\n".join(lines)
 
 

@@ -14,7 +14,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from . import dsl, facts as facts_mod, govern
+from . import dsl, facts as facts_mod, govern, ui
 from .validate import _normalize
 
 # ------------------------------------------------------------------------- staleness
@@ -57,18 +57,25 @@ def staleness(root: Path, today: date | None = None) -> dict[str, Any]:
 
 
 def render_staleness(data: dict[str, Any]) -> str:
+    fresh = ui.green(f"{data['fresh']} fresh")
+    stale = ui.red(f"{data['stale']} stale") if data["stale"] else ui.dim("0 stale")
+    unreviewed = (
+        ui.yellow(f"{data['unreviewed']} unreviewed") if data["unreviewed"] else ui.dim("0 unreviewed")
+    )
     lines = [
-        f"Staleness as of {data['asOf']} (threshold {data['thresholdDays']} days)",
-        f"{data['elements']} elements: {data['fresh']} fresh, {data['stale']} stale, "
-        f"{data['unreviewed']} unreviewed",
+        ui.bold(f"Staleness as of {data['asOf']} (threshold {data['thresholdDays']} days)"),
+        f"{data['elements']} elements: {fresh}, {stale}, {unreviewed}",
         "",
     ]
     flagged = [r for r in data["rows"] if r["state"] != "fresh"]
     for row in sorted(flagged, key=lambda r: (-(r["age"] or 10**6), r["id"])):
         age = f"{row['age']} days" if row["age"] is not None else "never reviewed"
-        lines.append(f"  {row['state']:<11} {row['id']:<40} {age:<16} owner: {row['owner'] or '-'}")
+        state_field = f"{row['state']:<11}"
+        state = ui.red(state_field) if row["state"] == "stale" else ui.yellow(state_field)
+        identifier = "{:<40}".format(row["id"])
+        lines.append(f"  {state} {ui.bold(identifier)} {age:<16} {ui.dim('owner: ' + (row['owner'] or '-'))}")
     if not flagged:
-        lines.append("  Nothing stale.")
+        lines.append(ui.green(f"  {ui.check()} Nothing stale."))
     return "\n".join(lines)
 
 
@@ -166,21 +173,30 @@ def render_kpi(data: dict[str, Any]) -> str:
     def share(value: float) -> str:
         return f"{value:.0%}"
 
+    def label(text: str) -> str:
+        return ui.bold("{:<13}".format(text))
+
+    def listed(items: list[str], colour) -> str:
+        return colour(", ".join(items)) if items else ui.dim("none")
+
     lines = [
-        f"EA KPIs as of {data['asOf']}",
+        ui.bold(f"EA KPIs as of {data['asOf']}"),
         "",
-        f"Size          {size['elements']} elements, {size['relationships']} relationships, "
+        f"{label('Size')} {size['elements']} elements, {size['relationships']} relationships, "
         f"{size['views']} views; {size['facts']} facts, {size['entities']} entities",
-        f"Evidence      {share(ev['evidencedShare'])} concepts evidenced; {ev['assumed']} declared assumption(s)",
-        f"Governance    {share(gov['ownedShare'])} owned; {share(gov['staleShare'])} stale/unreviewed; "
+        f"{label('Evidence')} {share(ev['evidencedShare'])} concepts evidenced; "
+        f"{ev['assumed']} declared assumption(s)",
+        f"{label('Governance')} {share(gov['ownedShare'])} owned; {share(gov['staleShare'])} stale/unreviewed; "
         f"{gov['openDispensations']} open dispensation(s); {gov['decisions']} decision(s); "
         f"{gov['assessments']} assessment(s)",
-        f"Portfolio     {port['applications']} application(s); {share(port['timeClassifiedShare'])} TIME-classified; "
-        f"obsolescence exposure: {', '.join(port['obsolescenceExposure']) or 'none'}",
-        f"Capabilities  {cap['total']}; unsupported: {', '.join(cap['unsupported']) or 'none'}",
-        f"Quality       orphans: {', '.join(qual['orphans']) or 'none'}",
-        f"Documentation {doc['concerns']} concern(s); unheld: {', '.join(doc['unheldConcerns']) or 'none'}; "
-        f"unframed: {', '.join(doc['unframedConcerns']) or 'none'}",
+        f"{label('Portfolio')} {port['applications']} application(s); "
+        f"{share(port['timeClassifiedShare'])} TIME-classified; "
+        f"obsolescence exposure: {listed(port['obsolescenceExposure'], ui.yellow)}",
+        f"{label('Capabilities')} {cap['total']}; unsupported: {listed(cap['unsupported'], ui.red)}",
+        f"{label('Quality')} orphans: {listed(qual['orphans'], ui.yellow)}",
+        f"{label('Documentation')} {doc['concerns']} concern(s); "
+        f"unheld: {listed(doc['unheldConcerns'], ui.red)}; "
+        f"unframed: {listed(doc['unframedConcerns'], ui.red)}",
     ]
     return "\n".join(lines)
 
@@ -254,17 +270,18 @@ def debt(root: Path, today: date | None = None) -> dict[str, Any]:
 
 
 def render_debt(data: dict[str, Any]) -> str:
-    lines = [f"EA debt register as of {data['asOf']} -- {data['total']} item(s)", ""]
+    lines = [ui.bold(f"EA debt register as of {data['asOf']} -- {data['total']} item(s)"), ""]
     by_kind: dict[str, list[dict[str, str]]] = {}
     for item in data["items"]:
         by_kind.setdefault(item["kind"], []).append(item)
     for kind in sorted(by_kind):
-        lines.append(f"{kind} ({len(by_kind[kind])}):")
+        lines.append(f"{ui.yellow(ui.bold(kind))} ({len(by_kind[kind])}):")
         for item in by_kind[kind]:
-            lines.append(f"  {item['concept']:<40} {item['detail']}")
+            concept = "{:<40}".format(item["concept"])
+            lines.append(f"  {ui.bold(concept)} {ui.dim(item['detail'])}")
         lines.append("")
     if not data["items"]:
-        lines.append("No debt items found.")
+        lines.append(ui.green(f"{ui.check()} No debt items found."))
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -343,14 +360,17 @@ def conformance(root: Path, today: date | None = None) -> dict[str, Any]:
 
 
 def render_conformance(data: dict[str, Any]) -> str:
-    lines = ["ISO/IEC/IEEE 42010:2022 Clause 6 conformance (checkable subset)", ""]
+    lines = [ui.bold("ISO/IEC/IEEE 42010:2022 Clause 6 conformance (checkable subset)"), ""]
     for item in data["items"]:
-        lines.append(f"  {item['status'].upper():<5} {item['clause']:<5} {item['requirement']}")
-        lines.append(f"        {item['detail']}")
+        status_field = "{:<5}".format(item["status"].upper())
+        clause_field = "{:<5}".format(item["clause"])
+        lines.append(f"  {ui.status(status_field)} {ui.bold(clause_field)} {item['requirement']}")
+        lines.append(f"        {ui.dim(item['detail'])}")
+    summary = f"{data['passed']} pass, {data['failed']} fail, {data['gaps']} gap(s)"
     lines += [
         "",
-        f"{data['passed']} pass, {data['failed']} fail, {data['gaps']} gap(s) -- a 'gap' is a clause "
-        "this tooling does not check; it is not silent conformance",
+        (ui.green(summary) if not data["failed"] else ui.red(summary))
+        + ui.dim(" -- a 'gap' is a clause this tooling does not check; it is not silent conformance"),
     ]
     return "\n".join(lines)
 
@@ -393,22 +413,26 @@ def delta(root: Path) -> dict[str, Any]:
 
 
 def render_delta(data: dict[str, Any]) -> str:
-    lines = ["Delta: fact register vs approved model", ""]
-    lines.append(f"Entities with no model counterpart ({len(data['unmodelledEntities'])}):")
+    lines = [ui.bold("Delta: fact register vs approved model"), ""]
+    lines.append(ui.bold(f"Entities with no model counterpart ({len(data['unmodelledEntities'])}):"))
     for row in data["unmodelledEntities"]:
-        kind = f" [{row['kind']}]" if row["kind"] else ""
-        lines.append(f"  {row['entity']:<30} {row['name']}{kind}")
+        kind = ui.dim(f" [{row['kind']}]") if row["kind"] else ""
+        entity_field = "{:<30}".format(row["entity"])
+        lines.append(f"  {ui.cyan(entity_field)} {row['name']}{kind}")
     if not data["unmodelledEntities"]:
-        lines.append("  none")
+        lines.append(ui.dim("  none"))
     lines.append("")
-    lines.append(f"Facts no model concept cites ({len(data['unusedFacts'])}):")
+    lines.append(ui.bold(f"Facts no model concept cites ({len(data['unusedFacts'])}):"))
     for row in data["unusedFacts"]:
-        lines.append(f"  {row['fact']:<40} {row['statement'][:90]}")
+        fact_field = "{:<40}".format(row["fact"])
+        lines.append(f"  {ui.cyan(fact_field)} {ui.dim(row['statement'][:90])}")
     if not data["unusedFacts"]:
-        lines.append("  none")
+        lines.append(ui.dim("  none"))
     lines += [
         "",
-        "Candidates, not defects: an unmodelled entity may be out of scope, and direct "
-        "file+quote citations do not count as fact use. Judgement belongs to ea-delta-ingest.",
+        ui.dim(
+            "Candidates, not defects: an unmodelled entity may be out of scope, and direct "
+            "file+quote citations do not count as fact use. Judgement belongs to ea-delta-ingest."
+        ),
     ]
     return "\n".join(lines)
