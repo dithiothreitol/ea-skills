@@ -1,0 +1,109 @@
+# Contributing to ea-skills
+
+Thanks for considering a contribution. The conventions here are strict but few, and
+almost all of them are enforced by a test rather than a review comment — if the suite
+is green and the gates pass, you are most of the way to merged.
+
+## Development setup
+
+```bash
+git clone https://github.com/dithiothreitol/ea-skills.git && cd ea-skills
+python -m venv .venv
+.venv/Scripts/python -m pip install -r requirements.txt    # Windows
+# source .venv/bin/activate && pip install -r requirements.txt   # POSIX
+
+.venv/Scripts/python -m pytest tests -q          # 220 tests, ~20 s
+.venv/Scripts/python -m easkills oracle-info     # oracle version + pin status
+```
+
+Python ≥ 3.11. Three runtime dependencies (`pyyaml`, `jsonschema`, `lxml`) — adding a
+fourth needs a strong argument in the PR description; GPL-licensed dependencies and
+anything that fetches from the network at runtime are rejected on principle (see
+[BLUEPRINT AD-05](docs/BLUEPRINT.md)).
+
+## Run the full gate before pushing
+
+CI runs exactly this; save yourself the round-trip:
+
+```bash
+python -m pytest tests -q
+python -m easkills validate       --root eval/example --strict
+python -m easkills validate-facts --root eval/example --strict
+python -m easkills validate-gov   --root eval/example --strict
+python -m easkills coverage       --root eval/example --min-coverage 100
+python -m easkills compile        --root eval/example
+python -m easkills docs           --root eval/example && git diff --exit-code eval/example/docs
+python -m easkills score --root eval/golden/clinic --gold eval/golden/clinic --min-f1 100
+python -m easkills validate --root eval/fixtures/broken        # must FAIL
+```
+
+## The conventions that are actually load-bearing
+
+**1. Every new validator rule ships as a triple.** A rule without proof it fires is
+decoration, so the test suite enforces the pattern:
+
+- the check itself (in `easkills/validate.py`, `facts.py` or `govern.py`);
+- a case in `eval/fixtures/broken/` that violates it (annotated with the rule code);
+- a row in [`docs/RULES.md`](docs/RULES.md) and an entry in the parametrized
+  expected-codes list in the matching test module.
+
+**2. Generated artifacts regenerate in the same commit.** Schemas
+(`python -m easkills gen-schema`) and the example's docs
+(`python -m easkills docs --root eval/example`) are committed *and*
+freshness-checked — a stale artifact fails CI, so regenerate alongside the change
+that invalidated it.
+
+**3. Gold never changes with skill changes.** The golden set (`eval/golden/`,
+`eval/example/`) is the measuring stick; a commit that moves both the stick and the
+thing being measured proves nothing. If gold is wrong, fix it in its own PR with its
+own justification.
+
+**4. The worked example stays at zero findings, warnings included.** It is the
+documented "0 errors, 0 warnings" claim, gated with `--strict` in CI. If your change
+makes the example warn, either the example needs a legitimate update or your rule is
+too noisy — decide which, explicitly.
+
+**5. Never edit the oracle to make something pass.** `oracle/` is vendored,
+hash-pinned primary-source data. Re-pinning (`pin-oracle`) is only for deliberate,
+reviewed upgrades (e.g. a newer Archi revision), never for silencing `ORACLE001`.
+
+**6. Determinism is a feature.** Outputs are byte-stable: same input, same bytes.
+Write generated files with `newline="\n"`; no wall-clock timestamps in artifacts
+(dates derive from model content); stable sort orders everywhere. There are tests
+that will catch you.
+
+**7. Colour is display, never data.** Terminal styling goes through `easkills/ui.py`
+and must degrade to the exact plain text in pipes and CI. Never branch logic on
+whether styling is active.
+
+## Adding or changing a skill
+
+Skills live in `skills/<name>/SKILL.md` — frontmatter (`name`, `description` with
+concrete triggers) plus instructions. The house style: non-negotiables first, then
+procedure, then "reporting back". A skill instructs judgement and defers proof to the
+CLI gates; a skill that asks the model to recall ArchiMate semantics from memory will
+be rejected — that is what the oracle is for.
+
+If the change affects extraction or modelling quality, run the golden-set evaluation
+(see [`eval/golden/README.md`](eval/golden/README.md)) and put the before/after score
+table in the PR.
+
+## Commit and PR style
+
+- One logical change per commit; imperative-ish summary line, body explains *why*.
+- PRs fill the template checklist — it mirrors the conventions above.
+- CI must be green. A red negative-fixture step means the validator stopped catching
+  violations — that is the highest-severity failure this repo has.
+
+## Where to start
+
+Good first contributions: a new EA-smell as a debt-register query, a golden case that
+exercises something the set does not (a contradiction between sources, a messier
+document format), or a rule from the "Not yet implemented" section of
+[`docs/RULES.md`](docs/RULES.md). Open an issue first for anything that touches the
+DSL or the oracle.
+
+## Code of conduct
+
+This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md). Be excellent to
+each other; argue about evidence, not people.
