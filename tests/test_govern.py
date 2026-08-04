@@ -65,6 +65,7 @@ EXPECTED_ERROR_CODES = [
     "DISP004",  # applies to unknown element
     "DISP005",  # waives unknown standard
     "DISP007",  # expires before granted
+    "DISP008",  # expiry passes the pattern but is not a real date
     "DEC001",  # no rationale (schema)
     "DEC003",  # supersededBy unknown
     "DEC005",  # relatedElements unknown
@@ -75,6 +76,7 @@ EXPECTED_ERROR_CODES = [
     "REQ003",  # request references an unknown offering
     "REQ004",  # request scope names an unknown element
     "REQ005",  # fulfilled without date or deliverable pointer
+    "REQ009",  # request date passes the pattern but is not a real date
 ]
 
 EXPECTED_WARNING_CODES = [
@@ -108,6 +110,58 @@ def test_repo_without_governance_dirs_is_valid(tmp_path):
     report = govern.validate_governance(tmp_path, today=TODAY)
     assert report.ok
     assert report.counts["standards"] == 0
+
+
+# ------------------------------------------------------------------ robustness of the gate
+
+
+def _record(tmp_path, relative: str, body: str):
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(body, encoding="utf-8", newline="\n")
+    return tmp_path
+
+
+def test_an_impossible_expiry_does_not_silence_the_other_dispensation_checks(tmp_path):
+    """The regression that mattered most: one bad date used to blank a whole record.
+
+    ``expires: 2027-13-45`` satisfies the schema's date pattern, so the record reached
+    the semantic checks -- which skipped it wholesale, taking the expired-waiver error,
+    the unknown element and the unknown standard with it. The gate reported ok=True.
+    """
+    root = _record(
+        tmp_path,
+        "governance-log/dispensations/disp-x.yaml",
+        "id: disp-x\nwaives:\n  standard: std-nonexistent\nappliesTo: [app-nonexistent]\n"
+        "rationale: The expiry on this waiver is not a real calendar date.\n"
+        "grantedBy: board@example.test\ngranted: '2020-01-01'\nexpires: '2027-13-45'\nstatus: open\n",
+    )
+    codes = {f.code for f in govern.validate_governance(root, today=TODAY).errors}
+    assert {"DISP008", "DISP004", "DISP005"} <= codes
+
+
+def test_a_non_integer_sla_is_reported_by_the_schema_not_a_traceback(tmp_path):
+    """Loading is best-effort by design; the schema check is what reports bad values."""
+    root = _record(
+        tmp_path,
+        "services/svc-x.yaml",
+        "id: svc-x\nname: Offering X\ndescription: An offering whose SLA is not a number.\n"
+        "fulfilledBy: ea-context\nowner: ea@example.test\nslaDays: ten\nlifecycle: active\n",
+    )
+    report = govern.validate_governance(root, today=TODAY)  # must not raise
+    assert "SVC001" in {f.code for f in report.errors}
+    assert govern.load(root).services["svc-x"].sla_days == 0
+
+
+def test_an_impossible_request_date_is_reported(tmp_path):
+    root = _record(
+        tmp_path,
+        "governance-log/requests/req-x.yaml",
+        "id: req-x\nservice: svc-x\nrequestedBy: team@example.test\n"
+        "requested: '2026-02-30'\nstatus: open\n",
+    )
+    codes = {f.code for f in govern.validate_governance(root, today=TODAY).errors}
+    assert "REQ009" in codes
 
 
 # ------------------------------------------------------------------------------- CLI

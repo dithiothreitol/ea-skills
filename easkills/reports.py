@@ -24,7 +24,8 @@ def staleness(root: Path, today: date | None = None) -> dict[str, Any]:
     today = today or date.today()
     model, _documents, config = dsl.load(root, "approved")
     governance = govern.load(root)
-    threshold = int(config.get("stalenessDays", 365))
+    # Reports never crash on a bad config value; the model gate reports it (SCHEMA002).
+    threshold, _problem = dsl.config_number(config, "stalenessDays", 365, minimum=1)
 
     # Demand per element: how many service requests name it in scope. Demand-weighted
     # maintenance is the AoD answer to rot -- review what people ask about first, and

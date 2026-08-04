@@ -59,6 +59,7 @@ def test_example_model_uses_fact_reference_provenance(example_root):
 
 EXPECTED_ERROR_CODES = [
     "SCHEMA001",  # not an ArchiMate concept
+    "SCHEMA002",  # unusable ea.config.yaml value (threshold out of range)
     "ID001",  # duplicate identifier across files
     "REF001",  # relationship endpoint missing
     "REF002",  # view references unknown element
@@ -67,6 +68,7 @@ EXPECTED_ERROR_CODES = [
     "PROV003",  # quote absent from the source
     "PROV005",  # assumed without rationale
     "PROV007",  # provenance references a fact missing from the register
+    "PROV008",  # provenance file resolves outside the repository
     "MOT001",  # appliesTo target does not exist
     "MOT002",  # appliesTo on a non-Motivation element
     "ISO001",  # view frames an unknown concern
@@ -119,6 +121,72 @@ def test_warning_rule_fires(broken_report, code):
 
 def test_broken_fixture_fails_overall(broken_report):
     assert not broken_report.ok
+
+
+# ------------------------------------------------------------------ robustness of the gate
+
+
+def test_provenance_cannot_be_verified_against_a_file_outside_the_repository(tmp_path):
+    """A quote located outside the repository is unreviewable traceability.
+
+    Before PROV008 this passed with zero errors: the citation escaped the repository,
+    the quote was found in a file no reviewer can see, and -- running in CI on
+    untrusted content -- pass/fail leaked whether a string exists on the runner.
+    """
+    outside = tmp_path / "outside-secret.txt"
+    outside.write_text("the deployment key is hunter2\n", encoding="utf-8")
+    root = tmp_path / "repo"
+    (root / "model" / "approved").mkdir(parents=True)
+    (root / "model/approved/m.yaml").write_text(
+        "elements:\n"
+        "  - id: cap-x\n    type: Capability\n    name: Capability X\n"
+        "    owner: owner@example.test\n    lastReviewed: 2026-07-01\n"
+        "    provenance:\n      - file: ../outside-secret.txt\n"
+        "        quote: the deployment key is hunter2\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    report = validate.validate(root, zone="approved", today=date(2026, 7, 30))
+    assert not report.ok
+    assert [f.code for f in report.errors] == ["PROV008"]
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "stalenessDays: soon",  # not a number at all
+        "stalenessDays: 0",  # below the usable minimum
+        "quoteMatchThreshold: 90",  # a ratio written as a percentage
+        "factsRoot: ../..",  # citations would resolve outside the repository
+    ],
+)
+def test_unusable_config_values_are_findings_not_crashes(tmp_path, line):
+    """A gate that raises reports nothing at all -- the worst possible outcome."""
+    root = tmp_path / "repo"
+    (root / "model" / "approved").mkdir(parents=True)
+    (root / "ea.config.yaml").write_text(f"name: Probe\n{line}\n", encoding="utf-8", newline="\n")
+    (root / "model/approved/m.yaml").write_text(
+        "elements:\n"
+        "  - id: cap-x\n    type: Capability\n    name: Capability X\n"
+        "    owner: owner@example.test\n    lastReviewed: 2026-07-01\n"
+        "    assumed: true\n    rationale: Probe element for a config-robustness test.\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    report = validate.validate(root, zone="approved", today=date(2026, 7, 30))
+    assert "SCHEMA002" in {f.code for f in report.errors}
+
+
+def test_default_thresholds_still_apply_when_the_config_is_unusable(tmp_path):
+    """The fallback must be the documented default, not an accidental extreme."""
+    from easkills import dsl
+
+    value, problem = dsl.config_number({"quoteMatchThreshold": 90}, "quoteMatchThreshold", 0.90, 0.0, 1.0)
+    assert (value, bool(problem)) == (0.90, True)
+    value, problem = dsl.config_number({"stalenessDays": True}, "stalenessDays", 365, minimum=1)
+    assert (value, bool(problem)) == (365, True)
+    value, problem = dsl.config_number({"stalenessDays": "180"}, "stalenessDays", 365, minimum=1)
+    assert (value, problem) == (180, "")
 
 
 def test_matrix_violation_names_the_permitted_alternatives(broken_report):

@@ -1,0 +1,13 @@
+# --- DISP008: shape-valid but impossible expiry -------------------------------------
+# '2027-13-45' satisfies the schema's date pattern and no calendar. An expiry that
+# cannot be parsed cannot expire, which is how a waiver becomes permanent by accident --
+# and it used to take DISP003/004/005/007 down with it for this record.
+id: disp-impossible-date
+waives:
+  standard: std-dup
+appliesTo: [node-a]
+rationale: The expiry date on this waiver is not a real date, on purpose.
+grantedBy: someone@example.test
+granted: 2026-01-01
+expires: "2027-13-45"
+status: open

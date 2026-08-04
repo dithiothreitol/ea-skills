@@ -209,6 +209,48 @@ def check_schema(root: Path, documents: list[dsl.Document], schema: dict[str, An
     return findings
 
 
+def check_config(model: dsl.Model) -> list[Finding]:
+    """``ea.config.yaml`` values that other rules depend on must be usable.
+
+    Two keys decide how strict this gate is, and one pair of keys decides which files
+    provenance may cite. A bad value there used to raise straight out of the check --
+    a gate that crashes reports nothing at all, so it is a finding instead, with the
+    documented default applied so the rest of the run still means something.
+    """
+    findings: list[Finding] = []
+    rel_config = dsl.CONFIG_FILENAME
+    for key, default, minimum, maximum in (
+        ("stalenessDays", 365, 1, None),
+        ("quoteMatchThreshold", 0.90, 0.0, 1.0),
+    ):
+        _value, problem = dsl.config_number(model.config, key, default, minimum=minimum, maximum=maximum)
+        if problem:
+            findings.append(
+                Finding(
+                    "SCHEMA002",
+                    SEVERITY_ERROR,
+                    f"{problem} -- falling back to the default {default!r}",
+                    file=rel_config,
+                    locator=key,
+                )
+            )
+    root = model.root.resolve()
+    for key, default in (("factsRoot", "."), ("sourcesDir", "facts/sources")):
+        directory = (model.root / str(model.config.get(key, default))).resolve()
+        if not directory.is_relative_to(root):
+            findings.append(
+                Finding(
+                    "SCHEMA002",
+                    SEVERITY_ERROR,
+                    f"{key} resolves outside the repository: {directory} -- sources and their "
+                    "citations must live where a reviewer can read them",
+                    file=rel_config,
+                    locator=key,
+                )
+            )
+    return findings
+
+
 def check_identifiers(model: dsl.Model) -> list[Finding]:
     findings: list[Finding] = []
     for key, first, second in model.duplicate_ids:
@@ -284,7 +326,9 @@ def check_provenance(model: dsl.Model) -> list[Finding]:
     from . import facts as facts_mod  # local import: facts.py imports Finding from here
 
     findings: list[Finding] = []
-    threshold = float(model.config.get("quoteMatchThreshold", 0.90))
+    threshold, _problem = dsl.config_number(
+        model.config, "quoteMatchThreshold", 0.90, minimum=0.0, maximum=1.0
+    )  # a bad value is reported by check_config; here the default keeps the gate running
     facts_root = model.facts_root()
     cache: dict[Path, str | None] = {}
     register, _register_docs, _entities_doc = facts_mod.load(model.root)
@@ -292,7 +336,20 @@ def check_provenance(model: dsl.Model) -> list[Finding]:
     def verify_quote(concept: dsl.Concept, file: str, quote: str, via: str = "") -> None:
         rel_file = _rel(model.root, concept.source_path)
         suffix = f" (via fact '{via}')" if via else ""
-        source_path = (facts_root / file).resolve()
+        source_path, problem = dsl.resolve_provenance_file(model.root, facts_root, file)
+        if source_path is None:
+            findings.append(
+                Finding(
+                    "PROV008",
+                    SEVERITY_ERROR,
+                    f"provenance file {file!r} {problem}{suffix} -- a quote verified against a file "
+                    "outside this repository is traceability nobody can review",
+                    file=rel_file,
+                    locator=concept.locator,
+                    concept=concept.id,
+                )
+            )
+            return
         if source_path not in cache:
             cache[source_path] = (
                 source_path.read_text(encoding="utf-8", errors="replace") if source_path.is_file() else None
@@ -402,7 +459,8 @@ def check_governance_metadata(model: dsl.Model, today: date | None = None) -> li
     findings: list[Finding] = []
     approved = model.zone == "approved"
     severity = SEVERITY_ERROR if approved else SEVERITY_WARNING
-    staleness_days = int(model.config.get("stalenessDays", 365))
+    # A malformed value is reported by check_config; use the documented default here.
+    staleness_days, _problem = dsl.config_number(model.config, "stalenessDays", 365, minimum=1)
     today = today or date.today()
 
     for element in model.elements.values():
@@ -865,6 +923,7 @@ def check_smells(model: dsl.Model) -> list[Finding]:
 CHECK_ORDER = (
     "oracle",
     "schema",
+    "config",
     "identifiers",
     "references",
     "provenance",
@@ -888,6 +947,7 @@ def _run_checks(
     findings: list[Finding] = []
     findings += check_oracle()
     findings += check_schema(root, documents, schema)
+    findings += check_config(model)
     findings += check_identifiers(model)
     findings += check_references(model)
     findings += check_provenance(model)

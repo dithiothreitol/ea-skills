@@ -27,6 +27,13 @@ facts:
       - file: facts/sources/does-not-exist.md
         quote: any quote at all goes here
 
+  # --- FACT008: the evidence file is outside the repository ---------------------------
+  - id: fact-escaping-source
+    statement: Cites a file outside the repository as its evidence.
+    provenance:
+      - file: ../../../outside-the-repository.md
+        quote: any quote at all goes here
+
   # --- FACT004: the quote does not occur in the cited source --------------------------
   - id: fact-fabricated-quote
     statement: The board approved four million euro for the programme.

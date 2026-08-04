@@ -132,6 +132,18 @@ elements:
       - file: facts/sources/does-not-exist.md
         quote: any quote at all goes here
 
+  # --- PROV008: the citation escapes the repository ----------------------------------
+  # A quote "verified" against a file outside the repository is traceability nobody can
+  # review -- and in CI on untrusted content, a probe of the runner's filesystem.
+  - id: escaping-source
+    type: BusinessRole
+    name: Role Citing Outside the Repository
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: ../../../outside-the-repository.md
+        quote: any quote at all goes here
+
   # --- PROV001: no provenance and not declared as an assumption ----------------------
   - id: unsourced
     type: BusinessRole

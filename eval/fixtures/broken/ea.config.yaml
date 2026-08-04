@@ -3,5 +3,8 @@
 name: Broken Fixture Model
 documentation: Deliberately invalid model used to test the validator.
 stalenessDays: 30
-quoteMatchThreshold: 0.90
+# --- SCHEMA002: a ratio written as a percentage. Out of range, so the documented
+# default (0.90) is applied and the run continues -- but the typo is an error, because
+# a silently mis-set threshold decides whether fabricated quotes pass.
+quoteMatchThreshold: 90
 factsRoot: .

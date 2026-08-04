@@ -30,6 +30,7 @@ service layer (`SIB`/`DEC`/`DISP`/`COMP`/`SVC`/`REQ`).
 |---|---|---|
 | `SCHEMA000` | error | The YAML file cannot be parsed, or its top level is not a mapping. |
 | `SCHEMA001` | error | The file violates `schema/model.schema.json` -- unknown key, missing required field, bad identifier pattern, or a `type` that is not an ArchiMate 3.2 concept. |
+| `SCHEMA002` | error | An `ea.config.yaml` value other rules depend on is unusable: `stalenessDays`/`quoteMatchThreshold` not a number or outside its usable range, or `factsRoot`/`sourcesDir` resolving outside the repository. The documented default is applied so the run still completes -- but a silently mis-set threshold decides whether fabricated quotes pass, so it is an error, never a fallback in silence. |
 | `ID001` | error | Duplicate identifier. Reported against the second definition, naming the file holding the first. |
 | `ID002` | error | The same identifier is used by both an element and a relationship. |
 | `REF001` | error | A relationship endpoint does not resolve to an element in this zone. |
@@ -51,6 +52,7 @@ language-model extraction.
 | `PROV005` | error | Marked `assumed: true` with no rationale. |
 | `PROV006` | info | A declared assumption, listed so it can be confirmed or dropped at review. |
 | `PROV007` | error | Provenance references a fact (`fact:`) that is not in the fact register. A resolved fact's own quotes are re-verified here (as `PROV002`/`PROV003`/`PROV004`, marked "via fact"), so the evidence chain stays mechanical even if the register changed after intake. |
+| `PROV008` | error | The provenance `file:` resolves outside the repository (`../../secrets.txt`, or via a `factsRoot` that escapes). A quote verified against a file no reviewer can open is unreviewable traceability -- and in CI on untrusted content, pass/fail would leak whether a string exists on the runner. The file is refused, not read. |
 
 ## Layer 1 -- governance metadata
 
@@ -151,6 +153,7 @@ schema error rather than a distinct rule.
 | `FACT005` | warning | The quote matches only approximately (similarity at or above `quoteMatchThreshold`, default 0.90). Quote verbatim text instead of paraphrasing. |
 | `FACT006` | error | The fact references an entity id that is not in `facts/entities.yaml`. |
 | `FACT007` | warning | Another fact already makes the same statement. Merge them and keep both quotes as provenance. |
+| `FACT008` | error | The evidence `file:` resolves outside the repository. Same rule as `PROV008`, one layer earlier: the evidence for a fact must be a source file in this repository. |
 
 ## Fact register -- entity resolution
 
@@ -190,6 +193,7 @@ nobody acts on is equally fake, so expiry is an error, not a shrug.
 | `DISP005` | error | `waives.standard` names an unknown standard. |
 | `DISP006` | warning | Expires within 30 days -- schedule the review now. |
 | `DISP007` | error | `expires` is before `granted`. |
+| `DISP008` | error | `expires` or `granted` passes the schema's date *pattern* but is not a real calendar date (`2027-13-45`). An expiry that cannot be parsed cannot expire -- how a waiver becomes permanent by accident -- and the date-independent checks (`DISP004`, `DISP005`) still run alongside this finding rather than being skipped with the record. |
 
 ## Governance log -- decisions
 
@@ -242,6 +246,7 @@ service line).
 | `REQ006` | warning | Open past the offering's `slaDays`. Fulfil, decline with a reason, or renegotiate the catalog promise. (A warning, not an error: a late answer does not make the *model* wrong -- but breaches surface in `kpi` and on the board agenda.) |
 | `REQ007` | warning | Declined without `notes` -- a refusal needs a reason the requester can read. |
 | `REQ008` | warning | Requests a retired offering. |
+| `REQ009` | error | `requested` or `fulfilled` passes the date pattern but is not a real calendar date. SLA and fulfilment timing are computed from these fields, so an unreadable date quietly removes the request from the ledger's arithmetic. |
 
 ## Not yet implemented
 

@@ -144,7 +144,7 @@ def load_register_documents(root: Path) -> list[dsl.Document]:
     documents: list[dsl.Document] = []
     if not directory.is_dir():
         return documents
-    paths = sorted(p for p in directory.rglob("*") if p.suffix in {".yaml", ".yml"})
+    paths = sorted(p for p in directory.rglob("*") if p.is_file() and p.suffix in {".yaml", ".yml"})
     for path in paths:
         try:
             data = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -289,14 +289,29 @@ def check_identifiers(register: Register) -> list[Finding]:
 def check_quotes(register: Register) -> list[Finding]:
     """Locate every quote in its cited source -- the same gate model provenance passes."""
     findings: list[Finding] = []
-    threshold = float(register.config.get("quoteMatchThreshold", 0.90))
+    threshold, _problem = dsl.config_number(
+        register.config, "quoteMatchThreshold", 0.90, minimum=0.0, maximum=1.0
+    )  # the model gate reports a bad value (SCHEMA002); never crash on it here
     facts_root = register.facts_root()
     cache: dict[Path, str | None] = {}
 
     for fact in register.facts.values():
         rel_file = _rel(register.root, fact.source_path)
         for provenance in fact.provenance:
-            source_path = (facts_root / provenance.file).resolve()
+            source_path, problem = dsl.resolve_provenance_file(register.root, facts_root, provenance.file)
+            if source_path is None:
+                findings.append(
+                    Finding(
+                        "FACT008",
+                        SEVERITY_ERROR,
+                        f"provenance file {provenance.file!r} {problem} -- the evidence for a fact "
+                        "must be a source file in this repository",
+                        file=rel_file,
+                        locator=fact.locator,
+                        concept=fact.id,
+                    )
+                )
+                continue
             if source_path not in cache:
                 cache[source_path] = (
                     source_path.read_text(encoding="utf-8", errors="replace") if source_path.is_file() else None
@@ -435,9 +450,11 @@ def check_uncited_sources(register: Register) -> list[Finding]:
     findings: list[Finding] = []
     facts_root = register.facts_root()
     cited = {
-        (facts_root / provenance.file).resolve()
+        path
         for fact in register.facts.values()
         for provenance in fact.provenance
+        for path in [dsl.resolve_provenance_file(register.root, facts_root, provenance.file)[0]]
+        if path is not None
     }
     for path in iter_source_files(register):
         if path.resolve() not in cited:

@@ -18,6 +18,14 @@ This tooling is built to be safe to run in CI on untrusted content:
 - **No code execution from content.** Model repositories are YAML + Markdown; they
   are parsed with `yaml.safe_load` and never evaluated. Generated outputs (XML, SVG,
   Markdown) are built from sanitized/escaped values.
+- **Reads stay inside the repository.** Provenance and evidence references resolve
+  against the repository root and are refused if they escape it (`PROV008`/`FACT008`),
+  so validation cannot be pointed at files outside the checkout — which would also
+  turn a pass/fail into a probe of the runner's filesystem. `factsRoot`/`sourcesDir`
+  are held to the same rule (`SCHEMA002`).
+- **Malformed content produces findings, not tracebacks.** Configuration and record
+  loading never raise on bad values: a gate that crashes reports nothing, which is
+  indistinguishable from a gate that found nothing.
 - **Deterministic outputs.** Same input, same bytes — which also means a tampered
   artifact is a visible diff, not a mystery.
 

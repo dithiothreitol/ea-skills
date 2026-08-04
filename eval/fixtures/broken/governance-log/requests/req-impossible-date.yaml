@@ -1,0 +1,10 @@
+# --- REQ009: shape-valid but impossible request date --------------------------------
+# February 30th passes the schema's pattern and no calendar. SLA and fulfilment timing
+# are computed from this field, so an unreadable date quietly removes the request from
+# the demand ledger's arithmetic and the ledger looks healthier than it is.
+id: req-impossible-date
+service: svc-dup
+requestedBy: someone@example.test
+requested: "2026-02-30"
+scope: [node-a]
+status: open

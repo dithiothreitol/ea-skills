@@ -52,6 +52,7 @@ EXPECTED_ERROR_CODES = [
     "FACT003",  # provenance source file missing
     "FACT004",  # quote absent from the source
     "FACT006",  # unknown entity reference
+    "FACT008",  # evidence file resolves outside the repository
     "ENT001",  # duplicate entity id
     "ENT002",  # alias collides with another entity's name
 ]

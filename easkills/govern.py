@@ -78,10 +78,10 @@ class Dispensation:
     def is_open(self, today: date) -> bool:
         if self.status == "closed":
             return False
-        try:
-            return datetime.strptime(self.expires, "%Y-%m-%d").date() >= today
-        except ValueError:
-            return False
+        expires = _parse_date(self.expires)
+        # An unreadable expiry never covers anything: a waiver must fail closed, and
+        # DISP008 reports the date itself.
+        return expires is not None and expires >= today
 
 
 @dataclass
@@ -128,16 +128,10 @@ class Request:
     source_path: Path | None = None
 
     def requested_date(self) -> date | None:
-        try:
-            return datetime.strptime(self.requested, "%Y-%m-%d").date()
-        except ValueError:
-            return None
+        return _parse_date(self.requested)
 
     def fulfilled_date(self) -> date | None:
-        try:
-            return datetime.strptime(self.fulfilled, "%Y-%m-%d").date()
-        except ValueError:
-            return None
+        return _parse_date(self.fulfilled)
 
 
 @dataclass
@@ -240,7 +234,7 @@ def _read_record_files(root: Path, directory: Path) -> list[dsl.Document]:
     documents: list[dsl.Document] = []
     if not base.is_dir():
         return documents
-    for path in sorted(p for p in base.rglob("*") if p.suffix in {".yaml", ".yml"}):
+    for path in sorted(p for p in base.rglob("*") if p.is_file() and p.suffix in {".yaml", ".yml"}):
         try:
             data = yaml.safe_load(path.read_text(encoding="utf-8"))
         except yaml.YAMLError as exc:
@@ -259,6 +253,29 @@ def _str_list(raw: Any) -> list[str]:
     if not isinstance(raw, list):
         return []
     return [str(x) for x in raw if isinstance(x, (str, int))]
+
+
+def _int_or_zero(raw: Any) -> int:
+    """Loading must never raise: the schema check is what reports a bad value.
+
+    ``slaDays: ten`` used to crash ``validate-gov`` here, before ``SVC001`` could
+    report it -- a traceback instead of a finding, which is the one thing a gate must
+    not do. Records are assembled best-effort, exactly as in dsl.py and facts.py.
+    """
+    if isinstance(raw, bool) or raw is None:
+        return 0
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _parse_date(value: str) -> date | None:
+    """Real calendar date or ``None`` -- the record schemas only check date *shape*."""
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
 
 
 def load(root: Path) -> Governance:
@@ -381,7 +398,7 @@ def load(root: Path) -> Governance:
                 description=str(data.get("description", "") or ""),
                 fulfilled_by=str(data.get("fulfilledBy", "") or ""),
                 owner=str(data.get("owner", "") or ""),
-                sla_days=int(data.get("slaDays", 0) or 0),
+                sla_days=_int_or_zero(data.get("slaDays")),
                 lifecycle=str(data.get("lifecycle", "") or ""),
                 self_service=bool(data.get("selfService", False)),
                 source_path=doc.path,
@@ -485,12 +502,28 @@ def _check_dispensations(governance: Governance, elements: set[str], today: date
     findings: list[Finding] = []
     for dispensation in sorted(governance.dispensations.values(), key=lambda d: d.id):
         rel_file = _rel(governance.root, dispensation.source_path)
-        try:
-            expires = datetime.strptime(dispensation.expires, "%Y-%m-%d").date()
-            granted = datetime.strptime(dispensation.granted, "%Y-%m-%d").date()
-        except ValueError:
-            continue  # schema already rejected the format
-        if expires < granted:
+        # The schema checks date *shape* only, so '2027-13-45' reaches here. Skipping the
+        # whole record on an unparseable date (as this used to) silenced the flagship
+        # rule: an expired-but-open waiver, a bogus element and an unknown standard all
+        # went unreported. Report the date, then keep checking what does not need it.
+        expires = _parse_date(dispensation.expires)
+        granted = _parse_date(dispensation.granted)
+        for field_name, raw, parsed in (
+            ("expires", dispensation.expires, expires),
+            ("granted", dispensation.granted, granted),
+        ):
+            if parsed is None:
+                findings.append(
+                    Finding(
+                        "DISP008",
+                        SEVERITY_ERROR,
+                        f"{field_name} {raw!r} is not a real calendar date -- an unreadable expiry "
+                        "cannot expire, which is how a waiver becomes permanent by accident",
+                        file=rel_file,
+                        concept=dispensation.id,
+                    )
+                )
+        if expires is not None and granted is not None and expires < granted:
             findings.append(
                 Finding(
                     "DISP007",
@@ -500,7 +533,7 @@ def _check_dispensations(governance: Governance, elements: set[str], today: date
                     concept=dispensation.id,
                 )
             )
-        if dispensation.status != "closed" and expires < today:
+        if expires is not None and dispensation.status != "closed" and expires < today:
             findings.append(
                 Finding(
                     "DISP003",
@@ -511,7 +544,11 @@ def _check_dispensations(governance: Governance, elements: set[str], today: date
                     concept=dispensation.id,
                 )
             )
-        elif dispensation.status != "closed" and expires <= today + timedelta(days=EXPIRY_WARNING_DAYS):
+        elif (
+            expires is not None
+            and dispensation.status != "closed"
+            and expires <= today + timedelta(days=EXPIRY_WARNING_DAYS)
+        ):
             findings.append(
                 Finding(
                     "DISP006",
@@ -672,6 +709,23 @@ def _check_requests(governance: Governance, elements: set[str], today: date) -> 
                 )
             )
         requested = request.requested_date()
+        # Same trap as DISP008: a shape-valid but impossible date would silently take the
+        # request out of the SLA calculation, so the demand ledger would look healthy.
+        for field_name, raw, parsed in (
+            ("requested", request.requested, requested),
+            ("fulfilled", request.fulfilled, request.fulfilled_date()),
+        ):
+            if raw and parsed is None:
+                findings.append(
+                    Finding(
+                        "REQ009",
+                        SEVERITY_ERROR,
+                        f"{field_name} {raw!r} is not a real calendar date -- SLA and fulfilment "
+                        "timing are computed from it",
+                        file=rel_file,
+                        concept=request.id,
+                    )
+                )
         if (
             request.status == "open"
             and service is not None

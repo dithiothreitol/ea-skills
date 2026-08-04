@@ -7,6 +7,31 @@ project's build phases (design log with per-decision rationale:
 
 ## [Unreleased]
 
+### Fixed — gate robustness (a code review of the deterministic core)
+
+Four defects found by reviewing `easkills/`, each reproduced before it was fixed and
+each now carrying a regression test. Two were **false negatives in the gates**, which is
+the most serious class of bug this repository can have.
+
+- `DISP008` (new): a dispensation whose `expires` matched the schema's date *pattern*
+  but no calendar (`2027-13-45`) took the whole record out of the semantic checks — the
+  expired-and-open error (`DISP003`), the unknown element (`DISP004`) and the unknown
+  standard (`DISP005`) all vanished and `validate-gov` reported **ok**. Unparseable
+  dates are now reported and the date-independent checks keep running.
+- `REQ009` (new): the same trap in the demand ledger — an impossible `requested` or
+  `fulfilled` date silently removed a request from the SLA arithmetic.
+- `PROV008` / `FACT008` (new): a provenance `file:` could resolve outside the
+  repository (`../../secret.txt`) and a quote "verified" there passed with zero
+  errors. That is unreviewable traceability, and in CI on untrusted content it made
+  pass/fail a probe of the runner's filesystem. Escaping references are refused.
+- `SCHEMA002` (new): a malformed `ea.config.yaml` value (`stalenessDays: soon`,
+  `slaDays: ten`) raised out of the check — a gate that crashes reports nothing at
+  all. Configuration and record loading are now non-raising; bad values are findings
+  with the documented default applied, and `factsRoot`/`sourcesDir` must stay inside
+  the repository. Also caught: `quoteMatchThreshold: 90` (a ratio written as a
+  percentage), which would have silently accepted fabricated quotes.
+- Loaders ignore directories named like YAML files instead of crashing on them.
+
 ### Fixed — documentation claims turned into checked claims
 
 - The oracle pins are now verified by **every** command that consumes oracle data

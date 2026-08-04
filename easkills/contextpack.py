@@ -44,7 +44,8 @@ def build(root: Path, scope: str, today: date | None = None) -> ContextPack:
     today = today or date.today()
     model, _documents, config = dsl.load(root, "approved")
     governance = govern.load(root)
-    threshold = int(config.get("stalenessDays", 365))
+    # Never crash on a bad config value; the model gate reports it (SCHEMA002).
+    threshold, _problem = dsl.config_number(config, "stalenessDays", 365, minimum=1)
 
     if scope not in model.elements:
         raise ContextError(f"'{scope}' is not an element in the approved model")

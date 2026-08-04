@@ -157,6 +157,50 @@ def load_config(root: Path) -> dict[str, Any]:
     return config
 
 
+def config_number(
+    config: dict[str, Any],
+    key: str,
+    default: int | float,
+    minimum: int | float | None = None,
+    maximum: int | float | None = None,
+) -> tuple[Any, str]:
+    """Coerce a configured number, never raising. Returns ``(value, problem)``.
+
+    ``ea.config.yaml`` is repository content, and two of its keys decide how strict
+    other rules are. A typo there must therefore produce a *finding* (SCHEMA002, with
+    the default applied) rather than a traceback that takes the whole gate down --
+    and a threshold outside its usable range must be caught, because
+    ``quoteMatchThreshold: 90`` would silently turn every verified quote into an error.
+    """
+    raw = config.get(key, default)
+    if isinstance(raw, bool):  # bool is an int subclass; a flag here is a mistake
+        return default, f"{key}: expected a number, got the boolean {raw!r}"
+    try:
+        value = type(default)(raw)
+    except (TypeError, ValueError):
+        return default, f"{key}: expected a number, got {raw!r}"
+    if minimum is not None and value < minimum:
+        return default, f"{key}: {value} is below the usable minimum {minimum}"
+    if maximum is not None and value > maximum:
+        return default, f"{key}: {value} is above the usable maximum {maximum}"
+    return value, ""
+
+
+def resolve_provenance_file(root: Path, facts_root: Path, reference: str) -> tuple[Path | None, str]:
+    """Resolve a provenance ``file:`` reference, refusing to leave the repository.
+
+    Returns ``(path, problem)``. Traceability must point at content a reviewer can
+    open in this repository: a reference that escapes it (``../../secrets.txt``) is
+    either a mistake or a way to have the validator confirm a quote against a file
+    nobody reviews -- which, in CI on untrusted content, also probes the runner's
+    filesystem. Reported as PROV008 / FACT008 instead of being read.
+    """
+    candidate = (facts_root / reference).resolve()
+    if not candidate.is_relative_to(root.resolve()):
+        return None, f"resolves outside the repository: {candidate}"
+    return candidate, ""
+
+
 def zone_dir(root: Path, zone: str) -> Path:
     return root / "model" / zone
 
@@ -185,7 +229,9 @@ def load_documents(root: Path, zone: str) -> list[Document]:
     documents: list[Document] = []
     if not directory.is_dir():
         return documents
-    paths = sorted(p for p in directory.rglob("*") if p.suffix in {".yaml", ".yml"})
+    # is_file() matters: a *directory* named like a YAML file would otherwise be opened
+    # and crash the loader instead of being ignored.
+    paths = sorted(p for p in directory.rglob("*") if p.is_file() and p.suffix in {".yaml", ".yml"})
     for path in paths:
         try:
             data = yaml.safe_load(path.read_text(encoding="utf-8"))
