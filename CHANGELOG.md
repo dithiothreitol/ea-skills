@@ -5,7 +5,35 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
-## [Unreleased]
+## [0.7.0] — 2026-08-04
+
+A review release: no new features, eleven fixed defects — three of them **false
+negatives in the gates**, the class of bug this repository treats as highest severity.
+Every finding was reproduced before it was fixed, and the reproduction is now the
+regression test. Rules: 91 → 97.
+
+### Upgrading — behaviour that legitimately changes
+
+Repositories that passed on 0.6.0 can fail on 0.7.0. In every case the new verdict is
+the correct one; here is what to expect and what to do:
+
+- **`promote` blocks a replacement that would delete referenced content.** The gate now
+  validates the post-move result, so promoting a file that omits a still-referenced
+  element fails with `REF001` instead of passing and breaking the approved zone. Fix:
+  carry the content forward in the staging file, or promote a narrower delta. If your
+  repository was promoted on 0.6.0, run `validate --root . --strict` once — a
+  previously-passed promotion may have left dangling references behind.
+- **`timeDisposition` now has a vocabulary** (`Invest`/`Migrate`/`Tolerate`/
+  `Eliminate`). A mistyped value is `SCHEMA001`. Fix the model — it was silently
+  missing from the portfolio summary before.
+- **Provenance may not point outside the repository** (`PROV008`/`FACT008`), and
+  `factsRoot`/`sourcesDir` must resolve inside it (`SCHEMA002`).
+- **Impossible-but-well-shaped dates are errors** (`DISP008`, `REQ009`), as is a
+  request fulfilled before it was requested (`REQ010`).
+- **Malformed `ea.config.yaml` values are reported** rather than silently used
+  (`SCHEMA002`), with the documented default applied.
+- `compile`/`render --zone staging` now mean the same overlay `validate` means, so they
+  succeed on a delta that references approved elements.
 
 ### Fixed — one vocabulary for the TIME portfolio (core review, part 3)
 
