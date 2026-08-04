@@ -42,6 +42,10 @@ COMPLIANCE_VERDICTS = [
     "non-conformant",
 ]
 
+# Gartner TIME quadrants, in reading order. The single vocabulary: the schema constrains
+# `properties.timeDisposition` to it, docgen groups by it, kpi counts it.
+TIME_DISPOSITIONS = ("Invest", "Migrate", "Tolerate", "Eliminate")
+
 SLUG_PATTERN = "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$"
 DATE_PATTERN = "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
 
@@ -104,6 +108,18 @@ def build_schema() -> dict[str, Any]:
         "rationale": {"type": "string", "minLength": 1},
         "properties": {
             "type": "object",
+            # The property map is deliberately open -- an organisation's own keys are its
+            # own business. But keys this tooling *interprets* carry a vocabulary, because
+            # a value it does not recognise is silently dropped from the report that reads
+            # it: 'timeDisposition: tolerate' used to validate clean, count as
+            # TIME-classified in the KPI, and vanish from the architecture description's
+            # quadrant line, taking the whole application with it.
+            "properties": {
+                "timeDisposition": {
+                    "enum": list(TIME_DISPOSITIONS),
+                    "description": "Gartner TIME portfolio quadrant; read by 'docs' and 'kpi'.",
+                }
+            },
             "additionalProperties": {"type": ["string", "number", "boolean", "null"]},
         },
     }

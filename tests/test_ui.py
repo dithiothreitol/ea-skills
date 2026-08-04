@@ -59,6 +59,30 @@ def test_symbols_fall_back_when_console_cannot_encode(monkeypatch):
     assert ui.sym("✓", "OK") == "OK"
 
 
+def test_no_artifact_generator_imports_the_terminal_styling():
+    """Committed artifacts must not be able to vary with the console.
+
+    `ui` styling depends on TTY detection and `sys.stdout.encoding` (symbols fall back
+    to ASCII). Any of that leaking into a *written file* would make the generated
+    schemas, SVGs, exchange file or architecture description environment-dependent --
+    and the CI freshness check would then pass or fail depending on the runner. Today
+    that separation holds by discipline; this test makes it structural.
+    """
+    import ast
+    from pathlib import Path
+
+    package = Path(__file__).resolve().parents[1] / "easkills"
+    for module in ("docgen", "render", "aoef", "contextpack", "genschema"):
+        source = (package / f"{module}.py").read_text(encoding="utf-8")
+        imported: set[str] = set()
+        for node in ast.walk(ast.parse(source)):
+            if isinstance(node, ast.ImportFrom):
+                imported.update(alias.name for alias in node.names)
+            elif isinstance(node, ast.Import):
+                imported.update(alias.name.split(".")[-1] for alias in node.names)
+        assert "ui" not in imported, f"{module}.py writes artifacts and must not import ui"
+
+
 def test_styled_report_keeps_exit_codes(forced, example_root, broken_root, capsys):
     assert cli.main(["validate", "--root", str(example_root)]) == 0
     out = capsys.readouterr().out

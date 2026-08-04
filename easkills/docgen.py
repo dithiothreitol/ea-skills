@@ -14,9 +14,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import dsl, render
+from . import dsl, genschema, render
 
-TIME_ORDER = ("Invest", "Migrate", "Tolerate", "Eliminate")
+# One vocabulary, defined with the schema that enforces it (genschema.TIME_DISPOSITIONS).
+TIME_ORDER = genschema.TIME_DISPOSITIONS
 
 
 @dataclass
@@ -171,11 +172,24 @@ def build_markdown(model: dsl.Model) -> str:
         quadrants: dict[str, list[str]] = {}
         for app in applications:
             quadrants.setdefault(app.properties.get("timeDisposition", "Unclassified"), []).append(app.name)
+        # Print recognised quadrants in reading order, then anything left over. The
+        # leftover bucket matters: iterating a fixed vocabulary silently dropped
+        # applications whose disposition was mistyped, and a portfolio summary that
+        # quietly omits systems is worse than one that admits it cannot classify them.
+        unrecognised = sorted(set(quadrants) - {*TIME_ORDER, "Unclassified"})
         out.append("**TIME quadrants:** " + " · ".join(
             f"{quadrant}: {', '.join(sorted(quadrants[quadrant]))}"
-            for quadrant in (*TIME_ORDER, "Unclassified")
+            for quadrant in (*TIME_ORDER, "Unclassified", *unrecognised)
             if quadrant in quadrants
         ))
+        if unrecognised:
+            out.append("")
+            out.append(
+                "> Not a TIME quadrant: "
+                + ", ".join(f"`{value}`" for value in unrecognised)
+                + f". Expected one of {', '.join(TIME_ORDER)} -- fix the model, "
+                "these applications are not portfolio-classified."
+            )
 
     # ------------------------------------------------------------------ capability
     out += ["", "## 5. Capability support", ""]

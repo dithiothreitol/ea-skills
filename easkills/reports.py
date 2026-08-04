@@ -14,7 +14,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from . import dsl, facts as facts_mod, govern, ui
+from . import dsl, facts as facts_mod, genschema, govern, ui
 from .validate import _normalize
 
 # ------------------------------------------------------------------------- staleness
@@ -117,7 +117,11 @@ def kpi(root: Path, today: date | None = None) -> dict[str, Any]:
     owned = sum(1 for e in model.elements.values() if e.owner)
 
     applications = [e for e in model.elements.values() if e.type == "ApplicationComponent"]
-    with_time = sum(1 for a in applications if a.properties.get("timeDisposition"))
+    # Only a *recognised* disposition counts as classified: a mistyped one is not
+    # portfolio management, and counting it made the KPI disagree with the AD.
+    with_time = sum(
+        1 for a in applications if a.properties.get("timeDisposition") in genschema.TIME_DISPOSITIONS
+    )
     capabilities = [e for e in model.elements.values() if e.type == "Capability"]
     realized = {
         r.target

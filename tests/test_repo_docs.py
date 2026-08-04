@@ -156,6 +156,46 @@ def test_paths_named_in_the_security_policy_exist(repo_root, relative):
         assert list(repo_root.glob(pattern)), f"{relative} names `{pattern}`, which matches nothing"
 
 
+def test_every_literal_the_checks_compare_against_is_in_its_vocabulary():
+    """A rule comparing against a value no schema allows is dead code, silently.
+
+    `assessment.verdict == "non-conformant"` only fires if that exact string is in the
+    compliance verdict enum; rename the enum value and COMP003 stops existing without a
+    single test failing. Same for lifecycle/status literals and the ArchiMate type names
+    the reports filter on -- a typo there just yields an empty report.
+    """
+    from easkills import genschema, oracle
+
+    enum_of = {
+        name: getattr(genschema, f"build_{name}_schema")()["properties"]
+        for name in ("standard", "decision", "dispensation", "compliance", "service", "request")
+    }
+
+    def values(record: str, field: str) -> set[str]:
+        return set(enum_of[record][field]["enum"])
+
+    assert {"deprecated", "retired", "active"} <= values("standard", "lifecycle")
+    assert "superseded" in values("decision", "status")
+    assert "closed" in values("dispensation", "status")
+    assert "non-conformant" in values("compliance", "verdict")
+    assert {"active", "retired"} <= values("service", "lifecycle")
+    assert {"open", "fulfilled", "declined"} <= values("request", "status")
+
+    # Reports filter the model by these exact ArchiMate names.
+    assert {"ApplicationComponent", "Capability"} <= set(oracle.element_types())
+    assert "Realization" in oracle.relationship_types()
+
+    # The TIME vocabulary is shared by the schema, docgen and the KPI.
+    from easkills import docgen
+
+    assert tuple(docgen.TIME_ORDER) == tuple(genschema.TIME_DISPOSITIONS)
+    model_schema = genschema.build_schema()
+    time_enum = model_schema["$defs"]["element"]["properties"]["properties"]["properties"][
+        "timeDisposition"
+    ]["enum"]
+    assert set(time_enum) == set(genschema.TIME_DISPOSITIONS)
+
+
 def test_change_request_form_ships_where_its_fields_exist(repo_root):
     """The Phase-H form belongs to architecture repositories, so it ships in template/.
 

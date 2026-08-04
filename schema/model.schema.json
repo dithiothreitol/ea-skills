@@ -126,6 +126,17 @@
         },
         "properties": {
           "type": "object",
+          "properties": {
+            "timeDisposition": {
+              "enum": [
+                "Invest",
+                "Migrate",
+                "Tolerate",
+                "Eliminate"
+              ],
+              "description": "Gartner TIME portfolio quadrant; read by 'docs' and 'kpi'."
+            }
+          },
           "additionalProperties": {
             "type": [
               "string",
@@ -263,6 +274,17 @@
         },
         "properties": {
           "type": "object",
+          "properties": {
+            "timeDisposition": {
+              "enum": [
+                "Invest",
+                "Migrate",
+                "Tolerate",
+                "Eliminate"
+              ],
+              "description": "Gartner TIME portfolio quadrant; read by 'docs' and 'kpi'."
+            }
+          },
           "additionalProperties": {
             "type": [
               "string",

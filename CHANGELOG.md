@@ -7,6 +7,24 @@ project's build phases (design log with per-decision rationale:
 
 ## [Unreleased]
 
+### Fixed — one vocabulary for the TIME portfolio (core review, part 3)
+
+- `timeDisposition: tolerate` (a lowercase typo) validated clean, counted as **100%
+  TIME-classified** in `kpi`, and **disappeared from the architecture description's
+  quadrant line — taking the whole application with it**, because the line iterated a
+  fixed vocabulary and dropped anything else. The vocabulary now lives once
+  (`genschema.TIME_DISPOSITIONS`): the model schema constrains the key (so the gate
+  reports `SCHEMA001`), `kpi` counts only recognised values, and `docs` names
+  unrecognised ones instead of hiding them. The rest of the property map stays free-form
+  — only keys this tooling *interprets* carry a vocabulary.
+- Two new structural tests: every literal the governance checks compare against must
+  exist in its schema enum (a renamed enum value would otherwise delete a rule
+  silently), and no artifact-generating module may import the terminal-styling module
+  (so committed output cannot vary with the console).
+- Reviewed clean: `render.py` (no model data reaches an SVG attribute; output stable to
+  one decimal), `ui.py`, `genschema.py` (`additionalProperties: false` everywhere the
+  "unknown key" claim in RULES.md depends on it).
+
 ### Fixed — the write path, the zones, and the reports (core review, part 2)
 
 The most serious defect in the repository so far, plus five more. Every one reproduced

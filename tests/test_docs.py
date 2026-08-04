@@ -1,16 +1,49 @@
 """Rendering and the architecture description must be deterministic, self-contained
 and faithful to the model -- and the committed example outputs must stay fresh."""
 
+import shutil
+from datetime import date
 from pathlib import Path
 
 from lxml import etree
 
-from easkills import cli, docgen, dsl, render
+from easkills import cli, docgen, dsl, render, reports, validate
 
 
 def _model(example_root):
     model, _docs, _config = dsl.load(example_root, "approved")
     return model
+
+
+def test_a_mistyped_time_disposition_is_caught_and_never_silently_dropped(tmp_path, example_root):
+    """One vocabulary, enforced at the gate and honest in both reports.
+
+    `timeDisposition: tolerate` used to validate clean, count as 100% TIME-classified in
+    the KPI, and disappear from the architecture description's quadrant line -- taking
+    the whole application with it, because the line iterated a fixed vocabulary.
+    """
+    repo = tmp_path / "repo"
+    shutil.copytree(example_root, repo)
+    application = repo / "model" / "approved" / "application.yaml"
+    application.write_text(
+        application.read_text(encoding="utf-8").replace(
+            "timeDisposition: Tolerate", "timeDisposition: tolerate"
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+    today = date(2026, 7, 30)
+
+    # 1. the gate rejects the value
+    assert "SCHEMA001" in {f.code for f in validate.validate(repo, today=today).errors}
+    # 2. the KPI does not count it as classified
+    assert reports.kpi(repo, today=today)["portfolio"]["timeClassifiedShare"] < 1.0
+    # 3. and if the document is generated anyway, the application is still named
+    docgen.generate(repo)
+    text = (repo / "docs" / "architecture-description.md").read_text(encoding="utf-8")
+    quadrants = next(line for line in text.splitlines() if line.startswith("**TIME quadrants:**"))
+    assert "ERP Core" in quadrants
+    assert "Not a TIME quadrant" in text
 
 
 # ------------------------------------------------------------------------- rendering
