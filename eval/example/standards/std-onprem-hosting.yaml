@@ -8,3 +8,7 @@ description: >
   Systems still on-premise need a time-bounded dispensation, not silence.
 owner: infrastructure@aurorafoods.example
 lastReviewed: 2026-06-30
+detect:
+  - manifest: package.json
+    dependency: "@aurorafoods/dc-agent"
+    note: The on-premise data-centre agent library; its presence means the workload is not in managed cloud.

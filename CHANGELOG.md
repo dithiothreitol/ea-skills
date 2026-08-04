@@ -5,6 +5,39 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
+## [Unreleased]
+
+### Added — `ea-check`: compliance lint inside consuming repositories (AD-09 decision taken)
+
+The deferred integration decision, resolved the narrow way the blueprint proposed —
+and the narrowness is the design.
+
+- `python -m easkills check --root <ea-repo> --repo . --scope <element-id>` runs in a
+  *product* repository's CI: it reads `package.json`, `pom.xml` and `requirements.txt`
+  and holds the declared dependencies against the standards its EA element claims.
+  Retired without a waiver is an error; deprecated warns; a covering dispensation is
+  reported **with its expiry**, because that date is a deadline.
+- **The consuming repository maintains nothing.** No integration manifest, no mapping
+  file: `--scope` is the entire convention, so adoption costs one CI line. Detection is
+  declared by each SIB entry (`detect:` naming a dependency per manifest kind), never
+  inferred — a standard with no rules is simply not checkable in code and says so.
+- Matching is by dependency name; the observed version is reported, never interpreted.
+  Range logic would need a semver dependency and would answer questions it cannot
+  settle.
+- Drift is reported in both directions: a governed dependency the model does not record
+  (`CHK006`, intake material) and a claimed standard nothing in the repository evidences
+  (`CHK005`).
+- 8 rules (`CHK000–CHK007`), a new skill (`ea-check`, 21 total), two consumer fixtures,
+  and a CI gate: the clean one must pass under `--strict`, the negative one must fail.
+- Also added: a scheduled workflow that opens the monthly comparison-table re-check as
+  an issue. The check itself cannot be automated — the reminder can, and an obligation
+  nobody is reminded of is the failure mode this project criticises elsewhere.
+
+Still deferred, deliberately: the network facade (MCP/HTTP) over the read-only
+commands. `ea-check` needs no service to run, and the demand ledger is the instrument
+that should decide whether a facade is wanted — repeated requests are evidence,
+speculation is not.
+
 ## [0.7.0] — 2026-08-04
 
 A review release: no new features, eleven fixed defects — three of them **false

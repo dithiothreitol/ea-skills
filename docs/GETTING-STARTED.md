@@ -196,13 +196,17 @@ python -m easkills delta --root .        # what the facts know that the model do
 python -m easkills context --root . --scope <element-id>   # pack for a dev team/agent
 ```
 
+Product repositories can gate on this too: `python -m easkills check --root <this repo>
+--repo . --scope <element-id>` fails a team's CI when a dependency implements a retired
+standard with no dispensation (`ea-check`).
+
 New information arrives → back to step 1, scoped to what changed (`ea-delta-ingest`);
 someone asks EA for something → record it in `governance-log/requests/`
 (`ea-service`) and let demand steer the maintenance queue.
 
 ## Working with the agent skills
 
-Everything above is what the 20 [agent skills](../skills/) instruct an agent to do —
+Everything above is what the 21 [agent skills](../skills/) instruct an agent to do —
 with the judgement calls (what is a capability, which concern a view frames, when to
 decline a request) spelled out per skill. Point your agent at this repository, start
 with `ea-run` (it checks repo state and routes), and keep one rule in view: **the

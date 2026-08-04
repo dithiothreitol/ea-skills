@@ -1,0 +1,48 @@
+# The README's capability comparison carries a standing obligation: re-check it monthly
+# and correct any claim that stopped being true. No test can check a competitor's
+# changelog -- but the *reminder* is automatable, and an obligation nobody is reminded of
+# is the exact failure mode this project criticises in other tools.
+name: Comparison re-check
+
+on:
+  schedule:
+    - cron: "0 9 1 * *" # 09:00 UTC on the first of every month
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  open-reminder:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Open the monthly re-check issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "Comparison table re-check — $(date -u +'%Y-%m')" \
+            --label "documentation" \
+            --body "$(cat <<'BODY'
+          The **How it compares** table in [README.md](../blob/main/README.md#how-it-compares)
+          states claims about five neighbouring projects, dated against the 2026-07-29
+          competitive survey behind `docs/BLUEPRINT.md`. Neighbours move fast; a stale
+          comparison is the kind of unbacked claim this repository refuses elsewhere.
+
+          Check each project's changelog/releases since the last re-check and correct any
+          row that stopped being true. Then update the date line under the table.
+
+          - [ ] mcp-archimate
+          - [ ] 7bots / archimate-deep-agent
+          - [ ] Transitrix
+          - [ ] ArcKit
+          - [ ] Ardoq
+          - [ ] ea-skills column still accurate (rules, skills, capabilities)
+          - [ ] date line under the table updated
+
+          Nothing to change is a valid outcome — say so and close: the point is that the
+          check happened, not that the table moved.
+          BODY
+          )"

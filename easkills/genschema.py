@@ -46,6 +46,9 @@ COMPLIANCE_VERDICTS = [
 # `properties.timeDisposition` to it, docgen groups by it, kpi counts it.
 TIME_DISPOSITIONS = ("Invest", "Migrate", "Tolerate", "Eliminate")
 
+# Dependency manifests `ea-check` reads in a consuming repository (AD-09).
+MANIFEST_KINDS = ("package.json", "pom.xml", "requirements.txt")
+
 SLUG_PATTERN = "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$"
 DATE_PATTERN = "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
 
@@ -413,6 +416,27 @@ def build_standard_schema() -> dict[str, Any]:
                 "description": "The standard that replaces this one (expected once deprecated/retired).",
             },
             "lastReviewed": {"type": "string", "pattern": DATE_PATTERN},
+            "detect": {
+                "type": "array",
+                "description": (
+                    "How a consuming repository evidences this standard, for 'ea-check'. "
+                    "Matching is by dependency name; versions are reported, never interpreted."
+                ),
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["manifest", "dependency"],
+                    "properties": {
+                        "manifest": {"enum": list(MANIFEST_KINDS)},
+                        "dependency": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "Package name; 'groupId:artifactId' for pom.xml.",
+                        },
+                        "note": {"type": "string"},
+                    },
+                },
+            },
         },
     }
 

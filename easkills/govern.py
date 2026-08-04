@@ -45,6 +45,10 @@ class Standard:
     description: str = ""
     owner: str = ""
     successor: str = ""
+    # How a consuming repository evidences this standard (AD-09, `ea-check`): declared
+    # by the standard itself, never inferred -- a SIB entry with no rules is simply not
+    # checkable in code and stays silent about it.
+    detect: list[dict[str, str]] = field(default_factory=list)
     source_path: Path | None = None
 
 
@@ -270,6 +274,17 @@ def _int_or_zero(raw: Any) -> int:
         return 0
 
 
+def _detect_rules(raw: Any) -> list[dict[str, str]]:
+    """``detect:`` entries, best-effort; the schema is what reports a malformed one."""
+    if not isinstance(raw, list):
+        return []
+    rules: list[dict[str, str]] = []
+    for item in raw:
+        if isinstance(item, dict):
+            rules.append({str(k): str(v) for k, v in item.items()})
+    return rules
+
+
 def _parse_date(value: str) -> date | None:
     """Real calendar date or ``None`` -- the record schemas only check date *shape*."""
     try:
@@ -305,6 +320,7 @@ def load(root: Path) -> Governance:
                 description=str(data.get("description", "") or ""),
                 owner=str(data.get("owner", "") or ""),
                 successor=str(data.get("successor", "") or ""),
+                detect=_detect_rules(data.get("detect")),
                 source_path=doc.path,
             ),
             doc.path,

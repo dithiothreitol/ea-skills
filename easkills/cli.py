@@ -14,6 +14,7 @@ from pathlib import Path
 
 from . import (
     aoef,
+    check as check_mod,
     contextpack,
     docgen,
     facts as facts_mod,
@@ -160,6 +161,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_context.add_argument("--scope", required=True, help="element id to scope the pack to")
     p_context.add_argument("--out", type=Path, help="write to a file instead of stdout")
     p_context.add_argument("--as-of", dest="as_of", help="evaluate freshness against this date (YYYY-MM-DD)")
+
+    p_check = sub.add_parser(
+        "check", help="lint a consuming repository against the standards its EA element claims (AD-09)"
+    )
+    p_check.add_argument("--root", type=Path, default=Path.cwd(), help="EA repository root (default: cwd)")
+    p_check.add_argument(
+        "--repo", type=Path, default=Path.cwd(), help="repository to check (default: cwd)"
+    )
+    p_check.add_argument("--scope", required=True, help="element id this repository implements")
+    p_check.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+    p_check.add_argument("--strict", action="store_true", help="treat warnings as failures too")
+    p_check.add_argument("--as-of", dest="as_of", help="evaluate dispensation expiry against this date")
 
     p_score = sub.add_parser("score", help="score a candidate repository against a golden one (P/R/F1)")
     p_score.add_argument("--root", type=Path, default=Path.cwd(), help="candidate repository root (default: cwd)")
@@ -353,6 +366,20 @@ def cmd_context(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_check(args: argparse.Namespace) -> int:
+    report = check_mod.check(
+        args.root.resolve(), args.repo.resolve(), scope=args.scope, today=_parse_as_of(args.as_of)
+    )
+    print(report.render())
+    if args.json_out:
+        args.json_out.parent.mkdir(parents=True, exist_ok=True)
+        args.json_out.write_text(json.dumps(report.as_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"\nJSON report written to {args.json_out}")
+    if not report.ok:
+        return 1
+    return 1 if args.strict and report.warnings else 0
+
+
 def cmd_score(args: argparse.Namespace) -> int:
     report = score_mod.score(args.root.resolve(), args.gold.resolve())
     print(report.render())
@@ -468,6 +495,7 @@ HANDLERS = {
     "conformance": cmd_conformance,
     "delta": cmd_delta,
     "context": cmd_context,
+    "check": cmd_check,
     "score": cmd_score,
     "validate-facts": cmd_validate_facts,
     "chunk": cmd_chunk,

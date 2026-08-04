@@ -4,3 +4,7 @@ name: Old Standard
 type: organisation
 lifecycle: deprecated
 successor: no-such-standard
+# --- CHK003: a deprecated standard that a consuming repository still implements ----
+detect:
+  - manifest: package.json
+    dependency: express

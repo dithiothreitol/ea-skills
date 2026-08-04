@@ -8,3 +8,12 @@ description: >
   reconciled with the infrastructure team 2026-06-30.
 owner: infrastructure@aurorafoods.example
 lastReviewed: 2026-06-30
+# How a consuming repository evidences this standard (ea-check, AD-09). Declared here,
+# never inferred: matching is by dependency name, and the version is reported, not judged.
+detect:
+  - manifest: package.json
+    dependency: pg
+  - manifest: requirements.txt
+    dependency: psycopg2-binary
+  - manifest: pom.xml
+    dependency: org.postgresql:postgresql

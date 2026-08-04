@@ -90,6 +90,17 @@ jobs:
           python -m easkills score --root eval/golden/clinic --gold eval/golden/clinic --min-f1 100
           python -m easkills score --root eval/example --gold eval/example --min-f1 100
 
+      # ea-check runs in a *consuming* repository (AD-09): the clean fixture must pass
+      # under --strict, and the negative one must fail -- otherwise the compliance lint
+      # is decoration in someone else's CI.
+      - name: Consuming-repository check
+        run: |
+          python -m easkills check --root eval/example --repo eval/fixtures/consumer-clean --scope app-order-portal --as-of 2026-07-30 --strict
+          if python -m easkills check --root eval/example --repo eval/fixtures/consumer --scope app-order-portal --as-of 2026-07-30; then
+            echo "::error::the negative consumer fixture passed -- ea-check is not catching violations"
+            exit 1
+          fi
+
       # The negative fixture must keep failing. A green run here would mean the
       # validator has stopped catching things.
       - name: Negative fixture must fail

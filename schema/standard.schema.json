@@ -58,6 +58,35 @@
     "lastReviewed": {
       "type": "string",
       "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "detect": {
+      "type": "array",
+      "description": "How a consuming repository evidences this standard, for 'ea-check'. Matching is by dependency name; versions are reported, never interpreted.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "manifest",
+          "dependency"
+        ],
+        "properties": {
+          "manifest": {
+            "enum": [
+              "package.json",
+              "pom.xml",
+              "requirements.txt"
+            ]
+          },
+          "dependency": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Package name; 'groupId:artifactId' for pom.xml."
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
     }
   }
 }

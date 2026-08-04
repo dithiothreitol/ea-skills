@@ -26,11 +26,13 @@ parser; `python -m easkills <command> --help` is the same information, per comma
 |---|---|---|
 | `--root <path>` | Repository root (default: cwd) | all except `gen-schema`, `pin-oracle`, `oracle-info` |
 | `--zone approved\|staging` | Which zone to read; governance metadata is mandatory in `approved` | `validate`, `compile`, `render` |
-| `--strict` | Warnings fail too (on `conformance`: any failed clause fails) | `validate`, `validate-facts`, `validate-gov`, `conformance` |
-| `--as-of YYYY-MM-DD` | Evaluate date-dependent checks against a fixed date, for reproducibility | `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `context` |
-| `--json <file>` | Write the machine-readable report alongside the rendered one. On `chunk` it takes **no argument** and prints JSON to stdout instead | `validate`, `validate-facts`, `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `delta`, `coverage`, `score`, `chunk` |
+| `--strict` | Warnings fail too (on `conformance`: any failed clause fails) | `validate`, `validate-facts`, `validate-gov`, `conformance`, `check` |
+| `--as-of YYYY-MM-DD` | Evaluate date-dependent checks against a fixed date, for reproducibility | `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `context`, `check` |
+| `--json <file>` | Write the machine-readable report alongside the rendered one. On `chunk` it takes **no argument** and prints JSON to stdout instead | `validate`, `validate-facts`, `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `delta`, `coverage`, `score`, `chunk`, `check` |
 | `--out <path>` | Output file (or directory, for `render`) instead of the default location | `compile`, `render`, `docs`, `context` |
 | `--skip-validation` | Build from a model with validation errors (not recommended) | `compile`, `docs` |
+| `--scope <element-id>` | The element the command is about | `context`, `check` |
+| `--repo <path>` | The *consuming* repository being checked (`--root` stays the EA repository) | `check` |
 
 ## Validation gates
 
@@ -49,10 +51,10 @@ Full catalogue with severities and rationale: [RULES.md](RULES.md).
 | `compile [--zone] [--out] [--skip-validation]` | DSL → ArchiMate Open Exchange XML (`build/model.xml`), XSD-validated offline, byte-stable. Refuses a model with errors. |
 | `promote [--file <staging-file>]... [--dry-run]` | **The only write path into `approved/`.** Validates the *post-move* result by approved-zone standards — a staging file replaces the approved file of the same name, so the gate sees exactly what the move produces; on a clean gate moves the files, naming any approved concepts the replacement removes. Partial promotion supported. The git commit is the approval record. |
 | `render [--zone] [--out]` | Views → deterministic SVG (`docs/views/`), no external toolchain. |
+| `docs [--out] [--skip-validation]` | Renders views and generates the architecture description (ISO 42010 Clause 6 shape, TIME portfolio, capability support, open assumptions) from `approved/` only. Deterministic; commit the output — CI checks freshness. |
 
 `--zone staging` means the same overlay everywhere (`validate`, `compile`, `render`): a
 delta is read against the approved model it proposes to change.
-| `docs [--out] [--skip-validation]` | Renders views and generates the architecture description (ISO 42010 Clause 6 shape, TIME portfolio, capability support, open assumptions) from `approved/` only. Deterministic; commit the output — CI checks freshness. |
 
 ## Intake
 
@@ -71,6 +73,12 @@ delta is read against the approved model it proposes to change.
 | `conformance [--strict] [--as-of] [--json]` | ISO/IEC/IEEE 42010:2022 Clause 6 checklist — `pass`/`fail` where checkable, explicit `gap` where not (never silent conformance). `--strict` exits 1 on any fail. |
 | `delta [--json]` | Continuous-ingestion input: entities with no model counterpart, facts no concept cites. Candidates, not defects. |
 | `context --scope <element-id> [--out] [--as-of]` | Agent context pack (AD-09): binding requirements via `appliesTo`, standards with waivers, applicable decisions, integration neighbours — approved-only, scope-filtered, opened by a mandatory freshness label. A Capability scope expands to its realizers. |
+
+## Consuming repositories
+
+| Command | Does |
+|---|---|
+| `check --scope <element-id> [--repo <path>] [--strict] [--as-of] [--json]` | Runs in a *product* repository's CI: reads its dependency manifests (`package.json`, `pom.xml`, `requirements.txt`) and reports them against the standards its EA element claims — retired without a waiver is an error, deprecated warns, a covering dispensation is reported with its expiry, and a governed dependency the model does not record comes back as drift. Detection is declared by each SIB entry (`detect:`), never inferred, and the consuming repository maintains no integration manifest: `--scope` is the whole convention. |
 
 ## Evaluation
 

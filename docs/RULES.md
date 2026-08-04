@@ -14,7 +14,9 @@ Three validators share this catalogue: `python -m easkills validate` covers the 
 zones (`ORACLE`/`SCHEMA`/`ID`/`REF`/`PROV`/`GOV`/`MOT`/`STD`/`ISO`/`REL`/`NAME`/`SMELL`),
 `python -m easkills validate-facts` covers the fact register (`FACT`/`ENT`/`SRC`), and
 `python -m easkills validate-gov` covers the standards base, governance log and the
-service layer (`SIB`/`DEC`/`DISP`/`COMP`/`SVC`/`REQ`).
+service layer (`SIB`/`DEC`/`DISP`/`COMP`/`SVC`/`REQ`). A fourth command, `python -m
+easkills check` (`CHK`), runs outside this repository entirely — in a consuming
+product repository — and is catalogued in its own section at the end.
 
 ## Layer 0 -- oracle integrity
 
@@ -257,6 +259,26 @@ service line).
 | `REQ008` | warning | Requests a retired offering. |
 | `REQ009` | error | `requested` or `fulfilled` passes the date pattern but is not a real calendar date. SLA and fulfilment timing are computed from these fields, so an unreadable date quietly removes the request from the ledger's arithmetic. |
 | `REQ010` | error | `fulfilled` is before `requested`. Both dates are real, so `REQ009` stays silent -- but the service line averages the interval between them, and a negative one reports EA as faster than it is. (The waiver-side counterpart is `DISP007`.) |
+
+## Consuming repositories -- `ea-check` (AD-09)
+
+`python -m easkills check` runs in a *product* repository, not in the EA repository:
+it reads dependency manifests and holds them against the standards the element that
+repository implements claims to follow. Detection is declared by each SIB entry
+(`detect:`), so the tooling never infers that a library "is" a standard, and matching
+is by dependency name -- the observed version is reported, never interpreted, because
+range logic would answer questions it cannot settle.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `CHK000` | error | A dependency manifest cannot be parsed. An unreadable manifest cannot be declared compliant, so the check refuses rather than skipping it. |
+| `CHK001` | error | `--scope` is not an element in the approved model. There is nothing to check against, and silence would read as compliance. |
+| `CHK002` | error | A declared dependency implements a **retired** standard and no open dispensation covers this element. Migrate, or file a time-bounded waiver in the EA repository. |
+| `CHK003` | warning | A declared dependency implements a **deprecated** standard -- plan the migration before it is retired. |
+| `CHK004` | info | A retired/deprecated implementation is covered by an open dispensation; reported with the waiver id and its expiry, after which it becomes `CHK002`. |
+| `CHK005` | warning | The model says this element follows a standard, but nothing in this repository evidences it -- the claim is unverified here. |
+| `CHK006` | info | A dependency implements a standard the model does not record for this element: drift the model should absorb (`ea-delta-ingest`), not a build failure. |
+| `CHK007` | warning | No dependency manifests found. The check ran and proved nothing -- said out loud, because an empty report otherwise reads as a clean bill of health. |
 
 ## Not yet implemented
 

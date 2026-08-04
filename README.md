@@ -10,7 +10,7 @@ and living governance out. All of it in git.
 [![CI](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Validation rules](https://img.shields.io/badge/validation%20rules-97-brightgreen.svg)](docs/RULES.md)
+[![Validation rules](https://img.shields.io/badge/validation%20rules-105-brightgreen.svg)](docs/RULES.md)
 [![ArchiMate 3.2](https://img.shields.io/badge/ArchiMate-3.2-orange.svg)](oracle/NOTICE.md)
 [![ISO/IEC/IEEE 42010](https://img.shields.io/badge/ISO%2FIEC%2FIEEE-42010%3A2022-lightgrey.svg)](docs/RULES.md)
 
@@ -124,7 +124,7 @@ flowchart LR
 ```
 
 Every arrow is a deterministic command with an exit-code contract, and every stage is
-driven by one of the **20 [agent skills](skills/)** — from `ea-intake` through
+driven by one of the **21 [agent skills](skills/)** — from `ea-intake` through
 `ea-approve` to `ea-board`. The orchestrator (`ea-run`) routes requests catalog-first
 and keeps the stage order honest.
 
@@ -136,6 +136,7 @@ and keeps the stage order honest.
 | Document | `ea-stakeholders`, `ea-views`, `ea-docs` | `docs`, `render`, ISO loop rules, freshness CI check |
 | Govern | `ea-standards-base`, `ea-dispensation`, `ea-adr`, `ea-compliance`, `ea-service` | `validate-gov` — expiry and SLA are enforced, not filed |
 | Maintain | `ea-health`, `ea-change-triage`, `ea-board`, `ea-context` | `kpi`, `debt`, `staleness`, `conformance`, `delta`, `context` |
+| Consume | `ea-check` | `check --scope` inside a product repo — standards lifecycle vs declared dependencies |
 | Evaluate | `ea-eval` | `score --min-f1` against the [golden set](eval/golden/) |
 
 ## Design principles
@@ -291,9 +292,10 @@ history and [BLUEPRINT §8a](docs/BLUEPRINT.md) for per-phase design decisions.
 | 5 | Evaluation: golden-set regression harness, capability comparison | **done** |
 | 6 | Service layer: offering catalog with SLAs, demand ledger, demand-weighted maintenance | **done** |
 
-Deliberately open (decisions, not backlog): `ea-check` — deterministic compliance
-linting inside consuming repositories — is deferred together with a network facade as
-the one integration-surface decision; ISO 42010 §6.9 correspondences remain an
+Deliberately open (decisions, not backlog): the **network facade** (MCP/HTTP) over the
+read-only commands stays deferred until the demand ledger shows someone asking for it —
+`ea-check` shipped without it, and needs no service to run; ISO 42010 §6.9
+correspondences remain an
 explicit gap; the [comparison table](#how-it-compares) above carries a monthly
 re-check obligation that nothing can automate; and the worked example carries
 *scheduled* failures (a dispensation expiring 2027-06-30, a staleness horizon in
@@ -307,7 +309,7 @@ easkills/        deterministic tooling (oracle, DSL, validators, compiler, rende
                  docgen, governance, reports, context packs, scorer, CLI)
 oracle/          vendored, hash-pinned rule data + NOTICE.md
 schema/          JSON Schemas -- all generated, never hand-edited
-skills/          the 20 agent skills (this is the product)
+skills/          the 21 agent skills (this is the product)
 template/        scaffold to copy for a new enterprise
 eval/example/    worked example, clean (doubles as the largest golden case)
 eval/golden/     golden-set cases for the regression harness
@@ -322,7 +324,7 @@ docs/            GETTING-STARTED, CLI reference, RULES catalogue, BLUEPRINT (des
 |---|---|
 | [Getting started](docs/GETTING-STARTED.md) | Tutorial: from a raw interview to a validated, documented architecture |
 | [CLI reference](docs/CLI.md) | Every command, flag and exit-code contract |
-| [Rule catalogue](docs/RULES.md) | All 97 validation rules with severities and rationale |
+| [Rule catalogue](docs/RULES.md) | All 105 validation rules with severities and rationale |
 | [Blueprint](docs/BLUEPRINT.md) | The research-verified design: decisions, evidence, per-phase log |
 | [Golden set](eval/golden/README.md) | How pipeline quality is measured |
 | [Contributing](CONTRIBUTING.md) | Dev setup, conventions, how to add a rule or a skill |
