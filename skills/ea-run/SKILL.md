@@ -20,8 +20,15 @@ python -m easkills delta --root .            # unmodelled entities / unused fact
 
 ## Routing table
 
+When a `services/` catalog exists, route **catalog-first**: an incoming ask that
+matches an offering becomes a recorded request (`ea-service`) and is fulfilled
+through that offering's path -- the ask defines the scope, and the scope caps the
+work (on-demand discipline: model the slice the request needs, nothing more).
+Everything else routes by situation:
+
 | Situation | Skill |
 |---|---|
+| Someone asks EA for something an offering covers | `ea-service` (record it, then fulfil via the offering) |
 | New raw documents; empty or stale fact register | `ea-intake` |
 | Facts exist, no capability map | `ea-capability-map` (the spine comes first) |
 | Facts + capability map; elements/relations to add | `ea-model` |

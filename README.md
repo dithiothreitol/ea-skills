@@ -16,14 +16,16 @@ weakest measured capability of language models on modelling tasks, and fabricate
 citations are a documented failure mode. Both are exactly the kind of thing a validator
 catches for free and a reviewer catches at 3pm on a Friday, if at all.
 
-**Status: all five planned phases complete.** The deterministic core (DSL,
-three-layer validator, Open Exchange compiler), intake (fact register, chunker,
-coverage), modelling (fact-referencing provenance, motivation layer, overlay staging,
-gated promotion), documentation (stakeholder/concern register, SVG rendering, ISO
-42010-shaped description), governance (standards base with lifecycle enforcement,
-dispensations that expire loudly, decision and compliance records, health reports,
-agent context packs) and the golden-set evaluation harness all work and are tested;
-nineteen skills drive them (see [Roadmap](#roadmap)).
+**Status: all planned phases complete, plus the service layer.** The deterministic
+core (DSL, three-layer validator, Open Exchange compiler), intake (fact register,
+chunker, coverage), modelling (fact-referencing provenance, motivation layer, overlay
+staging, gated promotion), documentation (stakeholder/concern register, SVG
+rendering, ISO 42010-shaped description), governance (standards base with lifecycle
+enforcement, dispensations that expire loudly, decision and compliance records,
+health reports, agent context packs), the golden-set evaluation harness and the
+Architecture-as-a-Service layer (offering catalog with SLAs, demand ledger,
+demand-weighted maintenance) all work and are tested; twenty skills drive them (see
+[Roadmap](#roadmap)).
 
 ## What exists today
 
@@ -174,6 +176,16 @@ Decisions are MADR-shaped with mandatory rationale (ISO 42010 §6.10); complianc
 verdicts use TOGAF's six levels, and a non-conformant verdict with no follow-up is
 flagged. The git commit of any record is its audit trail.
 
+**EA runs as a service, and demand steers maintenance (AD-10).** The catalog
+(`services/`) defines what EA provides -- every offering with a named owner, a
+fulfilment path and an SLA in days, schema-mandatory. The demand ledger
+(`governance-log/requests/`) records who asked for what: fulfilment must point at
+the deliverable, refusals need a written reason, and an open request past its SLA is
+flagged and lands in KPI as a breach. Demand then feeds back: the staleness review
+queue orders by how often consumers actually ask about an element, and
+never-requested content is named a de-scoping candidate -- architecture grows
+on demand, and rots only where nobody is looking anyway.
+
 **The model governs agents, not just people (AD-09).** `python -m easkills context
 --scope <system>` produces a scoped extract for coding agents in downstream repos:
 binding requirements via `appliesTo`, standards with lifecycle and waivers, applicable
@@ -226,6 +238,7 @@ implements TOGAF where it is genuinely strong: governance mechanics.
 | **3** | Stakeholder/concern register with the ISO 42010 loop enforced (`ISO001`-`006`), dependency-free byte-stable SVG rendering, generated architecture description with portfolio and capability outputs (`ea-stakeholders`, `ea-views`, `ea-docs`) | **done** |
 | **4** | Governance and maintenance: standards base with lifecycle enforcement (`STD*`/`SIB*`), dispensations with mandatory, loud expiry (`DISP*`), MADR decisions (`DEC*`), six-level compliance (`COMP*`), Phase H change triage, delta ingestion, EA-debt register, staleness + KPI reports, 42010 conformance checklist, `ea-context` agent packs (AD-09) | **done** |
 | **5** | Golden-set regression harness (`score` with P/R/F1 per category and a `--min-f1` gate, `eval/golden/`), `ea-eval` + `ea-run` skills, and the maintained capability comparison above | **done** |
+| **6** | Service layer (AD-10, Architecture-as-a-Service / on-demand): offering catalog with schema-mandatory owners and SLAs (`SVC*`), demand ledger with evidenced fulfilment and SLA hygiene (`REQ*`), demand-weighted staleness, service KPIs, `ea-service` skill, catalog-first routing | **done** |
 
 All planned phases are complete. Open items carried deliberately: `ea-check`
 (compliance linting inside consuming repositories) stays deferred per AD-09 pending
@@ -283,7 +296,7 @@ docs/            BLUEPRINT.md (design + research), RULES.md (rule catalogue)
 
 ```bash
 python -m venv .venv && .venv/Scripts/python -m pip install -r requirements.txt
-.venv/Scripts/python -m pytest tests -q          # 209 tests
+.venv/Scripts/python -m pytest tests -q          # 220 tests
 .venv/Scripts/python -m easkills oracle-info     # oracle version + pin status
 .venv/Scripts/python -m easkills gen-schema      # regenerate the DSL schema
 ```

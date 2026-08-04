@@ -25,7 +25,11 @@ Collect, in this order (the standing agenda):
 4. **Proposed decisions** -- ADRs with `status: proposed` awaiting acceptance.
 5. **Health movements** -- `kpi`/`debt`/`staleness` deltas since the last run:
    obsolescence exposure, unsupported capabilities, the review queue by owner.
-6. **Pending promotions** -- staged content whose review is stuck
+6. **Service performance** -- the `kpi` Service line: SLA breaches (`REQ006`) each
+   need a disposition (fulfil, decline, renegotiate the promise), offerings nobody
+   requests are candidates for retirement, and repeated informal asks are a missing
+   catalog entry.
+7. **Pending promotions** -- staged content whose review is stuck
    (`promote --dry-run` shows what is ready).
 
 For each item, prepare the *decision to be made*, not just the topic: "renew

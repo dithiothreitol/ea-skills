@@ -25,6 +25,8 @@ STANDARD_SCHEMA_PATH = SCHEMA_DIR / "standard.schema.json"
 DECISION_SCHEMA_PATH = SCHEMA_DIR / "decision.schema.json"
 DISPENSATION_SCHEMA_PATH = SCHEMA_DIR / "dispensation.schema.json"
 COMPLIANCE_SCHEMA_PATH = SCHEMA_DIR / "compliance.schema.json"
+SERVICE_SCHEMA_PATH = SCHEMA_DIR / "service.schema.json"
+REQUEST_SCHEMA_PATH = SCHEMA_DIR / "request.schema.json"
 
 STANDARD_TYPES = ["legal", "industry", "organisation"]
 STANDARD_LIFECYCLES = ["proposed", "trial", "active", "deprecated", "retired"]
@@ -506,6 +508,84 @@ def build_compliance_schema() -> dict[str, Any]:
     }
 
 
+def build_service_schema() -> dict[str, Any]:
+    """One architecture-service offering per file under services/ (AD-10).
+
+    The catalog is what turns EA from a gate into a provider: every offering has a
+    named owner, a fulfilment path, and an SLA in days -- a promise with a number,
+    so breaches are computable instead of felt.
+    """
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:ea-skills:schema:service",
+        "title": "EA Skills architecture-service offering",
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["id", "name", "description", "fulfilledBy", "owner", "slaDays", "lifecycle"],
+        "properties": {
+            "id": _slug_def(),
+            "name": {"type": "string", "minLength": 1, "maxLength": 120},
+            "description": {
+                "type": "string",
+                "minLength": 8,
+                "description": "What the consumer gets, phrased from the consumer's side.",
+            },
+            "fulfilledBy": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The skill and/or command that produces the deliverable, e.g. "
+                "'ea-context / python -m easkills context --scope <id>'.",
+            },
+            "owner": {"type": "string", "minLength": 1},
+            "slaDays": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 365,
+                "description": "Promised working window from request to fulfilment.",
+            },
+            "lifecycle": {"enum": ["proposed", "active", "retired"]},
+            "selfService": {
+                "type": "boolean",
+                "description": "True when the consumer can run the fulfilment themselves.",
+            },
+        },
+    }
+
+
+def build_request_schema() -> dict[str, Any]:
+    """One service request per file under governance-log/requests/ -- the demand
+    ledger. Architecture-as-a-Service is measured by consumption, and consumption
+    that is not recorded cannot be measured."""
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:ea-skills:schema:request",
+        "title": "EA Skills service request",
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["id", "service", "requestedBy", "requested", "status"],
+        "properties": {
+            "id": _slug_def(),
+            "service": {**_slug_def(), "description": "Offering id from services/."},
+            "requestedBy": {"type": "string", "minLength": 1},
+            "requested": {"type": "string", "pattern": DATE_PATTERN},
+            "scope": {
+                "type": "array",
+                "minItems": 1,
+                "items": _slug_def(),
+                "description": "Element ids the request is about; drives demand-weighted maintenance.",
+            },
+            "status": {"enum": ["open", "fulfilled", "declined"]},
+            "fulfilled": {"type": "string", "pattern": DATE_PATTERN},
+            "fulfilledBy": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Pointer to the deliverable: a path, record id or URL.",
+            },
+            "notes": {"type": "string"},
+        },
+    }
+
+
 def _write_json(target: Path, payload: dict[str, Any]) -> Path:
     target.parent.mkdir(parents=True, exist_ok=True)
     # newline="\n" so regenerating on Windows does not rewrite every line ending and
@@ -531,6 +611,8 @@ def write_all_schemas() -> list[Path]:
         _write_json(DECISION_SCHEMA_PATH, build_decision_schema()),
         _write_json(DISPENSATION_SCHEMA_PATH, build_dispensation_schema()),
         _write_json(COMPLIANCE_SCHEMA_PATH, build_compliance_schema()),
+        _write_json(SERVICE_SCHEMA_PATH, build_service_schema()),
+        _write_json(REQUEST_SCHEMA_PATH, build_request_schema()),
     ]
 
 
@@ -566,3 +648,11 @@ def load_dispensation_schema(path: Path | None = None) -> dict[str, Any]:
 
 def load_compliance_schema(path: Path | None = None) -> dict[str, Any]:
     return _load(path or COMPLIANCE_SCHEMA_PATH, build_compliance_schema)
+
+
+def load_service_schema(path: Path | None = None) -> dict[str, Any]:
+    return _load(path or SERVICE_SCHEMA_PATH, build_service_schema)
+
+
+def load_request_schema(path: Path | None = None) -> dict[str, Any]:
+    return _load(path or REQUEST_SCHEMA_PATH, build_request_schema)

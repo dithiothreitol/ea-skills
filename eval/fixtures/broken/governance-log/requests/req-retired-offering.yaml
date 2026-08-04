@@ -1,0 +1,6 @@
+# --- REQ008: requests a retired offering --------------------------------------------
+id: req-retired-offering
+service: svc-retired
+requestedBy: someone@example.test
+requested: 2026-07-28
+status: open

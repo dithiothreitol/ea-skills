@@ -1,0 +1,6 @@
+# --- REQ007: declined with no reason ------------------------------------------------
+id: req-silent-decline
+service: svc-dup
+requestedBy: someone@example.test
+requested: 2026-07-01
+status: declined

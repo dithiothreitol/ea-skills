@@ -30,6 +30,8 @@ python -m easkills context  --root . --scope <id>     # agent context pack (AD-0
 | `model/approved/` | Human-signed model. Ownership and review dates are mandatory. Everything downstream reads only from here. |
 | `landscape/` | Architecture landscape partitioned by scope: `strategic/`, `segments/`, `capabilities/`. Baseline, transition and target states are modelled as ArchiMate plateaus inside the model, not as copies of it. |
 | `standards/` | Standards information base. One file per standard, carrying its type (legal / industry / organisational) and lifecycle state (proposed, trial, active, deprecated, retired). |
+| `services/` | Architecture-service catalog (AD-10): one offering per file with owner, fulfilment path and SLA. |
+| `governance-log/requests/` | Demand ledger: who asked for which offering, with evidenced fulfilment. Demand feeds the staleness review queue. |
 | `requirements/` | Architecture requirements. |
 | `governance-log/decisions/` | Architecture decision records (MADR). |
 | `governance-log/compliance/` | Compliance assessments, recorded with TOGAF's six conformance levels rather than pass/fail. |

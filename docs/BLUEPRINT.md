@@ -63,6 +63,15 @@ The repository's second audience (after humans) is the coding / requirements-def
 
 Rationale: TOGAF dispensation-with-expiry mechanics map directly onto agent workflows (an agent that must violate a standard files a time-bounded waiver instead of drifting silently). Competitive note: for context *provisioning* alone, markdown-only governance (ArcKit) is sufficient — the model-backed moat exists only where something is deterministically *checked* (relationship matrix, standards lifecycle, provenance), i.e. the `ea-check` half. Sequencing guard: none of this may delay Phases 2–5 (§1: ship fast).
 
+**AD-10 — EA operates as a service with a catalog and a demand ledger (Architecture-as-a-Service / on-demand).**
+Added post-roadmap (2026-08). Two record types complete the operating model the rest of the repository implies:
+
+* **Catalog** (`services/`, one offering per file): what EA provides, phrased from the consumer's side, with a named owner, a fulfilment path (skill/command) and an **SLA in days** — a promise with a number, schema-mandatory. Lifecycle proposed→active→retired; `selfService` marks offerings consumers run themselves (an SLA that cannot be breached).
+* **Demand ledger** (`governance-log/requests/`): who asked for which offering, for which model elements (`scope`), with what outcome. Fulfilment must point at the deliverable (`REQ005`); refusal needs a reason (`REQ007`); an open request past its SLA warns (`REQ006` — warning not error: lateness does not make the *model* wrong, but breaches surface in KPI and on the board agenda).
+* **Demand feeds maintenance (the on-demand rule):** `staleness` carries per-element demand and the review queue orders by it; zero-demand + stale = de-scoping candidate. `kpi` gains the service line (offerings, open/fulfilled/declined, SLA breaches, average fulfilment) — the AaaS value evidence: consumption, not model size. Routing is catalog-first (`ea-run`), and a request's scope caps the work: unmodelled areas hit by a request go through intake *scoped to that request*, thin-slice, never big-up-front.
+
+Deliberately not included: a network facade (MCP/HTTP) over the read-only commands for true self-service — same adoption-decision class as `ea-check`, and they belong together as the one integration surface for consuming repositories.
+
 ## 4. Skill catalog
 
 ### Phase D — Define & Document (pipeline order)
@@ -230,6 +239,16 @@ Deviations from the catalog: `ea-debt`/`ea-staleness`/`ea-kpi` folded into one `
 * Skills: `ea-eval` (regression discipline: all cases, spread over cherry-picks, gold changes never land with skill changes) and `ea-run` (the orchestrator: state check first, routing table, from-scratch stage order). Skill catalog complete at 19. 201 tests.
 
 Open items carried deliberately beyond the roadmap: `ea-check` decision now due (AD-09 said "decide after Phase 5"); 42010 §6.9 correspondences; monthly competitive re-check of the README table; the worked example's scheduled failures (dispensation expiry 2027-06-30, staleness horizon mid-2027) are maintenance rehearsals, not defects.
+
+**Phase 6 — complete (2026-08-04).** The service layer (AD-10, Architecture-as-a-Service / on-demand):
+
+* Catalog + demand ledger as governance records (schemas generated like the rest): `services/*.yaml` (owner + `slaDays` + fulfilment schema-mandatory, lifecycle, `selfService`) and `governance-log/requests/*.yaml` (offering, requester, `scope` of model elements, status open/fulfilled/declined with evidenced fulfilment).
+* `validate-gov` gains 11 rule codes: `SVC000–002`, `REQ000–008`. Flagships: `REQ005` — a fulfilment without a deliverable pointer is a closed ticket, not a service; `REQ006` — an open request past its offering's SLA warns and lands in KPI as a breach (warning, not error — documented rationale in RULES.md).
+* Demand-weighted maintenance: `staleness` carries per-element demand (requests naming it in scope) and a `neverRequested` count; the review queue orders by demand. `kpi` gains the Service line: active offerings, request dispositions, SLA breaches, average fulfilment days.
+* Worked example: 3 offerings (context pack, compliance review, standard exception) + 2 fulfilled requests — one pointing at the existing compliance assessment as its deliverable, closing the loop request→offering→record. Negative fixture fires all 11 new codes. 220 tests.
+* Skills: new `ea-service` (catalog discipline: an offering is a promise with a number; request lifecycle; SLA hygiene without silent date edits); `ea-run` routes catalog-first with the scope-caps-the-work rule; `ea-board` gets the service-performance agenda item; `ea-health` reads demand in the review queue.
+
+Design calls: requests that are *fulfilled* are timeless (the example carries no open requests, so no CI time-bomb beyond the deliberate 2027 ones); the network facade for self-service stays deferred with `ea-check` per AD-10.
 
 ## 9. Key sources (load-bearing)
 

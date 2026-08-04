@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ea-skills:schema:request",
+  "title": "EA Skills service request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "service",
+    "requestedBy",
+    "requested",
+    "status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+      "maxLength": 80
+    },
+    "service": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+      "maxLength": 80,
+      "description": "Offering id from services/."
+    },
+    "requestedBy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requested": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "scope": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+        "maxLength": 80
+      },
+      "description": "Element ids the request is about; drives demand-weighted maintenance."
+    },
+    "status": {
+      "enum": [
+        "open",
+        "fulfilled",
+        "declined"
+      ]
+    },
+    "fulfilled": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "fulfilledBy": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Pointer to the deliverable: a path, record id or URL."
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}

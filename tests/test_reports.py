@@ -38,6 +38,44 @@ def test_kpi_metrics(example_root):
     assert data["documentation"]["unframedConcerns"] == []
 
 
+def test_kpi_demand_metrics(example_root):
+    """AaaS is measured by consumption: offerings, requests, SLA state, fulfilment."""
+    data = reports.kpi(example_root, today=TODAY)
+    service = data["service"]
+    assert service["offerings"] == 3
+    assert service["requests"] == 2
+    assert service["open"] == 0 and service["fulfilled"] == 2
+    assert service["slaBreaches"] == []
+    assert service["avgFulfilmentDays"] == 3.5
+
+
+def test_kpi_flags_sla_breach(tmp_path, example_root):
+    import shutil
+
+    repo = tmp_path / "repo"
+    shutil.copytree(example_root, repo)
+    (repo / "governance-log" / "requests" / "req-late.yaml").write_text(
+        "id: req-late\n"
+        "service: svc-context-pack\n"
+        "requestedBy: someone@aurorafoods.example\n"
+        "requested: 2026-07-01\n"
+        "status: open\n",
+        encoding="utf-8",
+    )
+    data = reports.kpi(repo, today=TODAY)
+    assert data["service"]["slaBreaches"] == ["req-late"]
+
+
+def test_staleness_carries_demand(example_root):
+    """Demand-weighted maintenance: requests' scopes count per element."""
+    data = reports.staleness(example_root, today=TODAY)
+    by_id = {r["id"]: r for r in data["rows"]}
+    assert by_id["app-erp-core"]["demand"] == 1
+    assert by_id["app-order-portal"]["demand"] == 1
+    assert by_id["app-wms"]["demand"] == 0
+    assert data["neverRequested"] == 14
+
+
 # ------------------------------------------------------------------------------ debt
 
 

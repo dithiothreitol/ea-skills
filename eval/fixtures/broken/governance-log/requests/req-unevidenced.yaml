@@ -1,0 +1,6 @@
+# --- REQ005: fulfilled with no date and no deliverable pointer ---------------------
+id: req-unevidenced
+service: svc-dup
+requestedBy: someone@example.test
+requested: 2026-07-01
+status: fulfilled

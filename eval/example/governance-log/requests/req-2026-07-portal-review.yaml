@@ -1,0 +1,11 @@
+# One service request per file: the demand ledger. Fulfilment points at the
+# deliverable, so consumption is auditable, not anecdotal.
+id: req-2026-07-portal-review
+service: svc-compliance-review
+requestedBy: ecommerce@aurorafoods.example
+requested: 2026-07-16
+scope: [app-order-portal]
+status: fulfilled
+fulfilled: 2026-07-22
+fulfilledBy: governance-log/compliance/comp-2026-07-order-portal.yaml
+notes: Requested ahead of the portal's hosting contract renewal.

@@ -29,7 +29,14 @@ def test_example_governance_is_clean(example_report):
 
 
 def test_example_governance_counts(example_report):
-    assert example_report.counts == {"standards": 3, "decisions": 1, "dispensations": 1, "assessments": 1}
+    assert example_report.counts == {
+        "standards": 3,
+        "decisions": 1,
+        "dispensations": 1,
+        "assessments": 1,
+        "services": 3,
+        "requests": 2,
+    }
 
 
 def test_open_dispensation_covers_the_pair(example_root):
@@ -63,6 +70,11 @@ EXPECTED_ERROR_CODES = [
     "DEC005",  # relatedElements unknown
     "COMP004",  # followUp references unknown records
     "COMP005",  # relatedElements unknown
+    "SVC001",  # offering violates the service schema (no owner/SLA)
+    "SVC002",  # duplicate service id
+    "REQ003",  # request references an unknown offering
+    "REQ004",  # request scope names an unknown element
+    "REQ005",  # fulfilled without date or deliverable pointer
 ]
 
 EXPECTED_WARNING_CODES = [
@@ -70,6 +82,9 @@ EXPECTED_WARNING_CODES = [
     "DISP006",  # expires within the review window
     "DEC004",  # superseded without supersededBy
     "COMP003",  # non-conformant without follow-up
+    "REQ006",  # open request past the offering's SLA
+    "REQ007",  # declined without a reason
+    "REQ008",  # requests a retired offering
 ]
 
 

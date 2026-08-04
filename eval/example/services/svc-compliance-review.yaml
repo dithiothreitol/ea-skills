@@ -1,0 +1,9 @@
+id: svc-compliance-review
+name: Solution compliance review
+description: >
+  Assessment of a project or system against the approved architecture, with TOGAF's
+  six-level verdict and a recorded follow-up path for anything non-conformant.
+fulfilledBy: ea-compliance / governance-log/compliance/ record
+owner: ea@aurorafoods.example
+slaDays: 10
+lifecycle: active

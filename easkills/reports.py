@@ -23,22 +23,36 @@ from .validate import _normalize
 def staleness(root: Path, today: date | None = None) -> dict[str, Any]:
     today = today or date.today()
     model, _documents, config = dsl.load(root, "approved")
+    governance = govern.load(root)
     threshold = int(config.get("stalenessDays", 365))
+
+    # Demand per element: how many service requests name it in scope. Demand-weighted
+    # maintenance is the AoD answer to rot -- review what people ask about first, and
+    # question whether never-requested content earns its upkeep.
+    demand: dict[str, int] = {}
+    for request in governance.requests.values():
+        for element_id in request.scope:
+            demand[element_id] = demand.get(element_id, 0) + 1
+
     rows: list[dict[str, Any]] = []
     for element in sorted(model.elements.values(), key=lambda e: e.id):
+        row: dict[str, Any] = {
+            "id": element.id,
+            "owner": element.owner,
+            "demand": demand.get(element.id, 0),
+        }
         if not element.last_reviewed:
-            rows.append({"id": element.id, "owner": element.owner, "reviewed": None, "age": None, "state": "unreviewed"})
+            rows.append({**row, "reviewed": None, "age": None, "state": "unreviewed"})
             continue
         try:
             reviewed = datetime.strptime(element.last_reviewed, "%Y-%m-%d").date()
         except ValueError:
-            rows.append({"id": element.id, "owner": element.owner, "reviewed": element.last_reviewed, "age": None, "state": "invalid-date"})
+            rows.append({**row, "reviewed": element.last_reviewed, "age": None, "state": "invalid-date"})
             continue
         age = (today - reviewed).days
         rows.append(
             {
-                "id": element.id,
-                "owner": element.owner,
+                **row,
                 "reviewed": element.last_reviewed,
                 "age": age,
                 "state": "stale" if age > threshold else "fresh",
@@ -52,6 +66,7 @@ def staleness(root: Path, today: date | None = None) -> dict[str, Any]:
         "fresh": states.count("fresh"),
         "stale": states.count("stale"),
         "unreviewed": states.count("unreviewed") + states.count("invalid-date"),
+        "neverRequested": sum(1 for r in rows if r["demand"] == 0),
         "rows": rows,
     }
 
@@ -64,16 +79,22 @@ def render_staleness(data: dict[str, Any]) -> str:
     )
     lines = [
         ui.bold(f"Staleness as of {data['asOf']} (threshold {data['thresholdDays']} days)"),
-        f"{data['elements']} elements: {fresh}, {stale}, {unreviewed}",
+        f"{data['elements']} elements: {fresh}, {stale}, {unreviewed}; "
+        + ui.dim(f"{data.get('neverRequested', 0)} never requested by any service consumer"),
         "",
     ]
     flagged = [r for r in data["rows"] if r["state"] != "fresh"]
-    for row in sorted(flagged, key=lambda r: (-(r["age"] or 10**6), r["id"])):
+    for row in sorted(flagged, key=lambda r: (-r.get("demand", 0), -(r["age"] or 10**6), r["id"])):
         age = f"{row['age']} days" if row["age"] is not None else "never reviewed"
         state_field = f"{row['state']:<11}"
         state = ui.red(state_field) if row["state"] == "stale" else ui.yellow(state_field)
         identifier = "{:<40}".format(row["id"])
-        lines.append(f"  {state} {ui.bold(identifier)} {age:<16} {ui.dim('owner: ' + (row['owner'] or '-'))}")
+        demand = row.get("demand", 0)
+        demand_note = ui.yellow(f"demand: {demand}") if demand else ui.dim("demand: 0")
+        lines.append(
+            f"  {state} {ui.bold(identifier)} {age:<16} {demand_note}  "
+            f"{ui.dim('owner: ' + (row['owner'] or '-'))}"
+        )
     if not flagged:
         lines.append(ui.green(f"  {ui.check()} Nothing stale."))
     return "\n".join(lines)
@@ -123,6 +144,21 @@ def kpi(root: Path, today: date | None = None) -> dict[str, Any]:
     def pct(part: int, whole: int) -> float:
         return round(part / whole, 4) if whole else 1.0
 
+    requests = list(governance.requests.values())
+    open_requests = [r for r in requests if r.status == "open"]
+    fulfilled = [r for r in requests if r.status == "fulfilled"]
+    sla_breaches = []
+    for request in open_requests:
+        service = governance.services.get(request.service)
+        requested = request.requested_date()
+        if service and service.sla_days > 0 and requested and (today - requested).days > service.sla_days:
+            sla_breaches.append(request.id)
+    fulfilment_days = [
+        (r.fulfilled_date() - r.requested_date()).days
+        for r in fulfilled
+        if r.fulfilled_date() and r.requested_date()
+    ]
+
     return {
         "asOf": today.isoformat(),
         "size": {
@@ -161,6 +197,17 @@ def kpi(root: Path, today: date | None = None) -> dict[str, Any]:
             "unheldConcerns": sorted(set(model.concerns) - held),
             "unframedConcerns": sorted(set(model.concerns) - framed),
         },
+        "service": {
+            "offerings": sum(1 for s in governance.services.values() if s.lifecycle == "active"),
+            "requests": len(requests),
+            "open": len(open_requests),
+            "fulfilled": len(fulfilled),
+            "declined": sum(1 for r in requests if r.status == "declined"),
+            "slaBreaches": sorted(sla_breaches),
+            "avgFulfilmentDays": round(sum(fulfilment_days) / len(fulfilment_days), 1)
+            if fulfilment_days
+            else None,
+        },
     }
 
 
@@ -169,6 +216,7 @@ def render_kpi(data: dict[str, Any]) -> str:
         data["size"], data["evidence"], data["governance"], data["portfolio"],
         data["capabilities"], data["quality"], data["documentation"],
     )
+    svc = data["service"]
 
     def share(value: float) -> str:
         return f"{value:.0%}"
@@ -197,6 +245,10 @@ def render_kpi(data: dict[str, Any]) -> str:
         f"{label('Documentation')} {doc['concerns']} concern(s); "
         f"unheld: {listed(doc['unheldConcerns'], ui.red)}; "
         f"unframed: {listed(doc['unframedConcerns'], ui.red)}",
+        f"{label('Service')} {svc['offerings']} active offering(s); {svc['requests']} request(s) "
+        f"({svc['open']} open, {svc['fulfilled']} fulfilled, {svc['declined']} declined); "
+        f"SLA breaches: {listed(svc['slaBreaches'], ui.red)}; "
+        f"avg fulfilment: {svc['avgFulfilmentDays'] if svc['avgFulfilmentDays'] is not None else '—'} day(s)",
     ]
     return "\n".join(lines)
 

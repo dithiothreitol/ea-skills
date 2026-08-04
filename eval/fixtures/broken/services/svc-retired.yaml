@@ -1,0 +1,8 @@
+# Referenced by req-retired-offering to trigger REQ008.
+id: svc-retired
+name: Retired Offering
+description: No longer provided; requests against it must be flagged.
+fulfilledBy: nothing anymore
+owner: someone@example.test
+slaDays: 5
+lifecycle: retired

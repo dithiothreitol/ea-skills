@@ -30,6 +30,8 @@ STANDARDS_DIR = Path("standards")
 DECISIONS_DIR = Path("governance-log") / "decisions"
 DISPENSATIONS_DIR = Path("governance-log") / "dispensations"
 COMPLIANCE_DIR = Path("governance-log") / "compliance"
+SERVICES_DIR = Path("services")
+REQUESTS_DIR = Path("governance-log") / "requests"
 
 EXPIRY_WARNING_DAYS = 30
 
@@ -96,12 +98,57 @@ class ComplianceAssessment:
 
 
 @dataclass
+class Service:
+    """An architecture-service offering (AD-10): a promise with an owner and an SLA."""
+
+    id: str
+    name: str = ""
+    description: str = ""
+    fulfilled_by: str = ""
+    owner: str = ""
+    sla_days: int = 0
+    lifecycle: str = ""
+    self_service: bool = False
+    source_path: Path | None = None
+
+
+@dataclass
+class Request:
+    """One entry in the demand ledger: who asked which offering for what."""
+
+    id: str
+    service: str = ""
+    requested_by: str = ""
+    requested: str = ""
+    scope: list[str] = field(default_factory=list)
+    status: str = "open"
+    fulfilled: str = ""
+    fulfilled_by: str = ""
+    notes: str = ""
+    source_path: Path | None = None
+
+    def requested_date(self) -> date | None:
+        try:
+            return datetime.strptime(self.requested, "%Y-%m-%d").date()
+        except ValueError:
+            return None
+
+    def fulfilled_date(self) -> date | None:
+        try:
+            return datetime.strptime(self.fulfilled, "%Y-%m-%d").date()
+        except ValueError:
+            return None
+
+
+@dataclass
 class Governance:
     root: Path
     standards: dict[str, Standard] = field(default_factory=dict)
     decisions: dict[str, Decision] = field(default_factory=dict)
     dispensations: dict[str, Dispensation] = field(default_factory=dict)
     assessments: dict[str, ComplianceAssessment] = field(default_factory=dict)
+    services: dict[str, Service] = field(default_factory=dict)
+    requests: dict[str, Request] = field(default_factory=dict)
     documents: list[tuple[str, dsl.Document]] = field(default_factory=list)  # (kind, doc)
     duplicates: list[tuple[str, str, Path]] = field(default_factory=list)  # (kind, id, second file)
 
@@ -164,7 +211,9 @@ class GovReport:
                 f"{self.counts.get('standards', 0)} standards, "
                 f"{self.counts.get('decisions', 0)} decisions, "
                 f"{self.counts.get('dispensations', 0)} dispensations, "
-                f"{self.counts.get('assessments', 0)} assessments"
+                f"{self.counts.get('assessments', 0)} assessments, "
+                f"{self.counts.get('services', 0)} services, "
+                f"{self.counts.get('requests', 0)} requests"
             ),
             "",
         ]
@@ -317,6 +366,53 @@ def load(root: Path) -> Governance:
             doc.path,
         )
 
+    for doc in _read_record_files(root, SERVICES_DIR):
+        governance.documents.append(("SVC", doc))
+        if doc.data is None or not doc.data.get("id"):
+            continue
+        data = doc.data
+        register(
+            "SVC",
+            governance.services,
+            str(data["id"]),
+            Service(
+                id=str(data["id"]),
+                name=str(data.get("name", "") or ""),
+                description=str(data.get("description", "") or ""),
+                fulfilled_by=str(data.get("fulfilledBy", "") or ""),
+                owner=str(data.get("owner", "") or ""),
+                sla_days=int(data.get("slaDays", 0) or 0),
+                lifecycle=str(data.get("lifecycle", "") or ""),
+                self_service=bool(data.get("selfService", False)),
+                source_path=doc.path,
+            ),
+            doc.path,
+        )
+
+    for doc in _read_record_files(root, REQUESTS_DIR):
+        governance.documents.append(("REQ", doc))
+        if doc.data is None or not doc.data.get("id"):
+            continue
+        data = doc.data
+        register(
+            "REQ",
+            governance.requests,
+            str(data["id"]),
+            Request(
+                id=str(data["id"]),
+                service=str(data.get("service", "") or ""),
+                requested_by=str(data.get("requestedBy", "") or ""),
+                requested=str(data.get("requested", "") or ""),
+                scope=_str_list(data.get("scope")),
+                status=str(data.get("status", "open") or "open"),
+                fulfilled=str(data.get("fulfilled", "") or ""),
+                fulfilled_by=str(data.get("fulfilledBy", "") or ""),
+                notes=str(data.get("notes", "") or ""),
+                source_path=doc.path,
+            ),
+            doc.path,
+        )
+
     return governance
 
 
@@ -327,6 +423,8 @@ _SCHEMAS = {
     "DEC": genschema.load_decision_schema,
     "DISP": genschema.load_dispensation_schema,
     "COMP": genschema.load_compliance_schema,
+    "SVC": genschema.load_service_schema,
+    "REQ": genschema.load_request_schema,
 }
 
 
@@ -526,6 +624,84 @@ def _check_assessments(governance: Governance, elements: set[str]) -> list[Findi
     return findings
 
 
+def _check_requests(governance: Governance, elements: set[str], today: date) -> list[Finding]:
+    findings: list[Finding] = []
+    for request in sorted(governance.requests.values(), key=lambda r: r.id):
+        rel_file = _rel(governance.root, request.source_path)
+        service = governance.services.get(request.service)
+        if service is None:
+            findings.append(
+                Finding(
+                    "REQ003",
+                    SEVERITY_ERROR,
+                    f"references unknown service '{request.service}' -- offerings live in services/",
+                    file=rel_file,
+                    concept=request.id,
+                )
+            )
+        elif service.lifecycle == "retired":
+            findings.append(
+                Finding(
+                    "REQ008",
+                    SEVERITY_WARNING,
+                    f"requests retired offering '{service.id}' -- update the catalog or the request",
+                    file=rel_file,
+                    concept=request.id,
+                )
+            )
+        for element_id in request.scope:
+            if element_id not in elements:
+                findings.append(
+                    Finding(
+                        "REQ004",
+                        SEVERITY_ERROR,
+                        f"scope names '{element_id}' which is not an element in the approved model",
+                        file=rel_file,
+                        concept=request.id,
+                    )
+                )
+        if request.status == "fulfilled" and not (request.fulfilled and request.fulfilled_by):
+            findings.append(
+                Finding(
+                    "REQ005",
+                    SEVERITY_ERROR,
+                    "status is 'fulfilled' but the fulfilment date or the deliverable pointer "
+                    "(fulfilledBy) is missing -- an unevidenced fulfilment is a closed ticket, not a service",
+                    file=rel_file,
+                    concept=request.id,
+                )
+            )
+        requested = request.requested_date()
+        if (
+            request.status == "open"
+            and service is not None
+            and service.sla_days > 0
+            and requested is not None
+            and (today - requested).days > service.sla_days
+        ):
+            findings.append(
+                Finding(
+                    "REQ006",
+                    SEVERITY_WARNING,
+                    f"open for {(today - requested).days} days against an SLA of {service.sla_days} -- "
+                    "fulfil it, decline it with a reason, or renegotiate the catalog promise",
+                    file=rel_file,
+                    concept=request.id,
+                )
+            )
+        if request.status == "declined" and not request.notes:
+            findings.append(
+                Finding(
+                    "REQ007",
+                    SEVERITY_WARNING,
+                    "declined without notes -- a refusal needs a reason the requester can read",
+                    file=rel_file,
+                    concept=request.id,
+                )
+            )
+    return findings
+
+
 def validate_governance(root: Path, today: date | None = None) -> GovReport:
     today = today or date.today()
     governance = load(root)
@@ -538,6 +714,7 @@ def validate_governance(root: Path, today: date | None = None) -> GovReport:
     findings += _check_dispensations(governance, elements, today)
     findings += _check_decisions(governance, elements)
     findings += _check_assessments(governance, elements)
+    findings += _check_requests(governance, elements, today)
 
     severity_rank = {SEVERITY_ERROR: 0, SEVERITY_WARNING: 1, SEVERITY_INFO: 2}
     findings.sort(key=lambda f: (severity_rank.get(f.severity, 3), f.code, f.file, f.concept))
@@ -548,5 +725,7 @@ def validate_governance(root: Path, today: date | None = None) -> GovReport:
         "decisions": len(governance.decisions),
         "dispensations": len(governance.dispensations),
         "assessments": len(governance.assessments),
+        "services": len(governance.services),
+        "requests": len(governance.requests),
     }
     return report

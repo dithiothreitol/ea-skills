@@ -1,0 +1,6 @@
+# --- SVC001: schema violation (no owner, no SLA, bad lifecycle) --------------------
+id: svc-invalid
+name: Offering With No Promise
+description: Missing its owner and SLA on purpose.
+fulfilledBy: nobody knows
+lifecycle: imaginary

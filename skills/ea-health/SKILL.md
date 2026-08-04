@@ -38,10 +38,13 @@ evidence of the problem.
 
 ## Reading staleness
 
-The report lists every element past `stalenessDays` or never reviewed, with owners.
-The output is a *review queue grouped by owner* -- send each owner their list and
-record the outcome by updating `lastReviewed` (a real review, not a bump; bumping
-the date without looking is worse than staleness because it forges freshness).
+The report lists every element past `stalenessDays` or never reviewed, with owners
+-- and each element's **demand** (how many service requests named it in scope).
+The output is a *review queue grouped by owner, ordered by demand*: review what
+consumers actually ask about first. Elements with zero demand and long staleness
+are de-scoping candidates, not just review debt. Record outcomes by updating
+`lastReviewed` (a real review, not a bump; bumping the date without looking is
+worse than staleness because it forges freshness).
 
 ## Reading KPIs
 

@@ -1,0 +1,9 @@
+id: req-2026-08-erp-context
+service: svc-context-pack
+requestedBy: erp-replatforming-team@aurorafoods.example
+requested: 2026-08-01
+scope: [app-erp-core, service-order-api]
+status: fulfilled
+fulfilled: 2026-08-02
+fulfilledBy: python -m easkills context --scope app-erp-core (pack delivered into the replatforming repo)
+notes: Context for the replatforming assessment; includes the on-premise waiver state.

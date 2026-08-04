@@ -1,0 +1,13 @@
+# One architecture-service offering per file (AD-10). The catalog is what turns EA
+# from a gate into a provider: a named owner, a fulfilment path, an SLA in days.
+id: svc-context-pack
+name: Agent context pack
+description: >
+  Scoped extract of everything binding one system: requirements and constraints via
+  appliesTo, standards with lifecycle and waivers, applicable decisions, integration
+  neighbours -- freshness-labelled, generated from the approved model only.
+fulfilledBy: ea-context / python -m easkills context --scope <element>
+owner: ea@aurorafoods.example
+slaDays: 2
+lifecycle: active
+selfService: true

@@ -1,0 +1,9 @@
+id: svc-standard-exception
+name: Standard exception (dispensation)
+description: >
+  Time-bounded waiver from a standard for named systems, granted by the architecture
+  board. Expiry is mandatory and enforced; renewal is a new decision, never a default.
+fulfilledBy: ea-dispensation / governance-log/dispensations/ record
+owner: architecture-board@aurorafoods.example
+slaDays: 15
+lifecycle: active

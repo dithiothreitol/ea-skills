@@ -13,8 +13,8 @@ Severity meanings:
 Three validators share this catalogue: `python -m easkills validate` covers the model
 zones (`ORACLE`/`SCHEMA`/`ID`/`REF`/`PROV`/`GOV`/`MOT`/`STD`/`ISO`/`REL`/`NAME`/`SMELL`),
 `python -m easkills validate-facts` covers the fact register (`FACT`/`ENT`/`SRC`), and
-`python -m easkills validate-gov` covers the standards base and governance log
-(`SIB`/`DEC`/`DISP`/`COMP`).
+`python -m easkills validate-gov` covers the standards base, governance log and the
+service layer (`SIB`/`DEC`/`DISP`/`COMP`/`SVC`/`REQ`).
 
 ## Layer 0 -- oracle integrity
 
@@ -212,6 +212,36 @@ nobody acts on is equally fake, so expiry is an error, not a shrug.
 | `COMP003` | warning | `non-conformant` with no `followUp` -- a failed assessment must lead to a dispensation, a decision, or documented remediation. |
 | `COMP004` | error | `followUp` references a dispensation or decision that does not exist. |
 | `COMP005` | error | `relatedElements` names an element that is not in the approved model. |
+
+## Service layer -- catalog (AD-10)
+
+Architecture-as-a-Service: EA's offerings live in `services/`, one per file. An
+offering is a promise with a number -- owner and SLA are schema-mandatory.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `SVC000` | error | File cannot be parsed / not a single mapping. |
+| `SVC001` | error | Violates `schema/service.schema.json` (owner, `slaDays` and fulfilment are required). |
+| `SVC002` | error | Duplicate service id. |
+
+## Service layer -- demand ledger
+
+Requests (`governance-log/requests/`) record who asked for which offering.
+Consumption that is not recorded cannot be measured -- and demand is what
+maintenance is weighted by (`staleness` shows per-element demand; `kpi` shows the
+service line).
+
+| Code | Severity | Rule |
+|---|---|---|
+| `REQ000` | error | File cannot be parsed / not a single mapping. |
+| `REQ001` | error | Violates `schema/request.schema.json`. |
+| `REQ002` | error | Duplicate request id. |
+| `REQ003` | error | References an offering that is not in the catalog. |
+| `REQ004` | error | `scope` names an element that is not in the approved model. |
+| `REQ005` | error | `fulfilled` status without a fulfilment date or a deliverable pointer -- an unevidenced fulfilment is a closed ticket, not a service. |
+| `REQ006` | warning | Open past the offering's `slaDays`. Fulfil, decline with a reason, or renegotiate the catalog promise. (A warning, not an error: a late answer does not make the *model* wrong -- but breaches surface in `kpi` and on the board agenda.) |
+| `REQ007` | warning | Declined without `notes` -- a refusal needs a reason the requester can read. |
+| `REQ008` | warning | Requests a retired offering. |
 
 ## Not yet implemented
 

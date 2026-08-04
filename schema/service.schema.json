@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ea-skills:schema:service",
+  "title": "EA Skills architecture-service offering",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "description",
+    "fulfilledBy",
+    "owner",
+    "slaDays",
+    "lifecycle"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+      "maxLength": 80
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "description": {
+      "type": "string",
+      "minLength": 8,
+      "description": "What the consumer gets, phrased from the consumer's side."
+    },
+    "fulfilledBy": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The skill and/or command that produces the deliverable, e.g. 'ea-context / python -m easkills context --scope <id>'."
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "slaDays": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 365,
+      "description": "Promised working window from request to fulfilment."
+    },
+    "lifecycle": {
+      "enum": [
+        "proposed",
+        "active",
+        "retired"
+      ]
+    },
+    "selfService": {
+      "type": "boolean",
+      "description": "True when the consumer can run the fulfilment themselves."
+    }
+  }
+}

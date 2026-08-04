@@ -1,0 +1,7 @@
+# --- REQ003 (unknown service) + REQ004 (unknown scope element) ---------------------
+id: req-unknown-service
+service: no-such-service
+requestedBy: someone@example.test
+requested: 2026-07-01
+scope: [no-such-element]
+status: open

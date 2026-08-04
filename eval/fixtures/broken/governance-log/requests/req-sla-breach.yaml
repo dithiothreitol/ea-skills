@@ -1,0 +1,7 @@
+# --- REQ006: open far beyond the offering's SLA ------------------------------------
+id: req-sla-breach
+service: svc-dup
+requestedBy: someone@example.test
+requested: 2020-01-01
+scope: [node-a]
+status: open

@@ -1,0 +1,8 @@
+# --- SVC002: duplicate service id (see svc-dup-b.yaml) -----------------------------
+id: svc-dup
+name: Duplicated Offering
+description: First of two records claiming this id.
+fulfilledBy: ea-context
+owner: someone@example.test
+slaDays: 5
+lifecycle: active
