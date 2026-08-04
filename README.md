@@ -10,7 +10,7 @@ and living governance out. All of it in git.
 [![CI](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-220%20passing-brightgreen.svg)](tests/)
+[![Validation rules](https://img.shields.io/badge/validation%20rules-91-brightgreen.svg)](docs/RULES.md)
 [![ArchiMate 3.2](https://img.shields.io/badge/ArchiMate-3.2-orange.svg)](oracle/NOTICE.md)
 [![ISO/IEC/IEEE 42010](https://img.shields.io/badge/ISO%2FIEC%2FIEEE-42010%3A2022-lightgrey.svg)](docs/RULES.md)
 
@@ -124,7 +124,7 @@ flowchart LR
 ```
 
 Every arrow is a deterministic command with an exit-code contract, and every stage is
-driven by one of the **twenty [agent skills](skills/)** — from `ea-intake` through
+driven by one of the **20 [agent skills](skills/)** — from `ea-intake` through
 `ea-approve` to `ea-board`. The orchestrator (`ea-run`) routes requests catalog-first
 and keeps the stage order honest.
 
@@ -269,8 +269,10 @@ agents. What is not otherwise available is the *combination*:
 
 Verified against the 2026-07-29 competitive survey behind
 [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md); the ea-skills column reflects this
-repository as of 2026-08-04. Neighbours move fast — **re-checked monthly**, and
-corrected when a claim stops being true. Each capability exists somewhere; the
+repository as of 2026-08-04. Neighbours move fast, so this table carries a standing
+obligation: **re-check monthly, and correct it when a claim stops being true** — it is
+tracked as an open item below and in [BLUEPRINT §8a](docs/BLUEPRINT.md), because no
+test can check a competitor's changelog. Each capability exists somewhere; the
 integration is the contribution, and the governance end is where it is thinnest
 elsewhere.
 
@@ -292,9 +294,11 @@ history and [BLUEPRINT §8a](docs/BLUEPRINT.md) for per-phase design decisions.
 Deliberately open (decisions, not backlog): `ea-check` — deterministic compliance
 linting inside consuming repositories — is deferred together with a network facade as
 the one integration-surface decision; ISO 42010 §6.9 correspondences remain an
-explicit gap; the worked example carries *scheduled* failures (a dispensation expiring
-2027-06-30, a staleness horizon in mid-2027) as maintenance rehearsals — renewing the
-records, not weakening the gates, is the drill.
+explicit gap; the [comparison table](#how-it-compares) above carries a monthly
+re-check obligation that nothing can automate; and the worked example carries
+*scheduled* failures (a dispensation expiring 2027-06-30, a staleness horizon in
+mid-2027) as maintenance rehearsals — renewing the records, not weakening the gates,
+is the drill.
 
 ## Repository layout
 
@@ -308,7 +312,7 @@ template/        scaffold to copy for a new enterprise
 eval/example/    worked example, clean (doubles as the largest golden case)
 eval/golden/     golden-set cases for the regression harness
 eval/fixtures/   negative fixtures -- every rule violated on purpose, proven by tests
-tests/           pytest suite (220 tests)
+tests/           pytest suite: the gates, the generators, and the claims these docs make
 docs/            GETTING-STARTED, CLI reference, RULES catalogue, BLUEPRINT (design)
 ```
 
@@ -318,7 +322,7 @@ docs/            GETTING-STARTED, CLI reference, RULES catalogue, BLUEPRINT (des
 |---|---|
 | [Getting started](docs/GETTING-STARTED.md) | Tutorial: from a raw interview to a validated, documented architecture |
 | [CLI reference](docs/CLI.md) | Every command, flag and exit-code contract |
-| [Rule catalogue](docs/RULES.md) | All ~90 validation rules with severities and rationale |
+| [Rule catalogue](docs/RULES.md) | All 91 validation rules with severities and rationale |
 | [Blueprint](docs/BLUEPRINT.md) | The research-verified design: decisions, evidence, per-phase log |
 | [Golden set](eval/golden/README.md) | How pipeline quality is measured |
 | [Contributing](CONTRIBUTING.md) | Dev setup, conventions, how to add a rule or a skill |
@@ -331,12 +335,13 @@ is enforced by a test rather than a review comment. Start with
 
 - every new validator rule ships with a negative-fixture case, a RULES.md row and a test;
 - generated artifacts (schemas, example docs) are regenerated in the same commit;
-- gold never changes in the same commit as skill changes;
+- gold's *authored* content never changes in the same commit as skill changes (its
+  generated `eval/example/docs/` regenerates with the tooling — that is convention 2);
 - the worked example stays at zero findings, warnings included.
 
 ```bash
 python -m venv .venv && .venv/Scripts/python -m pip install -r requirements.txt
-.venv/Scripts/python -m pytest tests -q          # 220 tests
+.venv/Scripts/python -m pytest tests -q          # the suite
 .venv/Scripts/python -m easkills oracle-info     # oracle version + pin status
 ```
 

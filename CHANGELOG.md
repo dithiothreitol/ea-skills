@@ -5,6 +5,43 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
+## [Unreleased]
+
+### Fixed — documentation claims turned into checked claims
+
+- The oracle pins are now verified by **every** command that consumes oracle data
+  (`compile`, `render`, `docs`, `gen-schema`, alongside `validate`/`oracle-info`),
+  `--skip-validation` included: a tampered relationship matrix can no longer reach a
+  compiled artifact or a generated schema. Previously only `validate` and
+  `oracle-info` checked, while the security policy claimed every run did.
+- Schema freshness now covers all nine generated schemas (one registry drives
+  `gen-schema` and the test); it previously covered three, so a change to the
+  standard, compliance, service or request schema could ship stale.
+- `docs/CLI.md` documents per-command flag availability, machine-checked against the
+  parser — the old "common flags" line implied flags on commands that exit 2 for them.
+- `CONTRIBUTING.md`'s pre-push gate is now an exact mirror of CI (six steps were
+  missing), and a test fails if the two drift again.
+- The gold convention is stated identically in CONTRIBUTING, the PR template and the
+  README, with the generated `eval/example/docs/` carve-out spelled out — the three
+  wordings previously contradicted each other for any renderer or docgen change.
+- Corrected rule counts in the changelog and the design log (0.0.1: 29 not 26;
+  0.4.0: 25 not 20; 0.6.0: 12 not 11), and replaced hand-maintained test counts with
+  a rule-count badge the suite verifies against `docs/RULES.md`.
+- The Phase-H change-request issue form moved to `template/.github/ISSUE_TEMPLATE/`,
+  where the `model/approved/`, `standards/` and `governance-log/decisions/` ids it
+  asks for actually exist; scaffolded repositories now get it.
+- The getting-started tutorial's step-4 view no longer references an element the
+  tutorial never authors (it now models the `Realization` the prose describes).
+- Packaging metadata reflects reality: build backend declared, PEP 639 licence form,
+  and the PyPI-only claims (long description with repo-relative links, platform
+  classifiers, an untested console script) removed — the oracle and schemas are
+  repository data, so ea-skills is used from a clone.
+- CI runs the suite on Python 3.11/3.12/3.13 across Linux and Windows, so
+  `requires-python` and the Windows line-ending sensitivity of the pinned oracle are
+  actually exercised.
+- `SECURITY.md` scope note points at `skills/*/SKILL.md` (the old `skills/*.md`
+  matched nothing), and paths named there are now checked to exist.
+
 ## [0.6.0] — 2026-08-04
 
 ### Added — the service layer (Architecture-as-a-Service / on-demand, AD-10)
@@ -14,7 +51,7 @@ project's build phases (design log with per-decision rationale:
   `selfService` flag.
 - Demand ledger `governance-log/requests/` — who asked for which offering, for which
   model elements; evidenced fulfilment, reasoned refusal, SLA hygiene.
-- 11 validator rules (`SVC000–002`, `REQ000–008`) in `validate-gov`.
+- 12 validator rules (`SVC000–002`, `REQ000–008`) in `validate-gov`.
 - Demand-weighted maintenance: per-element demand and `neverRequested` in
   `staleness`; Service line (offerings, dispositions, SLA breaches, average
   fulfilment) in `kpi`.
@@ -47,7 +84,7 @@ project's build phases (design log with per-decision rationale:
 - Governance records: standards base (SIB) with lifecycle and succession; MADR
   decisions with schema-mandatory rationale (ISO 42010 §6.10); dispensations with
   schema-mandatory expiry that **errors** once passed; compliance assessments with
-  TOGAF's six-level verdict. 20 validator rules in the new `validate-gov` gate.
+  TOGAF's six-level verdict. 25 validator rules in the new `validate-gov` gate.
 - SIB lifecycle enforced in the model gate (`STD001–004`): retired standards block
   unless an open dispensation covers the element, and the waiver is reported with
   its expiry.
@@ -101,7 +138,7 @@ project's build phases (design log with per-decision rationale:
 ### Added — the deterministic core (Phase 0)
 
 - YAML authoring DSL with generated JSON Schema; identifiers are stable slugs.
-- Three-layer validator (26 rules): schema, integrity + provenance + governance
+- Three-layer validator (29 rules): schema, integrity + provenance + governance
   metadata, ArchiMate 3.2 semantics from Archi's vendored, hash-pinned relationship
   matrix.
 - Compiler to Open Group ArchiMate Model Exchange XML, XSD-validated offline,

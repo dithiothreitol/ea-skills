@@ -20,7 +20,7 @@ service layer (`SIB`/`DEC`/`DISP`/`COMP`/`SVC`/`REQ`).
 
 | Code | Severity | Rule |
 |---|---|---|
-| `ORACLE001` | error | A vendored oracle file is missing or does not match its pinned SHA-256. Re-pin deliberately with `python -m easkills pin-oracle`. |
+| `ORACLE001` | error | A vendored oracle file is missing or does not match its pinned SHA-256. Verified by every command that consumes the oracle — `validate` and `oracle-info` report it, while `compile`, `render`, `docs` and `gen-schema` refuse to run (`--skip-validation` does not bypass it), so tampered rule data cannot reach an artifact or a generated schema. Re-pin deliberately with `python -m easkills pin-oracle`. |
 | `ORACLE002` | warning | The relationship matrix declares an ArchiMate version other than 3.2. |
 | `ORACLE003` | warning | The matrix contains a concept with no layer assignment in `easkills/oracle.py`. |
 

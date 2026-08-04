@@ -193,6 +193,11 @@ def verify_checksums() -> list[ChecksumResult]:
     return results
 
 
+def failed_checksums() -> list[ChecksumResult]:
+    """Pinned oracle files that drifted (empty list means the oracle is intact)."""
+    return [result for result in verify_checksums() if not result.ok]
+
+
 @lru_cache(maxsize=1)
 def relationship_letters() -> dict[str, str]:
     """Letter -> short relationship type name (``v`` -> ``Serving``)."""

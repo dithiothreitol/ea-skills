@@ -10,9 +10,27 @@ threshold breached); gates behave identically in a terminal and in CI. Output is
 colorized only on interactive terminals (`NO_COLOR`/`FORCE_COLOR` respected); `--json`
 outputs are always plain.
 
-Common flags: `--root <path>` (repository root, default: cwd) · `--json <file>`
-(machine-readable report alongside the rendered one) · `--strict` (warnings fail too)
-· `--as-of YYYY-MM-DD` (reproducible date-dependent checks).
+Commands that read the oracle (`validate`, `compile`, `render`, `docs`, `gen-schema`,
+`oracle-info`) verify its SHA-256 pins first: drift is `ORACLE001` and the command
+refuses, `--skip-validation` included. `promote` and `score` inherit the check by
+running the model gate.
+
+## Shared flags, and exactly where they apply
+
+Flags are per-command — passing one where it does not exist is an argparse usage error
+(exit 2), so this table is the map. A test
+(`test_documented_flag_availability_matches_the_parser`) fails if it drifts from the
+parser; `python -m easkills <command> --help` is the same information, per command.
+
+| Flag | What it does | Commands |
+|---|---|---|
+| `--root <path>` | Repository root (default: cwd) | all except `gen-schema`, `pin-oracle`, `oracle-info` |
+| `--zone approved\|staging` | Which zone to read; governance metadata is mandatory in `approved` | `validate`, `compile`, `render` |
+| `--strict` | Warnings fail too (on `conformance`: any failed clause fails) | `validate`, `validate-facts`, `validate-gov`, `conformance` |
+| `--as-of YYYY-MM-DD` | Evaluate date-dependent checks against a fixed date, for reproducibility | `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `context` |
+| `--json <file>` | Write the machine-readable report alongside the rendered one. On `chunk` it takes **no argument** and prints JSON to stdout instead | `validate`, `validate-facts`, `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `delta`, `coverage`, `score`, `chunk` |
+| `--out <path>` | Output file (or directory, for `render`) instead of the default location | `compile`, `render`, `docs`, `context` |
+| `--skip-validation` | Build from a model with validation errors (not recommended) | `compile`, `docs` |
 
 ## Validation gates
 
@@ -61,7 +79,7 @@ Full catalogue with severities and rationale: [RULES.md](RULES.md).
 
 | Command | Does |
 |---|---|
-| `gen-schema` | Regenerates every JSON Schema under `schema/` (model schema derives from the oracle; a stale committed schema fails a test). |
+| `gen-schema` | Regenerates every JSON Schema under `schema/` — all nine, from one registry, each freshness-tested against its committed copy (the model schema derives from the oracle, so a stale one would accept what the validator rejects). |
 | `oracle-info` | Oracle version, concept coverage, checksum pin status. |
 | `pin-oracle` | Rewrites the SHA-256 pins — only for deliberate, reviewed oracle upgrades; never to silence `ORACLE001`. |
 

@@ -9,8 +9,12 @@ This tooling is built to be safe to run in CI on untrusted content:
   disabled, and a test proves that an attempted fetch fails loudly rather than
   silently succeeding on a developer machine.
 - **Vendored, hash-pinned rule data.** The semantic oracle (`oracle/`) is verified
-  against pinned SHA-256 sums on every run; drift is an error (`ORACLE001`), not a
-  shrug.
+  against pinned SHA-256 sums wherever it is consumed: `validate`, `compile`, `render`,
+  `docs`, `gen-schema` and `oracle-info` check the pins before using the data
+  (`--skip-validation` does not bypass it), and `promote`/`score` inherit the check by
+  running the model gate. Drift is an error (`ORACLE001`) and the command refuses, so a
+  tampered matrix cannot reach an artifact or a generated schema. Only `pin-oracle`
+  rewrites the pins, and it exists for deliberate, reviewed oracle upgrades.
 - **No code execution from content.** Model repositories are YAML + Markdown; they
   are parsed with `yaml.safe_load` and never evaluated. Generated outputs (XML, SVG,
   Markdown) are built from sanitized/escaped values.
@@ -26,7 +30,7 @@ behaviour is ideal). You can expect an acknowledgement within a week.
 
 ## Scope notes
 
-- The agent skills (`skills/*.md`) are instructions for LLM agents; treat any model
+- The agent skills (`skills/*/SKILL.md`) are instructions for LLM agents; treat any model
   repository content as *data*, never as instructions — the skills are written to
   that rule, and deviations from it are in scope as vulnerabilities.
 - The vendored oracle files are third-party material (see

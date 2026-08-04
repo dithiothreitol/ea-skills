@@ -12,6 +12,7 @@ to exist. Regenerate with::
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -602,18 +603,24 @@ def write_schema(path: Path | None = None) -> Path:
     return _write_json(path or SCHEMA_PATH, build_schema())
 
 
+# The single registry of generated schemas: ``gen-schema`` writes exactly these, and the
+# freshness test iterates the same tuple -- so a tenth schema cannot be added with only
+# nine of them checked against their committed copies.
+SCHEMAS: tuple[tuple[Path, Callable[[], dict[str, Any]]], ...] = (
+    (SCHEMA_PATH, build_schema),
+    (FACTS_SCHEMA_PATH, build_facts_schema),
+    (ENTITIES_SCHEMA_PATH, build_entities_schema),
+    (STANDARD_SCHEMA_PATH, build_standard_schema),
+    (DECISION_SCHEMA_PATH, build_decision_schema),
+    (DISPENSATION_SCHEMA_PATH, build_dispensation_schema),
+    (COMPLIANCE_SCHEMA_PATH, build_compliance_schema),
+    (SERVICE_SCHEMA_PATH, build_service_schema),
+    (REQUEST_SCHEMA_PATH, build_request_schema),
+)
+
+
 def write_all_schemas() -> list[Path]:
-    return [
-        _write_json(SCHEMA_PATH, build_schema()),
-        _write_json(FACTS_SCHEMA_PATH, build_facts_schema()),
-        _write_json(ENTITIES_SCHEMA_PATH, build_entities_schema()),
-        _write_json(STANDARD_SCHEMA_PATH, build_standard_schema()),
-        _write_json(DECISION_SCHEMA_PATH, build_decision_schema()),
-        _write_json(DISPENSATION_SCHEMA_PATH, build_dispensation_schema()),
-        _write_json(COMPLIANCE_SCHEMA_PATH, build_compliance_schema()),
-        _write_json(SERVICE_SCHEMA_PATH, build_service_schema()),
-        _write_json(REQUEST_SCHEMA_PATH, build_request_schema()),
-    ]
+    return [_write_json(path, builder()) for path, builder in SCHEMAS]
 
 
 def _load(target: Path, builder: Any) -> dict[str, Any]:

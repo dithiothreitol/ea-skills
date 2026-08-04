@@ -12,20 +12,27 @@ python -m venv .venv
 .venv/Scripts/python -m pip install -r requirements.txt    # Windows
 # source .venv/bin/activate && pip install -r requirements.txt   # POSIX
 
-.venv/Scripts/python -m pytest tests -q          # 220 tests, ~20 s
+.venv/Scripts/python -m pytest tests -q          # the suite, ~20 s
 .venv/Scripts/python -m easkills oracle-info     # oracle version + pin status
 ```
 
-Python ≥ 3.11. Three runtime dependencies (`pyyaml`, `jsonschema`, `lxml`) — adding a
-fourth needs a strong argument in the PR description; GPL-licensed dependencies and
-anything that fetches from the network at runtime are rejected on principle (see
+Python ≥ 3.11; CI runs the suite on 3.11/3.12/3.13 across Linux and Windows. Three
+runtime dependencies (`pyyaml`, `jsonschema`, `lxml`) — adding a fourth needs a strong
+argument in the PR description; GPL-licensed dependencies and anything that fetches
+from the network at runtime are rejected on principle (see
 [BLUEPRINT AD-05](docs/BLUEPRINT.md)).
+
+The tooling is used from a clone (`python -m easkills …`): the oracle and the generated
+schemas are repository data, so there is no wheel to install and no PyPI release.
 
 ## Run the full gate before pushing
 
-CI runs exactly this; save yourself the round-trip:
+Every `easkills` invocation CI runs is in this block, and a test
+(`test_contributing_pre_push_gate_mirrors_ci`) fails if the two ever drift — so a green
+run here predicts a green CI:
 
 ```bash
+python -m easkills oracle-info
 python -m pytest tests -q
 python -m easkills validate       --root eval/example --strict
 python -m easkills validate-facts --root eval/example --strict
@@ -33,8 +40,13 @@ python -m easkills validate-gov   --root eval/example --strict
 python -m easkills coverage       --root eval/example --min-coverage 100
 python -m easkills compile        --root eval/example
 python -m easkills docs           --root eval/example && git diff --exit-code eval/example/docs
+python -m easkills validate       --root eval/golden/clinic --strict
+python -m easkills validate-facts --root eval/golden/clinic --strict
 python -m easkills score --root eval/golden/clinic --gold eval/golden/clinic --min-f1 100
-python -m easkills validate --root eval/fixtures/broken        # must FAIL
+python -m easkills score --root eval/example --gold eval/example --min-f1 100
+python -m easkills validate       --root eval/fixtures/broken   # must FAIL (exit 1)
+python -m easkills validate-facts --root eval/fixtures/broken   # must FAIL (exit 1)
+python -m easkills validate-gov   --root eval/fixtures/broken   # must FAIL (exit 1)
 ```
 
 ## The conventions that are actually load-bearing
@@ -47,16 +59,18 @@ decoration, so the test suite enforces the pattern:
 - a row in [`docs/RULES.md`](docs/RULES.md) and an entry in the parametrized
   expected-codes list in the matching test module.
 
-**2. Generated artifacts regenerate in the same commit.** Schemas
-(`python -m easkills gen-schema`) and the example's docs
-(`python -m easkills docs --root eval/example`) are committed *and*
-freshness-checked — a stale artifact fails CI, so regenerate alongside the change
-that invalidated it.
+**2. Generated artifacts regenerate in the same commit.** Every schema under `schema/`
+(`python -m easkills gen-schema` — all nine are freshness-tested) and the example's
+generated documentation (`python -m easkills docs --root eval/example`, i.e.
+`eval/example/docs/`) are committed *and* freshness-checked — a stale artifact fails
+CI, so regenerate alongside the change that invalidated it.
 
-**3. Gold never changes with skill changes.** The golden set (`eval/golden/`,
-`eval/example/`) is the measuring stick; a commit that moves both the stick and the
-thing being measured proves nothing. If gold is wrong, fix it in its own PR with its
-own justification.
+**3. Gold's *authored* content never changes with skill changes.** The golden set
+(`eval/golden/`, `eval/example/`) is the measuring stick; a commit that moves both the
+stick and the thing being measured proves nothing. If gold is wrong, fix it in its own
+PR with its own justification. The one carve-out is convention 2: `eval/example/docs/`
+is *generated* output, so a renderer or docgen change regenerates it in the same
+commit — that is the freshness check working, not a gold edit.
 
 **4. The worked example stays at zero findings, warnings included.** It is the
 documented "0 errors, 0 warnings" claim, gated with `--strict` in CI. If your change

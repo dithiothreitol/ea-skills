@@ -2,6 +2,8 @@
 
 import json
 
+import pytest
+
 from easkills import cli, genschema, oracle
 
 
@@ -84,17 +86,41 @@ def test_oracle_info(capsys):
     assert "FAIL" not in out
 
 
-def test_generated_schemas_are_committed_and_current(capsys):
-    """A stale committed schema would silently accept concepts the validators reject."""
-    assert genschema.load_schema(genschema.SCHEMA_PATH) == genschema.build_schema(), (
-        "run 'python -m easkills gen-schema'"
-    )
-    assert genschema.load_facts_schema(genschema.FACTS_SCHEMA_PATH) == genschema.build_facts_schema(), (
-        "run 'python -m easkills gen-schema'"
-    )
-    assert genschema.load_entities_schema(genschema.ENTITIES_SCHEMA_PATH) == genschema.build_entities_schema(), (
-        "run 'python -m easkills gen-schema'"
-    )
+@pytest.mark.parametrize("path,builder", genschema.SCHEMAS, ids=lambda value: getattr(value, "name", ""))
+def test_generated_schemas_are_committed_and_current(path, builder):
+    """A stale committed schema would silently accept what the validators reject.
+
+    Parametrized over the same registry ``gen-schema`` writes, so every generated
+    schema is covered by construction rather than by remembering to add a line here.
+    """
+    assert path.is_file(), f"missing generated schema {path.name}: run 'python -m easkills gen-schema'"
+    committed = json.loads(path.read_text(encoding="utf-8"))
+    assert committed == builder(), f"{path.name} is stale: run 'python -m easkills gen-schema'"
+
+
+def _tampered_pins(tmp_path):
+    """A pin file that no oracle file can match (simulates drift or tampering)."""
+    pins = tmp_path / "SHA256SUMS"
+    pins.write_text(f"{'0' * 64}  relationships.xml\n", encoding="utf-8", newline="\n")
+    return pins
+
+
+@pytest.mark.parametrize("command", ["compile", "render", "docs", "gen-schema"])
+def test_oracle_pin_drift_blocks_every_command_that_consumes_the_oracle(
+    command, example_root, tmp_path, monkeypatch, capsys
+):
+    """Reading tampered primary-source data must refuse, not produce artifacts.
+
+    ``validate`` reports drift as an ORACLE001 finding; these commands have no report
+    to carry it, and ``gen-schema`` would write the authoring contract from the
+    tampered matrix -- so they refuse before touching it.
+    """
+    monkeypatch.setattr(oracle, "CHECKSUMS", _tampered_pins(tmp_path))
+    argv = [command]
+    if command != "gen-schema":
+        argv += ["--root", str(example_root), "--out", str(tmp_path / "out")]
+    assert cli.main(argv) == 1
+    assert "ORACLE001" in capsys.readouterr().out
 
 
 def test_schema_enumerates_every_oracle_concept():

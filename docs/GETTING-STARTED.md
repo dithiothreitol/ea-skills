@@ -25,6 +25,10 @@ Edit `ea.config.yaml` — set the `name` and a one-paragraph `documentation` sta
 what this model exists to decide. A model with no stated audience goes unused; the
 ISO 42010 conformance check (6.2) will hold you to it.
 
+The scaffold also brings `.github/ISSUE_TEMPLATE/change_request.md`: in your repository
+the issue *is* the change-request record (step 6), which is why the form asks for ids
+from `model/approved/`, `standards/` and `governance-log/decisions/`.
+
 ## 1. Drop in a source and extract facts
 
 Put raw material into `facts/sources/` — an interview transcript, a systems-inventory
@@ -78,10 +82,32 @@ elements:
       - fact: fact-erp-role
 ```
 
-Build the capability map first (6–12 noun-phrase capabilities), then attach
-applications via `Realization`, then the rest. When you believe something the
-sources do not say, declare it: `assumed: true` plus a `rationale` — it will surface
-as an open question instead of masquerading as fact.
+One concept per authored file group, so diffs stay reviewable — the applications that
+realize the capability go in their own file:
+
+```yaml
+# model/staging/application.yaml
+elements:
+  - id: app-erp-core
+    type: ApplicationComponent
+    name: ERP Core
+    owner: finance-systems@yourco.example
+    lastReviewed: 2026-08-04
+    provenance:
+      - fact: fact-erp-role
+relationships:
+  - id: rel-erp-realizes-order-management
+    type: Realization
+    source: app-erp-core
+    target: cap-order-management
+    provenance:
+      - fact: fact-erp-role
+```
+
+Build the capability map first (6–12 noun-phrase capabilities), then attach the
+applications that realize them (as above), then the rest. When you believe something
+the sources do not say, declare it: `assumed: true` plus a `rationale` — it will
+surface as an open question instead of masquerading as fact.
 
 ```bash
 python -m easkills validate --root . --zone staging
@@ -176,7 +202,7 @@ someone asks EA for something → record it in `governance-log/requests/`
 
 ## Working with the agent skills
 
-Everything above is what the twenty [skills](../skills/) instruct an agent to do —
+Everything above is what the 20 [agent skills](../skills/) instruct an agent to do —
 with the judgement calls (what is a capability, which concern a view frames, when to
 decline a request) spelled out per skill. Point your agent at this repository, start
 with `ea-run` (it checks repo state and routes), and keep one rule in view: **the

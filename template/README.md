@@ -39,6 +39,14 @@ python -m easkills context  --root . --scope <id>     # agent context pack (AD-0
 | `docs/` | Generated architecture description and audience-facing outputs. |
 | `build/` | Compiled artifacts. Reproducible; not committed. |
 
+## Change requests
+
+`.github/ISSUE_TEMPLATE/change_request.md` ships with this scaffold: in a governed
+architecture repository the issue *is* the change-request record (AD-08), and
+`ea-change-triage` works from it — classification, evidence and routing are filled in
+on the same issue. Keep it; the ids it asks for are the ones in `model/approved/`,
+`standards/` and `governance-log/decisions/` here.
+
 ## Conventions
 
 Identifiers are stable lower-case slugs and are never regenerated. Every element and

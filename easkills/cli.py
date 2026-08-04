@@ -38,6 +38,30 @@ def _error(message: str) -> str:
     return f"{ui.red(ui.bold('ERROR'))}   {message}"
 
 
+def _oracle_intact() -> bool:
+    """Verify the oracle pins before consuming oracle data.
+
+    ``validate`` reports drift as an ``ORACLE001`` finding inside its report, but the
+    build and generation commands have no report to put it in -- and one of them
+    (``gen-schema``) writes the authoring contract *from* the oracle. Without this
+    guard, a tampered or line-ending-mangled oracle file would silently produce
+    artifacts and schemas, which is precisely the failure the pins exist to catch.
+    """
+    try:
+        failed = oracle.failed_checksums()
+    except oracle.OracleError as exc:
+        print(_error(str(exc)))
+        return False
+    if not failed:
+        return True
+    print(_error("ORACLE001  vendored oracle does not match its pinned SHA-256 sums:"))
+    for result in failed:
+        actual = result.actual[:16] if result.actual else "missing file"
+        print(f"         {result.name}: pinned {result.expected[:16]}..., found {actual}")
+    print("\nRe-pin (`python -m easkills pin-oracle`) only for a deliberate, reviewed oracle upgrade.")
+    return False
+
+
 def _parse_as_of(value: str | None):
     from datetime import date, datetime
 
@@ -191,6 +215,8 @@ def cmd_validate(args: argparse.Namespace) -> int:
 
 def cmd_compile(args: argparse.Namespace) -> int:
     root = args.root.resolve()
+    if not _oracle_intact():
+        return 1
     if not args.skip_validation:
         report = validate_mod.validate(root, zone=args.zone)
         if not report.ok:
@@ -219,6 +245,8 @@ def cmd_compile(args: argparse.Namespace) -> int:
 
 def cmd_render(args: argparse.Namespace) -> int:
     root = args.root.resolve()
+    if not _oracle_intact():
+        return 1
     try:
         result = render_mod.render_all(root, zone=args.zone, out_dir=args.out)
     except render_mod.RenderError as exc:
@@ -233,6 +261,8 @@ def cmd_render(args: argparse.Namespace) -> int:
 
 def cmd_docs(args: argparse.Namespace) -> int:
     root = args.root.resolve()
+    if not _oracle_intact():
+        return 1
     if not args.skip_validation:
         report = validate_mod.validate(root, zone="approved")
         if not report.ok:
@@ -390,6 +420,8 @@ def cmd_coverage(args: argparse.Namespace) -> int:
 
 
 def cmd_gen_schema(_args: argparse.Namespace) -> int:
+    if not _oracle_intact():
+        return 1
     for path in genschema.write_all_schemas():
         print(_ok(f"Wrote {path}"))
     print(f"(ArchiMate {oracle.matrix_version()}, {len(oracle.element_types())} element types)")
