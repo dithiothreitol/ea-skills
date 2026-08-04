@@ -159,6 +159,63 @@ def test_promote_update_replaces_the_approved_file(repo):
     assert "Publishes prices" in promoted
 
 
+def test_promotion_is_blocked_when_a_replacement_would_dangle_a_reference(repo):
+    """The gate must validate what the *move* produces, not a union of both files.
+
+    Promotion renames staging/x.yaml onto approved/x.yaml, so everything the approved
+    file held and the staging file leaves out is deleted. The gate used to merge the two
+    files id-by-id, validate that union, pass -- and then the move deleted content the
+    gate had just seen, leaving the approved zone with dangling references.
+    """
+    approved = (repo / "model" / "approved" / "application.yaml").read_text(encoding="utf-8")
+    kept, _sep, _dropped = approved.partition("  - id: app-wms")
+    assert _sep, "the example's application.yaml should hold more than one component"
+    _stage(repo, "application.yaml", kept)
+
+    result = promote.promote(repo, today=TODAY)
+    assert not result.ok, "dropping a referenced element must block promotion"
+    assert any(f.code == "REF001" for f in result.report.errors), result.report.render()
+    assert not result.moved
+    # The repository is untouched and still valid.
+    assert validate.validate(repo, zone="approved", today=TODAY).ok
+
+
+def test_a_replacement_that_drops_unreferenced_content_is_reported(repo):
+    """A clean gate is not silence: deletions are named before the commit signs them."""
+    _stage(
+        repo,
+        "spare.yaml",
+        """\
+elements:
+  - id: app-spare-tool
+    type: ApplicationComponent
+    name: Spare Tool
+    owner: it-service@aurorafoods.example
+    lastReviewed: 2026-07-31
+    provenance:
+      - fact: fact-manual-order-entry
+""",
+    )
+    promote.promote(repo, today=TODAY)  # app-spare-tool is now approved, referenced by nothing
+
+    _stage(repo, "spare.yaml", "elements: []\n")
+    result = promote.promote(repo, dry_run=True, today=TODAY)
+    assert result.ok, result.report.render()
+    assert result.dropped == ["app-spare-tool"]
+    assert "model/approved/spare.yaml" in result.replaced
+    rendered = result.render()
+    assert "app-spare-tool" in rendered and "removes 1 approved concept" in rendered
+
+
+def test_the_staging_view_shows_the_post_move_truth(repo):
+    """`validate --zone staging` uses the same shadowing, so drafting sees the result."""
+    approved = (repo / "model" / "approved" / "application.yaml").read_text(encoding="utf-8")
+    kept, _sep, _dropped = approved.partition("  - id: app-wms")
+    _stage(repo, "application.yaml", kept)
+    report = validate.validate(repo, zone="staging", today=TODAY)
+    assert any(f.code == "REF001" for f in report.errors), report.render()
+
+
 def test_promote_refuses_files_outside_staging(repo):
     with pytest.raises(promote.PromoteError):
         promote.promote(repo, files=[Path("model/approved/application.yaml")], today=TODAY)

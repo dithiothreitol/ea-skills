@@ -7,6 +7,39 @@ project's build phases (design log with per-decision rationale:
 
 ## [Unreleased]
 
+### Fixed — the write path, the zones, and the reports (core review, part 2)
+
+The most serious defect in the repository so far, plus five more. Every one reproduced
+before it was fixed; the reproduction is the regression test.
+
+- **Promotion could leave the approved zone invalid.** `promote` renames
+  `staging/x.yaml` onto `approved/x.yaml`, but the gate merged the two files
+  *id-by-id* and validated that union — content the move then deleted. Promoting an
+  updated `application.yaml` that left out one component passed the gate with **ok**,
+  deleted the component, and left dangling references (`REF001`) in the approved
+  zone. The gate now validates the post-move result (file shadowing in
+  `dsl.load_merged`), so the destructive promotion is blocked; a replacement that
+  drops only unreferenced content passes and **names what it deletes** in the report,
+  because the commit signs for it.
+- **`compile`/`render --zone staging` disagreed with `validate --zone staging`**: the
+  first two loaded staging alone and refused a delta with "unresolved endpoint;
+  validate before compiling" — right after it had validated cleanly. What a zone means
+  now lives in one function (`dsl.load_zone`).
+- **An impossible unquoted date crashed every command.** PyYAML resolves
+  `lastReviewed: 2026-06-31` to a date while parsing and raises a bare `ValueError`,
+  which the loaders did not catch. That one-character typo produced a traceback instead
+  of `SCHEMA000`.
+- **`REQ010`** (new): a request `fulfilled` *before* it was `requested` passed
+  validation and reported **avgFulfilmentDays: -19** in the service line.
+- **KPI contradicted itself on an empty repository**: "100% owned; 100%
+  stale/unreviewed" — a share of bad things is now 0% when there is nothing to
+  measure.
+- **ISO 42010 §6.8 could not fail** (hardcoded `pass`) in the one report whose purpose
+  is refusing silent conformance. It now checks that the generated architecture
+  description actually records every declared assumption.
+- **Context packs could call an unreadable review date "current"**: the mandatory
+  freshness banner was decided by sniffing for the substring "stale".
+
 ### Fixed — gate robustness (a code review of the deterministic core)
 
 Four defects found by reviewing `easkills/`, each reproduced before it was fixed and

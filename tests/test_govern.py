@@ -77,6 +77,7 @@ EXPECTED_ERROR_CODES = [
     "REQ004",  # request scope names an unknown element
     "REQ005",  # fulfilled without date or deliverable pointer
     "REQ009",  # request date passes the pattern but is not a real date
+    "REQ010",  # fulfilled before it was requested
 ]
 
 EXPECTED_WARNING_CODES = [

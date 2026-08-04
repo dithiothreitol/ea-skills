@@ -29,15 +29,28 @@ class ContextPack:
     markdown: str
 
 
-def _age_state(element: dsl.Element, threshold: int, today: date) -> str:
+def _review_state(element: dsl.Element, threshold: int, today: date) -> tuple[str, str]:
+    """``(state, human text)`` where state is ``fresh``/``stale``/``unreviewed``/``invalid``.
+
+    The state is returned explicitly rather than sniffed out of the text: the freshness
+    banner used to test for the substring "stale", so an element with an *invalid*
+    review date fell through to "current" -- a pack claiming currency from a date that
+    is not a date, in the one section whose job is to stop exactly that.
+    """
     if not element.last_reviewed:
-        return "never reviewed"
+        return "unreviewed", "never reviewed"
     try:
         reviewed = datetime.strptime(element.last_reviewed, "%Y-%m-%d").date()
     except ValueError:
-        return "invalid review date"
+        return "invalid", f"an unreadable review date ({element.last_reviewed!r})"
     age = (today - reviewed).days
-    return f"stale ({age} days since review)" if age > threshold else f"reviewed {element.last_reviewed}"
+    if age > threshold:
+        return "stale", f"stale ({age} days since review)"
+    return "fresh", f"reviewed {element.last_reviewed}"
+
+
+def _age_state(element: dsl.Element, threshold: int, today: date) -> str:
+    return _review_state(element, threshold, today)[1]
 
 
 def build(root: Path, scope: str, today: date | None = None) -> ContextPack:
@@ -77,7 +90,7 @@ def build(root: Path, scope: str, today: date | None = None) -> ContextPack:
     )
     out.append("")
 
-    flagged = [e for e in focus if "stale" in _age_state(e, threshold, today) or not e.last_reviewed]
+    flagged = [e for e in focus if _review_state(e, threshold, today)[0] != "fresh"]
     if flagged:
         out.append(
             "> **⚠ Freshness warning:** "

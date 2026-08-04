@@ -47,8 +47,11 @@ Full catalogue with severities and rationale: [RULES.md](RULES.md).
 | Command | Does |
 |---|---|
 | `compile [--zone] [--out] [--skip-validation]` | DSL → ArchiMate Open Exchange XML (`build/model.xml`), XSD-validated offline, byte-stable. Refuses a model with errors. |
-| `promote [--file <staging-file>]... [--dry-run]` | **The only write path into `approved/`.** Validates approved+staging merged by approved-zone standards; on a clean gate moves the files. Partial promotion supported. The git commit is the approval record. |
+| `promote [--file <staging-file>]... [--dry-run]` | **The only write path into `approved/`.** Validates the *post-move* result by approved-zone standards — a staging file replaces the approved file of the same name, so the gate sees exactly what the move produces; on a clean gate moves the files, naming any approved concepts the replacement removes. Partial promotion supported. The git commit is the approval record. |
 | `render [--zone] [--out]` | Views → deterministic SVG (`docs/views/`), no external toolchain. |
+
+`--zone staging` means the same overlay everywhere (`validate`, `compile`, `render`): a
+delta is read against the approved model it proposes to change.
 | `docs [--out] [--skip-validation]` | Renders views and generates the architecture description (ISO 42010 Clause 6 shape, TIME portfolio, capability support, open assumptions) from `approved/` only. Deterministic; commit the output — CI checks freshness. |
 
 ## Intake

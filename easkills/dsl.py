@@ -22,6 +22,13 @@ import yaml
 ZONES = ("approved", "staging")
 CONFIG_FILENAME = "ea.config.yaml"
 
+# What "this file does not parse" can raise. PyYAML resolves unquoted ISO dates to
+# ``datetime.date`` *while parsing*, so an impossible one (``lastReviewed: 2026-06-31``
+# -- a one-character typo) raises a bare ValueError from the constructor rather than a
+# YAMLError. Catching only YAMLError turned that typo into a traceback out of every
+# command instead of a SCHEMA000/FACT000 finding.
+YAML_ERRORS = (yaml.YAMLError, ValueError, TypeError)
+
 DEFAULT_CONFIG: dict[str, Any] = {
     "name": "Enterprise Architecture Model",
     "documentation": "",
@@ -151,7 +158,10 @@ def load_config(root: Path) -> dict[str, Any]:
     config = dict(DEFAULT_CONFIG)
     path = root / CONFIG_FILENAME
     if path.exists():
-        loaded = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        try:
+            loaded = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        except YAML_ERRORS:
+            return config  # an unreadable config falls back to defaults; the gate reports it
         if isinstance(loaded, dict):
             config.update(loaded)
     return config
@@ -235,7 +245,7 @@ def load_documents(root: Path, zone: str) -> list[Document]:
     for path in paths:
         try:
             data = yaml.safe_load(path.read_text(encoding="utf-8"))
-        except yaml.YAMLError as exc:
+        except YAML_ERRORS as exc:
             documents.append(Document(path=path, data=None, parse_error=str(exc)))
             continue
         if data is None:
@@ -375,6 +385,38 @@ def load(root: Path, zone: str) -> tuple[Model, list[Document], dict[str, Any]]:
     return model, documents, config
 
 
+def load_zone(root: Path, zone: str) -> tuple[Model, list[Document], dict[str, Any]]:
+    """What a zone *means*, in one place: ``staging`` is an overlay on ``approved``.
+
+    Every command that reads a zone goes through here, so they cannot disagree.
+    They used to: ``validate --zone staging`` applied the overlay and passed, while
+    ``compile --zone staging`` loaded staging alone and refused with "unresolved
+    endpoint; validate before compiling" -- for a delta that had just validated.
+    """
+    if zone == "staging":
+        return load_merged(root, zone_label="staging")
+    return load(root, zone)
+
+
+def shadowed_approved_files(root: Path, staging_paths: list[Path]) -> set[Path]:
+    """Approved files that promoting these staging files would overwrite.
+
+    Promotion is a rename onto the mirrored path, so an approved file whose
+    zone-relative path matches a staging one is *replaced*, not merged with.
+    """
+    staging_dir = zone_dir(root, "staging").resolve()
+    approved_dir = zone_dir(root, "approved").resolve()
+    shadowed: set[Path] = set()
+    for path in staging_paths:
+        resolved = path.resolve()
+        if not resolved.is_relative_to(staging_dir):
+            continue
+        target = approved_dir / resolved.relative_to(staging_dir)
+        if target.is_file():
+            shadowed.add(target)
+    return shadowed
+
+
 def load_merged(
     root: Path,
     staging_paths: list[Path] | None = None,
@@ -386,6 +428,13 @@ def load_merged(
     proposal); a staging relationship may reference approved elements. Duplicates
     *within* a zone are still errors. ``staging_paths`` restricts the overlay to
     selected staging files, which is what partial promotion simulates.
+
+    **File shadowing.** Promotion moves ``model/staging/x.yaml`` onto
+    ``model/approved/x.yaml``, replacing it whole. So a staging file with the same
+    zone-relative path as an approved one shadows it here: the approved file is left
+    out of the merge, because after the move its content no longer exists. Without
+    this, the gate validated a *union* of both files -- content the move then deleted --
+    and could pass a promotion that left the approved zone dangling.
     """
     config = load_config(root)
     approved_docs = load_documents(root, "approved")
@@ -393,6 +442,9 @@ def load_merged(
     if staging_paths is not None:
         wanted = {p.resolve() for p in staging_paths}
         staging_docs = [d for d in staging_docs if d.path.resolve() in wanted]
+
+    shadowed = shadowed_approved_files(root, [d.path for d in staging_docs])
+    approved_docs = [d for d in approved_docs if d.path.resolve() not in shadowed]
 
     model = build_model(root, zone_label, approved_docs, config)
     overlay = build_model(root, zone_label, staging_docs, config)

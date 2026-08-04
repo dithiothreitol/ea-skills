@@ -237,7 +237,7 @@ def _read_record_files(root: Path, directory: Path) -> list[dsl.Document]:
     for path in sorted(p for p in base.rglob("*") if p.is_file() and p.suffix in {".yaml", ".yml"}):
         try:
             data = yaml.safe_load(path.read_text(encoding="utf-8"))
-        except yaml.YAMLError as exc:
+        except dsl.YAML_ERRORS as exc:
             documents.append(dsl.Document(path=path, data=None, parse_error=str(exc)))
             continue
         if not isinstance(data, dict) or not data:
@@ -739,6 +739,19 @@ def _check_requests(governance: Governance, elements: set[str], today: date) -> 
                     SEVERITY_WARNING,
                     f"open for {(today - requested).days} days against an SLA of {service.sla_days} -- "
                     "fulfil it, decline it with a reason, or renegotiate the catalog promise",
+                    file=rel_file,
+                    concept=request.id,
+                )
+            )
+        fulfilled = request.fulfilled_date()
+        if requested is not None and fulfilled is not None and fulfilled < requested:
+            findings.append(
+                Finding(
+                    "REQ010",
+                    SEVERITY_ERROR,
+                    f"fulfilled ({request.fulfilled}) before it was requested ({request.requested}) -- "
+                    "the service line reports average fulfilment time from these dates, so this "
+                    "quietly makes performance look better than it is",
                     file=rel_file,
                     concept=request.id,
                 )

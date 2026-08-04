@@ -126,7 +126,7 @@ that has not started the documentation apparatus is not nagged about it.
 | `NAME004` | warning | Another element of the same type already has this name. Duplicate names are an EA smell and break traceability for anyone reading a view. |
 | `SMELL001` | warning | The element has no relationships (isolated element / dead component). `appliesTo` bindings count as connectivity, in both directions. |
 
-## Zone semantics
+## Zone semantics, and what promotion actually does
 
 `staging` is validated as an **overlay on `approved`**: staging is a proposed delta,
 so a staging relationship may reference approved elements, and a staging concept
@@ -135,6 +135,15 @@ re-using an approved id is an update proposal, not `ID001`. Governance metadata
 (`python -m easkills promote`), which validates approved + staging merged, by
 approved-zone standards. Promotion is the only write path into `approved` (AD-02);
 the git commit of the moved files is the approval record.
+
+**File shadowing.** Promotion is a rename onto the mirrored path, so a staging file
+named like an approved one *replaces* it whole — anything the approved file held and
+the staging file leaves out is deleted. Every zone read applies that rule (the
+`--zone staging` view, the promotion gate, `compile`, `render`), so what the gate
+validates is what the move produces: dropping a still-referenced element fails with
+`REF001` before anything moves. A replacement that only drops unreferenced content
+passes, and `promote` lists the concepts it removes — a deletion is a decision, and the
+commit signs for it.
 
 ## Fact register -- structure and traceability
 
@@ -247,6 +256,7 @@ service line).
 | `REQ007` | warning | Declined without `notes` -- a refusal needs a reason the requester can read. |
 | `REQ008` | warning | Requests a retired offering. |
 | `REQ009` | error | `requested` or `fulfilled` passes the date pattern but is not a real calendar date. SLA and fulfilment timing are computed from these fields, so an unreadable date quietly removes the request from the ledger's arithmetic. |
+| `REQ010` | error | `fulfilled` is before `requested`. Both dates are real, so `REQ009` stays silent -- but the service line averages the interval between them, and a negative one reports EA as faster than it is. (The waiver-side counterpart is `DISP007`.) |
 
 ## Not yet implemented
 

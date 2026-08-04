@@ -142,8 +142,15 @@ def kpi(root: Path, today: date | None = None) -> dict[str, Any]:
     held = {ref for s in model.stakeholders.values() for ref in s.concerns}
     framed = {ref for v in model.views.values() for ref in v.concerns}
 
-    def pct(part: int, whole: int) -> float:
-        return round(part / whole, 4) if whole else 1.0
+    def pct(part: int, whole: int, empty: float = 1.0) -> float:
+        """``empty`` is the value for "nothing to measure".
+
+        1.0 reads as vacuous truth for *good* shares (all zero concepts are evidenced),
+        but a share of *bad* things must be 0.0 there -- an empty model reporting
+        "100% stale/unreviewed" next to "100% owned" is a contradiction on the first
+        screen a new repository shows.
+        """
+        return round(part / whole, 4) if whole else empty
 
     requests = list(governance.requests.values())
     open_requests = [r for r in requests if r.status == "open"]
@@ -175,7 +182,7 @@ def kpi(root: Path, today: date | None = None) -> dict[str, Any]:
         },
         "governance": {
             "ownedShare": pct(owned, len(model.elements)),
-            "staleShare": pct(stale["stale"] + stale["unreviewed"], stale["elements"]),
+            "staleShare": pct(stale["stale"] + stale["unreviewed"], stale["elements"], empty=0.0),
             "openDispensations": sum(1 for d in governance.dispensations.values() if d.is_open(today)),
             "decisions": len(governance.decisions),
             "assessments": len(governance.assessments),
@@ -341,6 +348,34 @@ def render_debt(data: dict[str, Any]) -> str:
 # ---------------------------------------------------------------- ISO 42010 clause 6
 
 
+def _clause_6_8(root: Path, assumed: list[Any]) -> tuple[str, str]:
+    """ISO 42010 §6.8 -- and a check that can actually fail.
+
+    Declaring assumptions in the YAML is not "recording" them: the clause is about the
+    architecture *description*. So the pass depends on the generated document existing
+    and naming every declared assumption. This used to be a hardcoded ``pass``, which
+    is the decorative conformance the report exists to avoid.
+    """
+    if not assumed:
+        return "pass", "no declared assumptions -- nothing to record"
+    description = root / "docs" / "architecture-description.md"
+    if not description.is_file():
+        return (
+            "fail",
+            f"{len(assumed)} declared assumption(s), but docs/architecture-description.md "
+            "does not exist -- generate it with 'python -m easkills docs'",
+        )
+    text = description.read_text(encoding="utf-8", errors="replace")
+    missing = sorted(c.id for c in assumed if c.id not in text and (c.name or c.id) not in text)
+    if missing:
+        return (
+            "fail",
+            f"the architecture description does not record: {', '.join(missing)} -- "
+            "regenerate it after the model changed",
+        )
+    return "pass", f"{len(assumed)} declared assumption(s), each recorded in the architecture description"
+
+
 def conformance(root: Path, today: date | None = None) -> dict[str, Any]:
     """The checkable subset of ISO/IEC/IEEE 42010:2022 Clause 6, honestly labelled:
     ``pass``/``fail`` where a check exists, ``gap`` where this tooling does not
@@ -388,8 +423,7 @@ def conformance(root: Path, today: date | None = None) -> dict[str, Any]:
         item(
             "6.8",
             "Known inconsistencies and gaps recorded",
-            "pass",
-            f"{len(assumed)} declared assumption(s) surfaced in the architecture description",
+            *_clause_6_8(root, assumed),
         ),
         item(
             "6.9",

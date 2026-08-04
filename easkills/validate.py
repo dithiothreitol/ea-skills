@@ -980,10 +980,7 @@ def validate(root: Path, zone: str = "approved", today: date | None = None) -> R
     """Validate a zone. ``staging`` is validated as an overlay on ``approved``:
     staging is a proposed delta, so its relationships may reference approved
     elements and a same-id concept is an update proposal, not a duplicate."""
-    if zone == "staging":
-        model, documents, _config = dsl.load_merged(root, zone_label="staging")
-    else:
-        model, documents, _config = dsl.load(root, zone)
+    model, documents, _config = dsl.load_zone(root, zone)
     return _run_checks(model, documents, root, zone, today)
 
 

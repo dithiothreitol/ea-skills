@@ -148,7 +148,7 @@ def load_register_documents(root: Path) -> list[dsl.Document]:
     for path in paths:
         try:
             data = yaml.safe_load(path.read_text(encoding="utf-8"))
-        except yaml.YAMLError as exc:
+        except dsl.YAML_ERRORS as exc:
             documents.append(dsl.Document(path=path, data=None, parse_error=str(exc)))
             continue
         if data is None:
@@ -168,7 +168,7 @@ def load_entities_document(root: Path) -> dsl.Document | None:
         return None
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except yaml.YAMLError as exc:
+    except dsl.YAML_ERRORS as exc:
         return dsl.Document(path=path, data=None, parse_error=str(exc))
     if data is None:
         data = {}

@@ -33,6 +33,10 @@ class PromoteResult:
     dry_run: bool
     # (staging-relative repo path, approved-relative repo path) for each file.
     moves: list[tuple[str, str]] = field(default_factory=list)
+    # Approved files this promotion overwrites, and the approved concept ids that
+    # disappear with them -- a replacement is a deletion of whatever it leaves out.
+    replaced: list[str] = field(default_factory=list)
+    dropped: list[str] = field(default_factory=list)
     moved: bool = False
 
     @property
@@ -46,7 +50,21 @@ class PromoteResult:
             return "\n".join(lines)
         verb = "Would move" if not self.moved else "Moved"
         for source, target in self.moves:
-            lines.append(f"{ui.green(verb)}  {ui.dim(source)}  {ui.arrow()}  {ui.bold(target)}")
+            note = ui.yellow("  (replaces the approved file)") if target in self.replaced else ""
+            lines.append(f"{ui.green(verb)}  {ui.dim(source)}  {ui.arrow()}  {ui.bold(target)}{note}")
+        if self.dropped:
+            lines.append(
+                ui.yellow(
+                    f"{ui.warning_sign()} replacing those files removes {len(self.dropped)} approved "
+                    f"concept(s): {', '.join(self.dropped)}"
+                )
+            )
+            lines.append(
+                ui.dim(
+                    "   The gate validated the result *after* the replacement, so nothing is left "
+                    "dangling -- but these are deletions, and the commit signs for them."
+                )
+            )
         if not self.moved:
             lines.append(ui.dim("Dry run: nothing was moved."))
         else:
@@ -61,7 +79,7 @@ def staging_files(root: Path) -> list[Path]:
     directory = dsl.zone_dir(root, "staging")
     if not directory.is_dir():
         return []
-    return sorted(p for p in directory.rglob("*") if p.suffix in {".yaml", ".yml"})
+    return sorted(p for p in directory.rglob("*") if p.is_file() and p.suffix in {".yaml", ".yml"})
 
 
 def _resolve_selection(root: Path, files: list[Path] | None) -> list[Path]:
@@ -84,6 +102,22 @@ def _resolve_selection(root: Path, files: list[Path] | None) -> list[Path]:
     return sorted(selected)
 
 
+def _dropped_concepts(root: Path, selected: list[Path], today: date | None = None) -> list[str]:
+    """Approved ids that exist now and would not exist after this promotion.
+
+    A staging file replaces the approved file of the same name, so anything the
+    approved file held and the staging file leaves out is deleted. The gate validates
+    the post-move result, so nothing is left dangling -- but a deletion must still be
+    visible to whoever signs the commit, not discovered later in a diff.
+    """
+    before, _docs, _config = dsl.load(root, "approved")
+    after, _docs, _config = dsl.load_merged(root, selected, zone_label="approved")
+    gone = (set(before.elements) | set(before.relationships) | set(before.views)) - (
+        set(after.elements) | set(after.relationships) | set(after.views)
+    )
+    return sorted(gone)
+
+
 def promote(
     root: Path,
     files: list[Path] | None = None,
@@ -96,14 +130,25 @@ def promote(
 
     staging_dir = dsl.zone_dir(root, "staging").resolve()
     approved_dir = dsl.zone_dir(root, "approved")
+    shadowed = dsl.shadowed_approved_files(root, selected)
     moves: list[tuple[str, str]] = []
+    replaced: list[str] = []
     for path in selected:
         relative = path.relative_to(staging_dir)
         source_rel = str((Path("model") / "staging" / relative)).replace("\\", "/")
         target_rel = str((Path("model") / "approved" / relative)).replace("\\", "/")
         moves.append((source_rel, target_rel))
+        if (approved_dir / relative).resolve() in shadowed:
+            replaced.append(target_rel)
 
-    result = PromoteResult(root=root, report=report, dry_run=dry_run, moves=moves)
+    result = PromoteResult(
+        root=root,
+        report=report,
+        dry_run=dry_run,
+        moves=moves,
+        replaced=replaced,
+        dropped=_dropped_concepts(root, selected, today=today),
+    )
     if not report.ok or dry_run:
         return result
 

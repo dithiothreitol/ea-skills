@@ -38,6 +38,39 @@ def test_kpi_metrics(example_root):
     assert data["documentation"]["unframedConcerns"] == []
 
 
+def test_kpi_of_an_empty_repository_is_not_self_contradictory(tmp_path):
+    """A share of *bad* things must read 0% when there is nothing to measure.
+
+    A scaffolded repository used to report "100% owned; 100% stale/unreviewed" on the
+    same line -- the first screen a new user sees, stating two opposite things.
+    """
+    (tmp_path / "model" / "approved").mkdir(parents=True)
+    data = reports.kpi(tmp_path, today=TODAY)
+    assert data["governance"]["staleShare"] == 0.0
+    assert "0% stale/unreviewed" in reports.render_kpi(data)
+
+
+def test_conformance_6_8_fails_when_assumptions_are_not_in_the_description(tmp_path, example_root):
+    """§6.8 is about the architecture *description*, so the check reads the document.
+
+    It was a hardcoded 'pass' -- decorative conformance in the one report whose whole
+    point is refusing to present silence as conformance.
+    """
+    import shutil
+
+    repo = tmp_path / "repo"
+    shutil.copytree(example_root, repo)
+    clause = lambda root: next(  # noqa: E731 - local helper
+        i for i in reports.conformance(root, today=TODAY)["items"] if i["clause"] == "6.8"
+    )
+    assert clause(repo)["status"] == "pass"
+
+    (repo / "docs" / "architecture-description.md").unlink()
+    failed = clause(repo)
+    assert failed["status"] == "fail"
+    assert "easkills docs" in failed["detail"]
+
+
 def test_kpi_demand_metrics(example_root):
     """AaaS is measured by consumption: offerings, requests, SLA state, fulfilment."""
     data = reports.kpi(example_root, today=TODAY)
@@ -141,6 +174,26 @@ def test_context_pack_flags_stale_content(example_root):
     pack = contextpack.build(example_root, "app-erp-core", today=date(2028, 1, 1))
     assert "Freshness warning" in pack.markdown
     assert "advisory" in pack.markdown
+
+
+def test_context_pack_never_calls_an_unreadable_review_date_current(tmp_path):
+    """The freshness banner is the pack's one mandatory claim; it must not be bluffed.
+
+    It used to be decided by testing for the substring "stale", so an element whose
+    review date was not a date at all fell through to "-- current."
+    """
+    (tmp_path / "model" / "approved").mkdir(parents=True)
+    (tmp_path / "model/approved/m.yaml").write_text(
+        "elements:\n"
+        "  - id: app-x\n    type: ApplicationComponent\n    name: App X\n"
+        "    owner: owner@example.test\n    lastReviewed: '2026-06-31'\n"
+        "    assumed: true\n    rationale: Probe element with a date that is not a date.\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    text = contextpack.build(tmp_path, "app-x", today=TODAY).markdown
+    assert "Freshness warning" in text and "unreadable review date" in text
+    assert "-- current." not in text
 
 
 def test_context_pack_for_a_capability_expands_to_realizers(example_root):

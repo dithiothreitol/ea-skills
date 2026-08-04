@@ -151,6 +151,28 @@ def test_provenance_cannot_be_verified_against_a_file_outside_the_repository(tmp
     assert [f.code for f in report.errors] == ["PROV008"]
 
 
+def test_an_impossible_unquoted_date_is_a_finding_not_a_traceback(tmp_path):
+    """`lastReviewed: 2026-06-31` is a one-character typo, not a reason to crash.
+
+    PyYAML resolves unquoted ISO dates to ``datetime.date`` *while parsing*, so an
+    impossible one raises a bare ValueError -- which the loaders did not catch, taking
+    every command down with a traceback instead of reporting the file.
+    """
+    root = tmp_path / "repo"
+    (root / "model" / "approved").mkdir(parents=True)
+    (root / "model/approved/m.yaml").write_text(
+        "elements:\n"
+        "  - id: cap-x\n    type: Capability\n    name: Capability X\n"
+        "    owner: owner@example.test\n    lastReviewed: 2026-06-31\n"
+        "    assumed: true\n    rationale: Probe element with a date that is not a date.\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    report = validate.validate(root, zone="approved", today=date(2026, 7, 30))
+    assert not report.ok
+    assert "SCHEMA000" in {f.code for f in report.errors}
+
+
 @pytest.mark.parametrize(
     "line",
     [

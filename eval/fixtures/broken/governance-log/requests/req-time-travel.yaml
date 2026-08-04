@@ -1,0 +1,11 @@
+# --- REQ010: fulfilled before it was requested --------------------------------------
+# Both dates are real, so REQ009 is silent -- but the service line computes average
+# fulfilment time from them, so a negative interval makes EA look faster than it is.
+id: req-time-travel
+service: svc-dup
+requestedBy: someone@example.test
+requested: 2026-07-20
+scope: [node-a]
+status: fulfilled
+fulfilled: 2026-07-01
+fulfilledBy: docs/nothing-real.md

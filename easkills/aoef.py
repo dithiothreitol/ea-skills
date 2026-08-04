@@ -264,7 +264,8 @@ def validate_against_xsd(xml: bytes) -> list[str]:
 
 
 def compile_model(root: Path, zone: str = "approved", out: Path | None = None) -> CompileResult:
-    model, _documents, _config = dsl.load(root, zone)
+    # load_zone, not load: compiling 'staging' must mean the same overlay validate means.
+    model, _documents, _config = dsl.load_zone(root, zone)
     tree = build_tree(model)
     xml = etree.tostring(tree, xml_declaration=True, encoding="UTF-8", pretty_print=True)
     target = out or (root / "build" / "model.xml")

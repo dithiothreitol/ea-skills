@@ -140,7 +140,9 @@ def render_view(model: dsl.Model, view: dsl.View) -> str:
 
 def render_all(root: Path, zone: str = "approved", out_dir: Path | None = None) -> RenderResult:
     """Render every view of the zone to ``docs/views/<id>.svg`` (path-sorted, stable)."""
-    model, _documents, _config = dsl.load(root, zone)
+    # load_zone, not load: 'staging' is the overlay, so a delta renders against the
+    # approved model it proposes to change instead of reporting "no views".
+    model, _documents, _config = dsl.load_zone(root, zone)
     target_dir = out_dir or (root / "docs" / "views")
     target_dir.mkdir(parents=True, exist_ok=True)
     result = RenderResult(out_dir=target_dir)

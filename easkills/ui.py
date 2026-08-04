@@ -90,6 +90,10 @@ def bullet() -> str:
     return sym("●", "*")
 
 
+def warning_sign() -> str:
+    return sym("⚠", "!")
+
+
 def severity(label: str) -> str:
     """Colour a severity word, preserving the field width it was padded to."""
     key = label.strip().upper()
