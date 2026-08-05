@@ -47,6 +47,10 @@ relatedElements: [service-order-api, app-order-portal]
   file, old one gets `status: superseded` + `supersededBy:` (checked by
   `DEC003`/`DEC004`). Never rewrite an accepted decision's content -- amend history
   through new records.
+* **Superseding is not finished until the elements move.** `relatedElements` left on a
+  superseded record means the model still realises a decision that no longer stands --
+  `CORR001`, and it is the reason the successor record exists at all. Carry the elements
+  over to the new record, or drop the ones the new decision no longer covers.
 
 ## Judgement calls
 

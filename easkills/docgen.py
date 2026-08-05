@@ -12,9 +12,10 @@ model, not the wall clock: the document is as fresh as its content, not its buil
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import date as _date
 from pathlib import Path
 
-from . import dsl, genschema, render
+from . import correspond, dsl, genschema, render
 
 # One vocabulary, defined with the schema that enforces it (genschema.TIME_DISPOSITIONS).
 TIME_ORDER = genschema.TIME_DISPOSITIONS
@@ -60,6 +61,31 @@ def _contested_citations(model: dsl.Model) -> list[tuple[str, str, str]]:
                 )
             )
     return rows
+
+
+def _governance_view(model: dsl.Model) -> tuple[list, list]:
+    """(standing decisions, correspondences) for the last two sections.
+
+    Loaded here rather than passed in, so ``build_markdown(model)`` keeps its signature
+    and the description stays generated from one argument. The correspondence verdicts
+    are evaluated **as of the model's own date**, never the wall clock: a description
+    whose bytes changed because a dispensation expired overnight would fail the freshness
+    gate on a day nobody touched the repository.
+    """
+    from . import correspond as correspond_mod, govern as govern_mod
+
+    governance = govern_mod.load(model.root)
+    as_of = _as_of(model)
+    try:
+        today = _date.fromisoformat(as_of)
+    except ValueError:
+        today = _date.min  # an unreviewed model: nothing has expired yet
+    decisions = [
+        d
+        for d in sorted(governance.decisions.values(), key=lambda d: d.id)
+        if d.status in correspond_mod.STANDING_DECISION_STATUSES
+    ]
+    return decisions, correspond_mod.derive(model, governance, today)
 
 
 def _as_of(model: dsl.Model) -> str:
@@ -285,14 +311,76 @@ def build_markdown(model: dsl.Model) -> str:
         for name, kind, detail in contested:
             out.append(f"- **{_md_escape(name)}** ({kind}): {_md_escape(detail)}")
 
-    out += [
-        "",
-        "---",
-        "",
-        "*Correspondences (ISO 42010 §6.9) and architecture decisions (§6.10) are kept in "
-        "the governance log and joined into this description in a later phase.*",
-        "",
-    ]
+    # ------------------------------------------------------------------- decisions
+    decisions, correspondences = _governance_view(model)
+    out += ["", "## 7. Decisions", ""]
+    if not decisions:
+        out.append("*No decision records -- `governance-log/decisions/` is empty.*")
+    else:
+        out.append(
+            "ISO 42010 §6.10: the decisions this architecture rests on, each with the "
+            "rationale the record is required to carry."
+        )
+        out.append("")
+        rows = []
+        for decision in decisions:
+            rows.append(
+                [
+                    f"`{decision.id}`",
+                    _md_escape(decision.title),
+                    decision.status or "—",
+                    decision.date or "—",
+                    # Never truncated: a clipped rationale is how "because of the audit
+                    # finding in" ends up being the recorded reason for a decision.
+                    _md_escape(decision.rationale) or "—",
+                ]
+            )
+        out += _table(["Record", "Decision", "Status", "Decided", "Rationale"], rows)
+
+    # -------------------------------------------------------------- correspondences
+    out += ["", "## 8. Correspondences", ""]
+    out.append(
+        "ISO 42010 §6.9: relations between AD elements that no ArchiMate relationship "
+        "can express, because they cross out of the model -- into the governance log and "
+        "into the fact register. They are derived from what the records already declare, "
+        "so this table cannot drift from them, and each is held to a stated rule."
+    )
+    out.append("")
+    if not correspondences:
+        out.append("*Nothing relates this model to decisions, standards or evidence yet.*")
+    else:
+        rows = []
+        for rule in correspond.RULES:
+            of_kind = [c for c in correspondences if c.kind == rule.kind]
+            if not of_kind:
+                continue
+            violated = [c for c in of_kind if not c.satisfied]
+            rows.append(
+                [
+                    f"`{rule.kind}`",
+                    f"{rule.source_kind} → {rule.target_kind}",
+                    str(len(of_kind)),
+                    f"**{len(violated)}**" if violated else "0",
+                    _md_escape(rule.statement),
+                ]
+            )
+        out += _table(["Rule", "Relates", "Count", "Violated", "What must hold"], rows)
+        violations = [c for c in correspondences if not c.satisfied]
+        if violations:
+            out.append("")
+            out.append(
+                "The following correspondences are **violated**. ISO 42010 §6.8 asks for "
+                "known inconsistencies to be recorded, so they are recorded here rather "
+                "than left in a report nobody exports:"
+            )
+            out.append("")
+            for violation in violations:
+                out.append(
+                    f"- **{_md_escape(violation.source)} → {_md_escape(violation.target)}** "
+                    f"(`{violation.kind}`, {violation.code}): {_md_escape(violation.detail)}"
+                )
+
+    out += ["", ""]
     return "\n".join(out)
 
 

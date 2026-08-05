@@ -20,11 +20,15 @@ elements:
       - file: facts/sources/notes.md
         quote: two application servers that mirror each other
 
+  # --- CORR002: the only bearer of `fact-ref-missing`'s obligation is being eliminated,
+  # and CORR001's decision record still claims this element realises it -----------------
   - id: app-finance
     type: ApplicationComponent
     name: Finance System
     owner: finance@example.test
     lastReviewed: 2026-07-20
+    properties:
+      timeDisposition: Eliminate
     provenance:
       - file: facts/sources/notes.md
         quote: Order records are held by the finance system

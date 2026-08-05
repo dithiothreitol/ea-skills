@@ -1,0 +1,15 @@
+# --- CORR001: a decision the governance log retired, still claimed as realised -------
+# Deliberately *not* a DEC003/DEC004 case: the successor exists and is named, so the
+# record itself is in good order. What is wrong is the correspondence -- an element of
+# the approved model still points at a decision that no longer stands, which no other
+# rule in this repository could see.
+id: dec-realized-after-death
+title: Finance System Stays On Premise
+status: superseded
+date: 2026-01-15
+supersededBy: dec-super
+decision: The finance system stays in the primary data centre.
+rationale: >
+  Exists to trigger CORR001: superseded, successor named, and still corresponding to a
+  live element.
+relatedElements: [app-finance]

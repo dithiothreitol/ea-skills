@@ -81,6 +81,12 @@ jobs:
           python -m easkills docs --root eval/example
           git diff --exit-code eval/example/docs
 
+      # The checklist is only worth having if it is gated. Pinned to a date because
+      # the example's dispensation expires in 2027 on purpose: that failure belongs to
+      # the maintenance rehearsal, not to a CI run that happens to be late.
+      - name: ISO 42010 Clause 6 stays conformant on the worked example
+        run: python -m easkills conformance --root eval/example --strict --as-of 2026-07-30
+
       # Gold that does not pass its own gates is not gold, and the scorer must
       # report a perfect self-score or its matching logic has drifted.
       - name: Golden set stays gold

@@ -10,7 +10,7 @@ and living governance out. All of it in git.
 [![CI](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Validation rules](https://img.shields.io/badge/validation%20rules-109-brightgreen.svg)](docs/RULES.md)
+[![Validation rules](https://img.shields.io/badge/validation%20rules-111-brightgreen.svg)](docs/RULES.md)
 [![ArchiMate 3.2](https://img.shields.io/badge/ArchiMate-3.2-orange.svg)](oracle/NOTICE.md)
 [![ISO/IEC/IEEE 42010](https://img.shields.io/badge/ISO%2FIEC%2FIEEE-42010%3A2022-lightgrey.svg)](docs/RULES.md)
 
@@ -135,7 +135,7 @@ and keeps the stage order honest.
 | Publish | `ea-approve` | `promote` — the only write path into `approved/` |
 | Document | `ea-stakeholders`, `ea-views`, `ea-docs` | `docs`, `render`, ISO loop rules, freshness CI check |
 | Govern | `ea-standards-base`, `ea-dispensation`, `ea-adr`, `ea-compliance`, `ea-service` | `validate-gov` — expiry and SLA are enforced, not filed |
-| Maintain | `ea-health`, `ea-change-triage`, `ea-board`, `ea-context` | `kpi`, `debt`, `staleness`, `conformance`, `delta`, `context` |
+| Maintain | `ea-health`, `ea-change-triage`, `ea-board`, `ea-context` | `kpi`, `debt`, `staleness`, `conformance`, `correspondences`, `delta`, `context` |
 | Consume | `ea-check` | `check --scope` inside a product repo — standards lifecycle vs declared dependencies |
 | Evaluate | `ea-eval` | `score --min-f1` against the [golden set](eval/golden/) |
 
@@ -237,7 +237,7 @@ validator.
 | Concern | What is used | How |
 |---|---|---|
 | Notation | **ArchiMate 3.2** | Primary. Enforced from the machine-readable matrix, exported as Open Group Model Exchange XML. |
-| Architecture description | **ISO/IEC/IEEE 42010:2022** | Documentation structure and conformance checking: stakeholders, concerns, viewpoints, views, decisions with rationale. §6.9 correspondences are an explicit, labelled gap. |
+| Architecture description | **ISO/IEC/IEEE 42010:2022** | Documentation structure and conformance checking: stakeholders, concerns, viewpoints, views, decisions with rationale, and §6.9 correspondences derived from the records that declare them — never authored twice. |
 | Method and governance | **TOGAF 10** | Used as vocabulary and for governance mechanics (conformance levels, dispensations with expiry, Phase H change classes) — *not* as a process to march through. |
 | Detail design | **UML** | Secondary, where ArchiMate is too coarse (sequences, deployment). |
 | Decisions | **MADR** | Architecture decision records in the governance log. |
@@ -294,9 +294,9 @@ history and [BLUEPRINT §8a](docs/BLUEPRINT.md) for per-phase design decisions.
 
 Deliberately open (decisions, not backlog): the **network facade** (MCP/HTTP) over the
 read-only commands stays deferred until the demand ledger shows someone asking for it —
-`ea-check` shipped without it, and needs no service to run; ISO 42010 §6.9
-correspondences remain an
-explicit gap; the [comparison table](#how-it-compares) above carries a monthly
+`ea-check` shipped without it, and needs no service to run; §6.9 correspondences to AD
+elements in *another* architecture description stay underived, because nothing here can
+check the far end of one; the [comparison table](#how-it-compares) above carries a monthly
 re-check obligation that nothing can automate; and the worked example carries
 *scheduled* failures (a dispensation expiring 2027-06-30, a staleness horizon in
 mid-2027) as maintenance rehearsals — renewing the records, not weakening the gates,
@@ -324,7 +324,7 @@ docs/            GETTING-STARTED, CLI reference, RULES catalogue, BLUEPRINT (des
 |---|---|
 | [Getting started](docs/GETTING-STARTED.md) | Tutorial: from a raw interview to a validated, documented architecture |
 | [CLI reference](docs/CLI.md) | Every command, flag and exit-code contract |
-| [Rule catalogue](docs/RULES.md) | All 109 validation rules with severities and rationale |
+| [Rule catalogue](docs/RULES.md) | All 111 validation rules with severities and rationale |
 | [Blueprint](docs/BLUEPRINT.md) | The research-verified design: decisions, evidence, per-phase log |
 | [Golden set](eval/golden/README.md) | How pipeline quality is measured |
 | [Contributing](CONTRIBUTING.md) | Dev setup, conventions, how to add a rule or a skill |

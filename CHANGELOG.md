@@ -7,6 +7,48 @@ project's build phases (design log with per-decision rationale:
 
 ## [Unreleased]
 
+### Added — ISO 42010 §6.9: correspondences, derived rather than authored twice
+
+The last labelled `gap` in the conformance checklist closes. The clause asks for the
+relations between AD elements to be recorded, for the rules governing them to be stated,
+and for violations to be known. The obvious implementation — a `correspondences:` block
+authors fill in — was rejected: a decision record already names the elements it decides,
+a requirement already names what it binds, an element already names the standards it
+follows, a concept already names the facts that evidence it. Restating those would have
+bought conformance with duplication, and the two copies would have drifted inside a
+quarter. So correspondences are **derived** (`easkills/correspond.py`), and what was
+actually missing got built instead.
+
+- **Five correspondence rules, each stated and each enforced.** `realizes`
+  (decision → element), `binds` (motivation element → element), `governed-by`
+  (element → standard), `assessed-by` (assessment → element), `evidenced-by`
+  (concept → fact). Every one crosses a boundary no ArchiMate relationship can reach
+  across; inside the model, a relation between two elements is a relationship and the
+  oracle already governs it.
+- **`CORR001`** (warning): an element still realises a decision whose status is
+  `superseded`, `rejected` or `deprecated`. The record itself is in perfect order —
+  successor named, rationale present — so no `DEC*` rule could see this. What is stale
+  is the *relation*, and superseding was never finished until the elements moved.
+- **`CORR002`** (warning): a requirement, constraint, principle or goal whose bound
+  elements are **all** TIME `Eliminate` — the seven-year retention requirement nobody
+  thinks about until the system holding the records is switched off. One eliminated
+  bearer among several is a migration, not a gap, and stays silent.
+- **The other three cite the code that already enforces them** (`STD002`, `COMP005`,
+  `PROV007`) instead of reporting the same defect twice. A clause is not implemented by
+  inventing checks for relations that are already checked.
+- **`python -m easkills correspondences`**: every pair, its rule and its verdict.
+- **The architecture description records both remaining clauses.** New §7 Decisions
+  (with rationale, never truncated) and §8 Correspondences, replacing the footer that
+  promised them "in a later phase". Verdicts are evaluated as of the model's own date,
+  never the wall clock, so the freshness gate cannot fail on a day nobody touched the
+  repository.
+- **§6.10 was strengthened the way §6.8 already had been**: a decision record in the
+  governance log is a decision somebody can find, not one the *description* records. The
+  clause now depends on the generated document naming each standing decision.
+- CI gates `conformance --strict` on the worked example, pinned to a date — the
+  example's 2027 dispensation expiry belongs to the maintenance rehearsal, not to a CI
+  run that happens to be late.
+
 ### Added — contradictions are recorded, not resolved silently
 
 The end-to-end run showed what the golden set could not measure: what happens when two

@@ -36,6 +36,7 @@ def test_example_governance_counts(example_report):
         "assessments": 1,
         "services": 3,
         "requests": 2,
+        "correspondences": 13,
     }
 
 
@@ -88,6 +89,8 @@ EXPECTED_WARNING_CODES = [
     "REQ006",  # open request past the offering's SLA
     "REQ007",  # declined without a reason
     "REQ008",  # requests a retired offering
+    "CORR001",  # an element still realises a decision that no longer stands
+    "CORR002",  # an obligation whose only bearers are slated for elimination
 ]
 
 

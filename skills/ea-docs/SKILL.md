@@ -23,6 +23,10 @@ validation errors; do not override that to hit a deadline.
 * Capability support table, including capabilities *nothing realizes*.
 * Every declared assumption surfaced as an open question -- burying assumptions is the
   failure mode this section exists to prevent.
+* Decisions with their rationale (§6.10) and correspondences with the rule each one is
+  held to (§6.9), derived from the governance log and the register -- never authored a
+  second time in the description, and never truncated. A violated correspondence is
+  listed as a known inconsistency rather than left in a report nobody exports.
 * Deterministic output: the "as of" date is the newest `lastReviewed` in the model,
   not the wall clock, and identical models produce identical bytes. The generated
   files are committed; CI fails if they are stale, so regenerate and commit together
@@ -48,6 +52,6 @@ description itself per audience; one description, many extracts.
 ## Reporting back
 
 Say what was generated and from which model state, which concerns are still uncovered
-(the bold gaps in section 2), which portfolio fields are missing, and which
-assumptions the reader is being asked to accept. Those four lists are the review
-agenda; the prose around them is garnish.
+(the bold gaps in section 2), which portfolio fields are missing, which assumptions the
+reader is being asked to accept, and any violated correspondence in section 8. Those
+five lists are the review agenda; the prose around them is garnish.

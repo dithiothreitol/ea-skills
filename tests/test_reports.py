@@ -136,8 +136,17 @@ def test_conformance_passes_the_checkable_clauses(example_root):
     data = reports.conformance(example_root, today=TODAY)
     assert data["failed"] == 0
     by_clause = {i["clause"]: i["status"] for i in data["items"]}
-    assert by_clause["6.9"] == "gap", "unimplemented clauses must be labelled, never silently passed"
+    assert by_clause["6.9"] == "pass"
     assert by_clause["6.10"] == "pass"
+
+
+def test_an_unimplemented_clause_would_still_be_labelled_a_gap(tmp_path):
+    """The `gap` status must stay reachable. It is the mechanism that keeps silence from
+    reading as conformance, and the day every clause passes on an empty repository is the
+    day the checklist has become decoration."""
+    items = reports.conformance(tmp_path)["items"]
+    assert {i["clause"] for i in items if i["status"] == "gap"} == {"6.9"}
+    assert next(i for i in items if i["clause"] == "6.10")["status"] == "fail"
 
 
 def test_conformance_fails_without_the_apparatus(tmp_path):

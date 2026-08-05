@@ -40,6 +40,7 @@ python -m easkills validate-gov   --root eval/example --strict
 python -m easkills coverage       --root eval/example --min-coverage 100
 python -m easkills compile        --root eval/example
 python -m easkills docs           --root eval/example && git diff --exit-code eval/example/docs
+python -m easkills conformance    --root eval/example --strict --as-of 2026-07-30
 python -m easkills validate       --root eval/golden/clinic --strict
 python -m easkills validate-facts --root eval/golden/clinic --strict
 python -m easkills score --root eval/golden/clinic --gold eval/golden/clinic --min-f1 100

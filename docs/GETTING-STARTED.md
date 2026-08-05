@@ -192,6 +192,7 @@ python -m easkills kpi --root .          # incl. the service/demand line
 python -m easkills staleness --root .    # review queue, ordered by consumer demand
 python -m easkills debt --root .         # EA-smell register
 python -m easkills conformance --root .  # ISO 42010 Clause 6 checklist
+python -m easkills correspondences --root .   # §6.9: what relates to what, and the rule it is held to
 python -m easkills delta --root .        # what the facts know that the model doesn't
 python -m easkills context --root . --scope <element-id>   # pack for a dev team/agent
 ```

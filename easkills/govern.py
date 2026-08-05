@@ -23,7 +23,7 @@ from typing import Any
 import yaml
 from jsonschema import Draft202012Validator
 
-from . import dsl, genschema, ui
+from . import correspond, dsl, genschema, ui
 from .validate import SEVERITY_ERROR, SEVERITY_INFO, SEVERITY_WARNING, Finding
 
 STANDARDS_DIR = Path("standards")
@@ -211,7 +211,8 @@ class GovReport:
                 f"{self.counts.get('dispensations', 0)} dispensations, "
                 f"{self.counts.get('assessments', 0)} assessments, "
                 f"{self.counts.get('services', 0)} services, "
-                f"{self.counts.get('requests', 0)} requests"
+                f"{self.counts.get('requests', 0)} requests, "
+                f"{self.counts.get('correspondences', 0)} correspondences"
             ),
             "",
         ]
@@ -798,6 +799,10 @@ def validate_governance(root: Path, today: date | None = None) -> GovReport:
     findings += _check_decisions(governance, elements)
     findings += _check_assessments(governance, elements)
     findings += _check_requests(governance, elements, today)
+    # ISO 42010 §6.9: the relations that cross from the model into the governance log are
+    # checked where both sides are loaded -- which is here, not in `validate`.
+    correspondences = correspond.derive(model, governance, today)
+    findings += correspond.findings(correspondences)
 
     severity_rank = {SEVERITY_ERROR: 0, SEVERITY_WARNING: 1, SEVERITY_INFO: 2}
     findings.sort(key=lambda f: (severity_rank.get(f.severity, 3), f.code, f.file, f.concept))
@@ -810,5 +815,6 @@ def validate_governance(root: Path, today: date | None = None) -> GovReport:
         "assessments": len(governance.assessments),
         "services": len(governance.services),
         "requests": len(governance.requests),
+        "correspondences": len(correspondences),
     }
     return report

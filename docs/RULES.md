@@ -13,8 +13,9 @@ Severity meanings:
 Three validators share this catalogue: `python -m easkills validate` covers the model
 zones (`ORACLE`/`SCHEMA`/`ID`/`REF`/`PROV`/`GOV`/`MOT`/`STD`/`ISO`/`REL`/`NAME`/`SMELL`),
 `python -m easkills validate-facts` covers the fact register (`FACT`/`ENT`/`SRC`), and
-`python -m easkills validate-gov` covers the standards base, governance log and the
-service layer (`SIB`/`DEC`/`DISP`/`COMP`/`SVC`/`REQ`). A fourth command, `python -m
+`python -m easkills validate-gov` covers the standards base, governance log, the
+service layer and the correspondences that cross between them
+(`SIB`/`DEC`/`DISP`/`COMP`/`SVC`/`REQ`/`CORR`). A fourth command, `python -m
 easkills check` (`CHK`), runs outside this repository entirely — in a consuming
 product repository — and is catalogued in its own section at the end.
 
@@ -264,6 +265,36 @@ service line).
 | `REQ009` | error | `requested` or `fulfilled` passes the date pattern but is not a real calendar date. SLA and fulfilment timing are computed from these fields, so an unreadable date quietly removes the request from the ledger's arithmetic. |
 | `REQ010` | error | `fulfilled` is before `requested`. Both dates are real, so `REQ009` stays silent -- but the service line averages the interval between them, and a negative one reports EA as faster than it is. (The waiver-side counterpart is `DISP007`.) |
 
+## Correspondences (ISO 42010 §6.9)
+
+A correspondence relates AD elements to one another; a correspondence rule is what that
+relation has to satisfy. They are **derived, never authored twice**: a decision record
+already names the elements it decides, a requirement already names what it binds, an
+element already names the standards it follows, a concept already names the facts that
+evidence it. Asking for the same relation a second time in a `correspondences:` block
+would buy conformance with duplication, and the two copies would drift.
+
+Every one of these relations crosses a boundary no ArchiMate relationship can reach
+across -- into the governance log, into the fact register. Inside the model, a relation
+between two elements is a *relationship*, and the oracle governs it.
+
+| Kind | Relates | What must hold | Enforced by |
+|---|---|---|---|
+| `realizes` | decision → element | The decision still stands: superseded, rejected or deprecated records no longer describe the architecture. | `CORR001`, `DEC005` |
+| `binds` | motivation element → element | The obligation has a bearer that is not on its way out. | `CORR002`, `MOT001`, `MOT002` |
+| `governed-by` | element → standard | The standard is in the SIB and not retired, unless an open dispensation covers the pair. | `STD001`, `STD002`, `STD004` |
+| `assessed-by` | assessment → element | The assessed elements are in the approved model. | `COMP005` |
+| `evidenced-by` | concept → fact | The cited fact is in the register and its quotes are located in their sources. | `PROV007`, `PROV003`, `PROV001` |
+
+Only two of those rules needed a new check; the rest were already enforced, and naming
+the code that enforces them is more useful than reporting the same defect twice. Run
+`python -m easkills correspondences` for the table, including every pair and its verdict.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `CORR001` | warning | An element of the approved model still realises a decision whose status is `superseded`, `rejected` or `deprecated`. The record is in perfect order -- successor named, rationale present -- so no `DEC*` rule can see this; what is stale is the *relation*. A warning, not an error: the model is not malformed, the governance log has simply moved on without it. |
+| `CORR002` | warning | A requirement, constraint, principle or goal binds elements of which **every** one is TIME `Eliminate`. The obligation outlives its bearers -- the seven-year retention requirement nobody thinks about until the system holding the records is switched off. One eliminated bearer among several is a migration, not a gap, and is not reported. |
+
 ## Consuming repositories -- `ea-check` (AD-09)
 
 `python -m easkills check` runs in a *product* repository, not in the EA repository:
@@ -299,6 +330,7 @@ Stated so nobody mistakes silence for a clean bill of health:
 * **Verb-phrase naming for behaviour elements.** The convention (noun phrases for
   structure, verb phrases for behaviour) is real but needs more than a regex to check
   honestly, so it is not pretended at.
-* **ISO/IEC/IEEE 42010:2022 clause 6.9 (correspondences).** The conformance checklist
-  (`python -m easkills conformance`) covers 6.2-6.8 and 6.10 and reports 6.9 as an
-  explicit `gap` -- never as silent conformance.
+* **Correspondences to elements outside this AD.** §6.9 also covers relations to AD
+  elements *in another architecture description* -- another team's model, a supplier's.
+  Nothing here can check the far end of one, so none is derived; the conformance
+  checklist counts only correspondences whose both sides this repository holds.

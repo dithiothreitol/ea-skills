@@ -14,7 +14,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from . import dsl, facts as facts_mod, genschema, govern, ui
+from . import correspond, dsl, facts as facts_mod, genschema, govern, ui
 from .validate import _normalize
 
 # ------------------------------------------------------------------------- staleness
@@ -349,6 +349,55 @@ def render_debt(data: dict[str, Any]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+# -------------------------------------------------------- ISO 42010 §6.9 correspondences
+
+
+def correspondences(root: Path, today: date | None = None) -> dict[str, Any]:
+    """What relates to what across the AD, and the rule each relation is held to."""
+    today = today or date.today()
+    model, _documents, _config = dsl.load(root, "approved")
+    governance = govern.load(root)
+    data = correspond.summary(correspond.derive(model, governance, today))
+    data["asOf"] = today.isoformat()
+    return data
+
+
+def render_correspondences(data: dict[str, Any]) -> str:
+    lines = [
+        ui.bold(
+            f"Correspondences (ISO 42010 §6.9) as of {data['asOf']} -- "
+            f"{data['total']} relation(s), {data['violated']} violated"
+        ),
+        "",
+    ]
+    by_kind: dict[str, list[dict[str, Any]]] = {}
+    for item in data["items"]:
+        by_kind.setdefault(item["kind"], []).append(item)
+    for kind in data["kinds"]:
+        items = by_kind.get(kind["kind"], [])
+        if not items:
+            continue
+        header = f"{kind['kind']} ({kind['relates']}) -- {len(items)}"
+        lines.append(ui.cyan(ui.bold(header)))
+        lines.append(f"  {ui.dim('rule: ' + kind['rule'])}")
+        lines.append(f"  {ui.dim('enforced by: ' + ', '.join(kind['enforcedBy']))}")
+        for item in items:
+            pair = "{:<40}".format(f"{item['from']} -> {item['to']}")
+            if item["satisfied"]:
+                lines.append(f"  {ui.green(ui.check())} {pair}")
+            else:
+                lines.append(f"  {ui.red('x')} {ui.bold(pair)} {ui.red(item['code'])} {item['detail']}")
+        lines.append("")
+    if not data["items"]:
+        lines.append(
+            ui.dim(
+                "No correspondences. Nothing in this repository relates the model to its "
+                "decisions, its standards or its evidence -- which is what the clause is for."
+            )
+        )
+    return "\n".join(lines).rstrip() + "\n"
+
+
 # ---------------------------------------------------------------- ISO 42010 clause 6
 
 
@@ -380,12 +429,74 @@ def _clause_6_8(root: Path, assumed: list[Any]) -> tuple[str, str]:
     return "pass", f"{len(assumed)} declared assumption(s), each recorded in the architecture description"
 
 
+def _clause_6_9(correspondences: list[correspond.Correspondence]) -> tuple[str, str]:
+    """ISO 42010 §6.9 -- correspondences, and the rules they are held to.
+
+    Derived from what the AD already records (``easkills/correspond.py``), so the clause
+    passes on relations that exist and are checked, not on a section somebody wrote.
+    An AD with none is reported as a `gap` rather than a vacuous pass: nothing tying the
+    model to its decisions, its standards and its evidence is a state to see, not to
+    quietly tick off.
+    """
+    if not correspondences:
+        return (
+            "gap",
+            "no correspondences recorded -- nothing relates the model to its decisions, "
+            "standards or fact register",
+        )
+    violated = [c for c in correspondences if not c.satisfied]
+    kinds = sorted({c.kind for c in correspondences})
+    counted = f"{len(correspondences)} correspondence(s) over {len(kinds)} rule(s): {', '.join(kinds)}"
+    if violated:
+        listed = ", ".join(f"{c.source} -> {c.target} ({c.code})" for c in violated[:5])
+        more = f", and {len(violated) - 5} more" if len(violated) > 5 else ""
+        return "fail", f"{counted}; {len(violated)} violated: {listed}{more}"
+    return "pass", f"{counted}; every one satisfied"
+
+
+def _clause_6_10(root: Path, governance: govern.Governance) -> tuple[str, str]:
+    """ISO 42010 §6.10 -- decisions *and* their rationale, recorded in the description.
+
+    Same correction as §6.8: a decision record in the governance log is a decision the
+    architects can find, not one the description records. The clause is about the AD, so
+    the pass depends on the generated document naming each standing decision.
+    """
+    if not governance.decisions:
+        return "fail", "no decision records -- governance-log/decisions/ is empty"
+    standing = [
+        d
+        for d in sorted(governance.decisions.values(), key=lambda d: d.id)
+        if d.status in correspond.STANDING_DECISION_STATUSES
+    ]
+    total = f"{len(governance.decisions)} decision record(s); rationale is schema-mandatory"
+    if not standing:
+        return "fail", f"{total}, but none of them still stands"
+    description = root / "docs" / "architecture-description.md"
+    if not description.is_file():
+        return (
+            "fail",
+            f"{total}, but docs/architecture-description.md does not exist -- "
+            "generate it with 'python -m easkills docs'",
+        )
+    text = description.read_text(encoding="utf-8", errors="replace")
+    # An empty title must not match everything: `"" in text` is always true, which
+    # would turn a nameless decision into a recorded one.
+    missing = sorted(
+        d.id for d in standing if d.id not in text and not (d.title and d.title in text)
+    )
+    if missing:
+        return "fail", f"{total}, but the architecture description does not record: {', '.join(missing)}"
+    return "pass", f"{total}, each standing one recorded in the architecture description"
+
+
 def conformance(root: Path, today: date | None = None) -> dict[str, Any]:
     """The checkable subset of ISO/IEC/IEEE 42010:2022 Clause 6, honestly labelled:
     ``pass``/``fail`` where a check exists, ``gap`` where this tooling does not
     implement the clause yet -- silence is never presented as conformance."""
+    today = today or date.today()
     model, _documents, _config = dsl.load(root, "approved")
     governance = govern.load(root)
+    derived = correspond.derive(model, governance, today)
     held = {ref for s in model.stakeholders.values() for ref in s.concerns}
     framed = {ref for v in model.views.values() for ref in v.concerns}
     assumed = [c for c in list(model.elements.values()) + list(model.relationships.values()) if c.assumed]
@@ -431,15 +542,13 @@ def conformance(root: Path, today: date | None = None) -> dict[str, Any]:
         ),
         item(
             "6.9",
-            "Correspondences between AD elements",
-            "gap",
-            "not implemented by this tooling yet -- do not claim conformance on this clause",
+            "Correspondences between AD elements, and the rules they are held to",
+            *_clause_6_9(derived),
         ),
         item(
             "6.10",
             "Architecture decisions recorded with rationale",
-            "pass" if governance.decisions else "fail",
-            f"{len(governance.decisions)} decision record(s); rationale is schema-mandatory",
+            *_clause_6_10(root, governance),
         ),
     ]
     return {

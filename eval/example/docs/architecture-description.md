@@ -123,6 +123,23 @@ The following concepts are **declared assumptions** (`assumed: true`), not sourc
 - **Shorten Order-to-Delivery Lead Time** (Goal): Inferred from operational pain described in the interview, not stated as a goal by any stakeholder. Needs confirmation at the next architecture board.
 - **rel-order-management-realizes-goal** (Realization): Depends on the inferred goal; confirm together with goal-shorten-lead-time.
 
----
+## 7. Decisions
 
-*Correspondences (ISO 42010 §6.9) and architecture decisions (§6.10) are kept in the governance log and joined into this description in a later phase.*
+ISO 42010 §6.10: the decisions this architecture rests on, each with the rationale the record is required to carry.
+
+| Record | Decision | Status | Decided | Rationale |
+|---|---|---|---|---|
+| `decision-order-api-single-integration` | The order API stays the only integration between portal and ERP | accepted | 2026-07-20 | One integration point keeps the outage surface understood (it is already the documented single point of failure) and avoids the portal growing hidden dependencies on ERP internals. The known risk is concentration, which is accepted and monitored rather than traded for sprawl. |
+
+## 8. Correspondences
+
+ISO 42010 §6.9: relations between AD elements that no ArchiMate relationship can express, because they cross out of the model -- into the governance log and into the fact register. They are derived from what the records already declare, so this table cannot drift from them, and each is held to a stated rule.
+
+| Rule | Relates | Count | Violated | What must hold |
+|---|---|---|---|---|
+| `realizes` | decision → element | 3 | 0 | The elements a decision record names realise a decision that still stands. A record that has been superseded, rejected or deprecated no longer describes the architecture, and elements pointing at one are drift the governance log cannot see. |
+| `binds` | motivation element → element | 3 | 0 | A requirement, constraint, principle or goal binds elements that exist and can still carry it. An obligation whose only bearers are slated for elimination outlives the systems that meet it -- the retention requirement nobody notices until the system holding the records is switched off. |
+| `governed-by` | element → standard | 4 | 0 | An element's standards reference resolves to a SIB entry that is not retired, unless an open dispensation covers the pair. |
+| `assessed-by` | compliance assessment → element | 1 | 0 | A compliance assessment names elements that are in the approved model. |
+| `evidenced-by` | concept → fact | 2 | 0 | A model concept's provenance resolves to a fact in the register whose quotes are located mechanically in their sources -- or the concept declares itself assumed, with a rationale. |
+
