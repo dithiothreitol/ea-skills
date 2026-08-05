@@ -52,6 +52,14 @@ Two consequences worth stating plainly. A perfect self-score stays perfect, so
 vocabulary is now separated from one that missed the content -- which is the distinction
 the harness exists to make.
 
+## The cases
+
+| Case | Exercises |
+|---|---|
+| `clinic/` | One interview: entity resolution, an integration relationship, a risk statement. |
+| `contested/` | **Two sources that disagree.** An inventory records a scheduling system as decommissioned; an interview two months later records dispatch using it weekly. Both sides stay in the register (`confidence: contested` + `contests:`), the model follows one and says so (`PROV009`), and the architecture description quotes the losing side in its open questions. Also exercises multi-source intake and entity resolution across documents. |
+| `../example/` | The largest case: full lifecycle, governance records, service layer. |
+
 ## Adding a case
 
 A case earns its place by exercising something the existing set does not (a new

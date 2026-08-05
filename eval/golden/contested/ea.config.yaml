@@ -1,0 +1,13 @@
+# Golden-set case: two sources that disagree. The register keeps both sides; the model
+# follows one and says so. Deliberately no counts here -- this file is copied into the
+# scratch repository a candidate is produced in.
+name: Meridian Courier Enterprise Architecture
+documentation: >
+  Golden-set case for contradictions between sources: a systems inventory and an
+  interview held two months later disagree about whether a scheduling system still
+  exists. Exercises two-source intake, entity resolution across documents, and the
+  contested-fact mechanism end to end.
+stalenessDays: 365
+quoteMatchThreshold: 0.90
+factsRoot: .
+sourcesDir: facts/sources

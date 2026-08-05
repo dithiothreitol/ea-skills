@@ -88,6 +88,10 @@ jobs:
           python -m easkills validate --root eval/golden/clinic --strict
           python -m easkills validate-facts --root eval/golden/clinic --strict
           python -m easkills score --root eval/golden/clinic --gold eval/golden/clinic --min-f1 100
+          python -m easkills validate --root eval/golden/contested --strict
+          python -m easkills validate-facts --root eval/golden/contested --strict
+          python -m easkills coverage --root eval/golden/contested --min-coverage 100
+          python -m easkills score --root eval/golden/contested --gold eval/golden/contested --min-f1 100
           python -m easkills score --root eval/example --gold eval/example --min-f1 100
 
       # ea-check runs in a *consuming* repository (AD-09): the clean fixture must pass

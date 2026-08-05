@@ -42,6 +42,10 @@ class Fact:
     entities: list[str] = field(default_factory=list)
     topics: list[str] = field(default_factory=list)
     confidence: str = "stated"
+    # Facts this one contradicts. A contradiction is recorded, never resolved silently:
+    # both sides stay, each with its own verified quote, and the model decides which one
+    # it follows -- visibly (PROV009), not by which source happened to be read last.
+    contests: list[str] = field(default_factory=list)
     source_path: Path | None = None
     locator: str = ""
 
@@ -198,6 +202,7 @@ def build_register(
                 entities=_str_list(item.get("entities")),
                 topics=_str_list(item.get("topics")),
                 confidence=str(item.get("confidence", "stated") or "stated"),
+                contests=_str_list(item.get("contests")),
                 source_path=doc.path,
                 locator=f"facts[{index}]",
             )
@@ -415,6 +420,57 @@ def check_entities(register: Register) -> list[Finding]:
     return findings
 
 
+def check_contradictions(register: Register) -> list[Finding]:
+    """Sources disagree; the register has to say so, and say it in a followable way.
+
+    Nothing here decides who is right -- that is a modelling decision, made in the open
+    and reported by ``PROV009``. These checks only ensure a recorded contradiction names
+    the other side, that the other side exists, and that it points back.
+    """
+    findings: list[Finding] = []
+    for fact in sorted(register.facts.values(), key=lambda f: f.id):
+        rel_file = _rel(register.root, fact.source_path)
+        if fact.confidence == "contested" and not fact.contests:
+            findings.append(
+                Finding(
+                    "FACT009",
+                    SEVERITY_ERROR,
+                    "confidence is 'contested' but no 'contests' fact is named -- a contradiction "
+                    "nobody can follow is hinted at, not recorded",
+                    file=rel_file,
+                    locator=fact.locator,
+                    concept=fact.id,
+                )
+            )
+        for ref in sorted(fact.contests):
+            other = register.facts.get(ref)
+            if other is None:
+                findings.append(
+                    Finding(
+                        "FACT010",
+                        SEVERITY_ERROR,
+                        f"contests unknown fact '{ref}'",
+                        file=rel_file,
+                        locator=fact.locator,
+                        concept=fact.id,
+                    )
+                )
+                continue
+            if fact.id not in other.contests or other.confidence != "contested":
+                findings.append(
+                    Finding(
+                        "FACT011",
+                        SEVERITY_WARNING,
+                        f"contests '{ref}', but '{ref}' does not record the disagreement back -- "
+                        "a one-sided contradiction reads as if one source simply won",
+                        file=rel_file,
+                        locator=fact.locator,
+                        concept=fact.id,
+                    )
+                )
+    return findings
+
+
 def check_duplicate_statements(register: Register) -> list[Finding]:
     findings: list[Finding] = []
     seen: dict[str, str] = {}
@@ -478,6 +534,7 @@ def validate_facts(root: Path) -> FactsReport:
     findings += check_identifiers(register)
     findings += check_quotes(register)
     findings += check_entities(register)
+    findings += check_contradictions(register)
     findings += check_duplicate_statements(register)
     findings += check_uncited_sources(register)
 

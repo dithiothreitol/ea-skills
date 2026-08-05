@@ -5,6 +5,34 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
+## [Unreleased]
+
+### Added — contradictions are recorded, not resolved silently
+
+The end-to-end run showed what the golden set could not measure: what happens when two
+sources disagree. Nothing did — the register had `stated`/`implied` and no way to say
+"another document says the opposite", and `assumed: true` is only reported when a
+concept has *no* provenance, so "evidenced but contested" could not surface at all. The
+honest resolution was buried in prose or, worse, decided by whichever source was read
+last.
+
+- **`confidence: contested` + `contests: [fact-id]`** in the fact register. Both sides
+  stay, each with its own mechanically verified quote, and each names the other. Three
+  rules keep a recorded contradiction followable: `FACT009` (contested without naming
+  the other side), `FACT010` (names a fact that does not exist), `FACT011` (the other
+  side does not record the disagreement back — a one-sided contradiction reads as if one
+  source simply won).
+- **`PROV009`** (info): a model concept citing a contested fact. Reported, never
+  blocked — choosing between sources is the architect's job; choosing invisibly is not.
+- **The architecture description says so.** Contested citations get their own paragraph
+  in "Assumptions and open questions", **quoting the side the model did not follow**, so
+  a reader can overturn the choice without reading the register.
+- **New golden case `eval/golden/contested/`**: a courier's May systems inventory
+  records a scheduling system as decommissioned; a July interview records dispatch
+  keying weekend runs into it every Friday. Two sources, entity resolution across
+  documents, 100% source coverage, and the whole contested mechanism end to end. Gated
+  in CI like the other cases.
+
 ## [0.8.1] — 2026-08-05
 
 ### Changed — the golden-set scorer measures content, not vocabulary

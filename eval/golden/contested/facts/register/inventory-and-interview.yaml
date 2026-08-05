@@ -1,0 +1,57 @@
+# Two sources, one contradiction. Both sides stay: the register records what each
+# document says, and the model decides -- visibly -- which one it follows.
+facts:
+  - id: fact-schedpro-decommissioned
+    statement: SchedPro was decommissioned in March 2026 and is no longer supported.
+    confidence: contested
+    contests: [fact-schedpro-still-used]
+    provenance:
+      - file: facts/sources/systems-inventory-2026-05.md
+        quote: SchedPro was decommissioned in March 2026 and is no longer supported
+    entities: [entity-schedpro]
+
+  - id: fact-schedpro-still-used
+    statement: Dispatch keys the weekend runs into SchedPro every Friday afternoon.
+    confidence: contested
+    contests: [fact-schedpro-decommissioned]
+    provenance:
+      - file: facts/sources/interview-dispatch-lead-2026-07-02.md
+        quote: Dispatch still keys the weekend runs into SchedPro every Friday afternoon
+    entities: [entity-schedpro, entity-dispatch]
+
+  - id: fact-console-plans-routes
+    statement: The dispatch console is the planning system for courier routes.
+    provenance:
+      - file: facts/sources/systems-inventory-2026-05.md
+        quote: The dispatch console is the planning system for all courier routes
+    entities: [entity-dispatch-console]
+
+  # The whole sentence, not half of it: the second clause carries the reason the
+  # contradiction exists at all, and quoting only the first half left it uncited.
+  - id: fact-console-no-multidrop
+    statement: The dispatch console cannot plan multi-drop routes, which is why the weekend work stayed on SchedPro.
+    provenance:
+      - file: facts/sources/interview-dispatch-lead-2026-07-02.md
+        quote: The dispatch console cannot plan multi-drop routes, which is why the weekend work never moved off the old system
+    entities: [entity-dispatch-console, entity-schedpro]
+
+  - id: fact-schedpro-unowned
+    statement: Nobody owns SchedPro since the last operations manager left.
+    provenance:
+      - file: facts/sources/interview-dispatch-lead-2026-07-02.md
+        quote: Nobody owns SchedPro since the last operations manager left
+    entities: [entity-schedpro]
+
+  - id: fact-bookings-web-shop
+    statement: Customer bookings arrive through the web shop and are written into the order database.
+    provenance:
+      - file: facts/sources/systems-inventory-2026-05.md
+        quote: Customer bookings arrive through the web shop and are written into the order database
+    entities: [entity-web-shop, entity-order-database]
+
+  - id: fact-order-database-hosting
+    statement: The order database runs on the operations server in the Rotterdam office.
+    provenance:
+      - file: facts/sources/systems-inventory-2026-05.md
+        quote: The order database runs on the operations server in the Rotterdam office
+    entities: [entity-order-database, entity-operations-server]

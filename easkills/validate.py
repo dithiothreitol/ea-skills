@@ -447,6 +447,20 @@ def check_provenance(model: dsl.Model) -> list[Finding]:
                         )
                     )
                     continue
+                if fact.confidence == "contested":
+                    findings.append(
+                        Finding(
+                            "PROV009",
+                            SEVERITY_INFO,
+                            f"cites contested fact '{fact.id}' (contradicts "
+                            f"{', '.join(sorted(fact.contests)) or 'another source'}) -- the sources "
+                            "disagree and this model follows one side; that is a decision, and it is "
+                            "listed as an open question until someone confirms it",
+                            file=rel_file,
+                            locator=concept.locator,
+                            concept=concept.id,
+                        )
+                    )
                 for fact_provenance in fact.provenance:
                     verify_quote(concept, fact_provenance.file, fact_provenance.quote, via=fact.id)
                 continue

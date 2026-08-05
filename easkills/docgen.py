@@ -30,6 +30,38 @@ def _md_escape(text: str) -> str:
     return text.replace("|", "\\|").replace("\n", " ").strip()
 
 
+def _contested_citations(model: dsl.Model) -> list[tuple[str, str, str]]:
+    """(name, type, explanation) for concepts whose evidence is a contested fact.
+
+    Read from the fact register rather than the model: the register is where a
+    contradiction is recorded, and a description that quietly presented one side would
+    be the single most damaging thing this generator could do.
+    """
+    from . import facts as facts_mod
+
+    register, _documents, _entities = facts_mod.load(model.root)
+    rows: list[tuple[str, str, str]] = []
+    for concept in sorted(
+        list(model.elements.values()) + list(model.relationships.values()), key=lambda c: c.id
+    ):
+        for provenance in concept.provenance:
+            fact = register.facts.get(provenance.fact) if provenance.fact else None
+            if fact is None or fact.confidence != "contested":
+                continue
+            others = [register.facts.get(ref) for ref in sorted(fact.contests)]
+            against = "; ".join(other.statement for other in others if other is not None)
+            rows.append(
+                (
+                    concept.name or concept.id,
+                    concept.type,
+                    f"modelled on \"{fact.statement}\" -- another source says: {against}"
+                    if against
+                    else f"modelled on a contested statement: {fact.statement}",
+                )
+            )
+    return rows
+
+
 def _as_of(model: dsl.Model) -> str:
     dates = [e.last_reviewed for e in model.elements.values() if e.last_reviewed]
     return max(dates) if dates else "unreviewed"
@@ -229,9 +261,10 @@ def build_markdown(model: dsl.Model) -> str:
         )
         if c.assumed
     ]
-    if not assumed:
+    contested = _contested_citations(model)
+    if not assumed and not contested:
         out.append("*No declared assumptions -- every concept is source-evidenced.*")
-    else:
+    if assumed:
         out.append(
             "The following concepts are **declared assumptions** (`assumed: true`), not "
             "source-evidenced facts. Each needs confirmation or removal:"
@@ -239,6 +272,18 @@ def build_markdown(model: dsl.Model) -> str:
         out.append("")
         for concept in assumed:
             out.append(f"- **{_md_escape(concept.name or concept.id)}** ({concept.type}): {_md_escape(concept.rationale)}")
+    if contested:
+        # A contradiction between sources is not an assumption -- both sides are quoted --
+        # but the model still had to pick one, and that choice belongs in the open where a
+        # reader can overturn it.
+        out.append("")
+        out.append(
+            "The sources **disagree** about the following, and this description follows one "
+            "side. Each needs confirming with the people who own the systems:"
+        )
+        out.append("")
+        for name, kind, detail in contested:
+            out.append(f"- **{_md_escape(name)}** ({kind}): {_md_escape(detail)}")
 
     out += [
         "",

@@ -322,11 +322,22 @@ def build_facts_schema() -> dict[str, Any]:
                         "items": {"$ref": "#/$defs/slug"},
                         "description": "Free grouping tags, e.g. business, application, technology.",
                     },
+                    "contests": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {"$ref": "#/$defs/slug"},
+                        "description": (
+                            "Ids of facts this one contradicts. Required when confidence is "
+                            "'contested': a contradiction nobody can follow is hinted at, not recorded."
+                        ),
+                    },
                     "confidence": {
-                        "enum": ["stated", "implied"],
+                        "enum": ["stated", "implied", "contested"],
                         "description": (
                             "'stated' when the quote says it directly; 'implied' when the quote "
-                            "supports it only indirectly and a reviewer should look twice."
+                            "supports it only indirectly and a reviewer should look twice; "
+                            "'contested' when another source says the opposite -- both sides stay "
+                            "in the register and 'contests' names the other one."
                         ),
                     },
                 },

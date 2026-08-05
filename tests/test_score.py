@@ -235,3 +235,48 @@ def test_cli_score_gate_fails_on_gate_failure(candidate, capsys):
     )
     assert cli.main(["score", "--root", str(candidate), "--gold", str(CLINIC), "--min-f1", "50"]) == 1
     assert "fails its own validation gates" in capsys.readouterr().out
+
+
+# ------------------------------------------------------------------ the contested case
+
+CONTESTED = REPO_ROOT / "eval" / "golden" / "contested"
+
+
+def test_contested_case_is_gold():
+    """Two sources that disagree, and a register that keeps both sides."""
+    model_report = validate.validate(CONTESTED, zone="approved")
+    facts_report = facts.validate_facts(CONTESTED)
+    assert model_report.ok and not model_report.warnings, model_report.render()
+    assert facts_report.ok and not facts_report.warnings, facts_report.render()
+    assert score.score(CONTESTED, CONTESTED).min_f1 == 1.0
+
+
+def test_the_contradiction_is_recorded_on_both_sides():
+    register, _documents, _entities = facts.load(CONTESTED)
+    inventory = register.facts["fact-schedpro-decommissioned"]
+    interview = register.facts["fact-schedpro-still-used"]
+    assert inventory.confidence == interview.confidence == "contested"
+    assert interview.id in inventory.contests and inventory.id in interview.contests
+    assert {p.file for p in inventory.provenance} != {p.file for p in interview.provenance}, (
+        "the two sides must come from different sources, or it is not a contradiction"
+    )
+
+
+def test_following_one_side_is_reported_as_an_open_question():
+    """PROV009 is info, not an error: choosing is allowed, choosing silently is not."""
+    report = validate.validate(CONTESTED, zone="approved")
+    contested = [f for f in report.findings if f.code == "PROV009"]
+    assert contested and all(f.severity == "info" for f in contested)
+    assert any(f.concept == "app-schedpro" for f in contested)
+
+
+def test_the_architecture_description_says_the_sources_disagree(tmp_path):
+    from easkills import docgen
+
+    target = tmp_path / "contested"
+    shutil.copytree(CONTESTED, target)
+    docgen.generate(target)
+    text = (target / "docs" / "architecture-description.md").read_text(encoding="utf-8")
+    section = text.split("## 6. Assumptions and open questions", 1)[1]
+    assert "disagree" in section
+    assert "decommissioned in March 2026" in section, "the losing side must be quoted too"

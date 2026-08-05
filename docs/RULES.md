@@ -55,6 +55,7 @@ language-model extraction.
 | `PROV006` | info | A declared assumption, listed so it can be confirmed or dropped at review. |
 | `PROV007` | error | Provenance references a fact (`fact:`) that is not in the fact register. A resolved fact's own quotes are re-verified here (as `PROV002`/`PROV003`/`PROV004`, marked "via fact"), so the evidence chain stays mechanical even if the register changed after intake. |
 | `PROV008` | error | The provenance `file:` resolves outside the repository (`../../secrets.txt`, or via a `factsRoot` that escapes). A quote verified against a file no reviewer can open is unreviewable traceability -- and in CI on untrusted content, pass/fail would leak whether a string exists on the runner. The file is refused, not read. |
+| `PROV009` | info | The concept cites a **contested** fact: the sources disagree and this model follows one side. Reported, never blocked -- choosing is the architect's job; choosing invisibly is not. Listed in the architecture description's open questions with the other side quoted. |
 
 ## Layer 1 -- governance metadata
 
@@ -165,6 +166,9 @@ schema error rather than a distinct rule.
 | `FACT006` | error | The fact references an entity id that is not in `facts/entities.yaml`. |
 | `FACT007` | warning | Another fact already makes the same statement. Merge them and keep both quotes as provenance. |
 | `FACT008` | error | The evidence `file:` resolves outside the repository. Same rule as `PROV008`, one layer earlier: the evidence for a fact must be a source file in this repository. |
+| `FACT009` | error | `confidence: contested` without a `contests:` reference. A contradiction nobody can follow is hinted at, not recorded. |
+| `FACT010` | error | `contests:` names a fact that is not in the register. |
+| `FACT011` | warning | The named fact does not record the disagreement back (not `contested`, or not pointing here). A one-sided contradiction reads as if one source simply won. |
 
 ## Fact register -- entity resolution
 

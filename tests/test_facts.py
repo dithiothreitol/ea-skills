@@ -53,12 +53,15 @@ EXPECTED_ERROR_CODES = [
     "FACT004",  # quote absent from the source
     "FACT006",  # unknown entity reference
     "FACT008",  # evidence file resolves outside the repository
+    "FACT009",  # contested without naming the contradicting fact
+    "FACT010",  # contests a fact that does not exist
     "ENT001",  # duplicate entity id
     "ENT002",  # alias collides with another entity's name
 ]
 
 EXPECTED_WARNING_CODES = [
     "FACT005",  # quote only approximately matched
+    "FACT011",  # the contradiction is recorded on one side only
     "FACT007",  # duplicate statement
     "ENT003",  # entity never referenced
     "SRC001",  # source never cited

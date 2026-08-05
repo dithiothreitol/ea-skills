@@ -1,0 +1,25 @@
+entities:
+  - id: entity-schedpro
+    name: SchedPro
+    kind: application
+    aliases: [the old system]
+  - id: entity-dispatch-console
+    name: Dispatch Console
+    kind: application
+    aliases: [dispatch console]
+  - id: entity-web-shop
+    name: Web Shop
+    kind: application
+    aliases: [web shop]
+  - id: entity-order-database
+    name: Order Database
+    kind: data
+    aliases: [order database]
+  - id: entity-operations-server
+    name: Operations Server
+    kind: technology
+    aliases: [operations server]
+  - id: entity-dispatch
+    name: Dispatch
+    kind: organisation
+    aliases: [dispatch lead]

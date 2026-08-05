@@ -43,6 +43,10 @@ python -m easkills docs           --root eval/example && git diff --exit-code ev
 python -m easkills validate       --root eval/golden/clinic --strict
 python -m easkills validate-facts --root eval/golden/clinic --strict
 python -m easkills score --root eval/golden/clinic --gold eval/golden/clinic --min-f1 100
+python -m easkills validate       --root eval/golden/contested --strict
+python -m easkills validate-facts --root eval/golden/contested --strict
+python -m easkills coverage       --root eval/golden/contested --min-coverage 100
+python -m easkills score --root eval/golden/contested --gold eval/golden/contested --min-f1 100
 python -m easkills score --root eval/example --gold eval/example --min-f1 100
 python -m easkills check --root eval/example --repo eval/fixtures/consumer-clean --scope app-order-portal --as-of 2026-07-30 --strict
 python -m easkills check --root eval/example --repo eval/fixtures/consumer --scope app-order-portal --as-of 2026-07-30   # must FAIL (exit 1)

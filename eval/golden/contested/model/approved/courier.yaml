@@ -1,0 +1,118 @@
+# The model follows one side of the contradiction and says which: SchedPro is modelled
+# as present, because the more recent and more specific source says people use it every
+# week. PROV009 reports that choice, and the architecture description lists it as an open
+# question -- the inventory may simply be out of date, or a shadow system may be running
+# unsupported. Both readings are governance problems; neither is settled here.
+elements:
+  - id: app-dispatch-console
+    type: ApplicationComponent
+    name: Dispatch Console
+    documentation: Route planning for weekday work. Cannot plan multi-drop routes.
+    owner: it-operations@meridiancourier.example
+    lastReviewed: 2026-07-02
+    properties:
+      timeDisposition: Invest
+    provenance:
+      - fact: fact-console-plans-routes
+      - fact: fact-console-no-multidrop
+
+  - id: app-schedpro
+    type: ApplicationComponent
+    name: SchedPro
+    documentation: >
+      Legacy scheduling system. The May inventory records it as decommissioned; the July
+      interview records dispatch using it weekly. Modelled as present and unowned.
+    owner: it-operations@meridiancourier.example
+    lastReviewed: 2026-07-02
+    properties:
+      timeDisposition: Eliminate
+      lifecycle: contested
+    provenance:
+      - fact: fact-schedpro-still-used
+      - fact: fact-schedpro-unowned
+
+  - id: app-web-shop
+    type: ApplicationComponent
+    name: Web Shop
+    documentation: Where customer bookings arrive.
+    owner: it-operations@meridiancourier.example
+    lastReviewed: 2026-05-04
+    properties:
+      timeDisposition: Tolerate
+    provenance:
+      - fact: fact-bookings-web-shop
+
+  - id: data-order-database
+    type: DataObject
+    name: Order Database
+    owner: it-operations@meridiancourier.example
+    lastReviewed: 2026-05-04
+    provenance:
+      - fact: fact-bookings-web-shop
+
+  - id: node-operations-server
+    type: Node
+    name: Operations Server
+    documentation: In the Rotterdam office; runs the order database.
+    owner: it-operations@meridiancourier.example
+    lastReviewed: 2026-05-04
+    provenance:
+      - fact: fact-order-database-hosting
+
+  - id: role-dispatch
+    type: BusinessRole
+    name: Dispatch
+    documentation: Plans courier routes; keys weekend runs into SchedPro.
+    owner: operations@meridiancourier.example
+    lastReviewed: 2026-07-02
+    provenance:
+      - fact: fact-schedpro-still-used
+
+relationships:
+  - id: rel-console-serves-dispatch
+    type: Serving
+    source: app-dispatch-console
+    target: role-dispatch
+    provenance:
+      - fact: fact-console-plans-routes
+
+  - id: rel-schedpro-serves-dispatch
+    type: Serving
+    source: app-schedpro
+    target: role-dispatch
+    provenance:
+      - fact: fact-schedpro-still-used
+
+  - id: rel-web-shop-accesses-order-database
+    type: Access
+    source: app-web-shop
+    target: data-order-database
+    provenance:
+      - fact: fact-bookings-web-shop
+
+  # Access, not Serving: the matrix permits Access or Association between a Node and a
+  # DataObject, and hosting is the node holding the data, not offering it a service.
+  - id: rel-server-accesses-order-database
+    type: Access
+    source: node-operations-server
+    target: data-order-database
+    provenance:
+      - fact: fact-order-database-hosting
+
+stakeholders:
+  - id: stakeholder-dispatch-lead
+    name: Dispatch Lead
+    description: Runs the dispatch desk; the only person who knows the weekend routine.
+    concerns: [concern-unsupported-scheduling]
+
+concerns:
+  - id: concern-unsupported-scheduling
+    statement: Is weekend planning running on a system nobody supports or owns?
+
+views:
+  - id: route-planning
+    name: Route Planning
+    viewpoint: Application Usage
+    documentation: What dispatch actually plans with, including the contested system.
+    concerns: [concern-unsupported-scheduling]
+    include: [app-dispatch-console, app-schedpro, role-dispatch]
