@@ -207,9 +207,23 @@ python -m easkills staleness --root .    # review queue, ordered by consumer dem
 python -m easkills debt --root .         # EA-smell register
 python -m easkills conformance --root .  # ISO 42010 Clause 6 checklist
 python -m easkills correspondences --root .   # §6.9: what relates to what, and the rule it is held to
+python -m easkills roadmap --root .      # plateaus, gaps, and intent nothing schedules
 python -m easkills delta --root .        # what the facts know that the model doesn't
 python -m easkills context --root . --scope <element-id>   # pack for a dev team/agent
 ```
+
+When a change request arrives, do not eyeball its blast radius:
+
+```bash
+python -m easkills impact --root . --scope <element-id>              # the approved model
+python -m easkills impact --root . --scope <element-id> --zone staging   # including proposals
+python -m easkills render --root .                                   # views to SVG, without the full docs run
+```
+
+`impact` counts the stakeholder groups the change touches — the number TOGAF Phase H
+triage turns on — and lists the decisions, obligations, waivers and consumer requests
+inside the radius. It answers the arithmetic half and says so; the classification
+stays a recorded judgement (`ea-change-triage`).
 
 Product repositories can gate on this too: `python -m easkills check --root <this repo>
 --repo . --scope <element-id>` fails a team's CI when a dependency implements a retired

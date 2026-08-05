@@ -1,7 +1,17 @@
 # <Organisation> enterprise architecture
 
 Model repository scaffolded from the `ea-skills` template. Copy this directory, edit
-`ea.config.yaml`, and start with intake.
+`ea.config.yaml`, and start with intake — or, if you already have a model somewhere
+else, with the import.
+
+**Bring what you already have**
+
+```bash
+python -m easkills intake-csv --root . --file inventory.csv       # spreadsheet -> citable source
+python -m easkills import     --root . --file export.xml          # Archi/Open Exchange -> staging
+```
+
+**Intake and modelling**
 
 ```bash
 python -m easkills chunk          --root .            # split sources for extraction
@@ -11,13 +21,29 @@ python -m easkills validate --root . --zone staging   # proposals, overlaid on a
 python -m easkills promote  --root . --dry-run        # the promotion gate, no move
 python -m easkills promote  --root .                  # staging -> approved (on human sign-off)
 python -m easkills validate --root . --zone approved  # the published model
+```
+
+**Publish**
+
+```bash
 python -m easkills compile  --root . --zone approved  # -> build/model.xml
 python -m easkills docs     --root .                  # -> docs/ (AD + SVG views)
+python -m easkills render   --root .                  # views only
 python -m easkills validate-gov --root .              # standards + governance log gate
-python -m easkills kpi      --root .                  # health: also debt, staleness,
-                                                      #   conformance,
-                                                      #   correspondences, delta
-python -m easkills context  --root . --scope <id>     # agent context pack (AD-09)
+```
+
+**Operate**
+
+```bash
+python -m easkills kpi            --root .            # one-screen health
+python -m easkills staleness      --root .            # review queue, by consumer demand
+python -m easkills debt           --root .            # EA-smell register
+python -m easkills conformance    --root .            # ISO 42010 Clause 6 checklist
+python -m easkills correspondences --root .           # §6.9, with the rule each is held to
+python -m easkills roadmap        --root .            # plateaus, gaps, unscheduled intent
+python -m easkills delta          --root .            # what the facts know, the model doesn't
+python -m easkills impact  --root . --scope <id>      # blast radius + Phase H count
+python -m easkills context --root . --scope <id>      # agent context pack (AD-09)
 ```
 
 ## Layout

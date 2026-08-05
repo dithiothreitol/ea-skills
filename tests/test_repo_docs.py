@@ -142,6 +142,39 @@ def test_every_command_appears_in_the_cli_reference(repo_root):
     assert not missing, f"undocumented commands in docs/CLI.md: {missing}"
 
 
+# Commands that maintain *this* repository rather than an architecture one. The
+# walkthrough is written for someone running an architecture repository, so these are
+# the only ones it may omit -- and naming them here is what stops the list growing
+# quietly into "everything we forgot to document".
+MAINTAINER_COMMANDS = {
+    "gen-schema",  # regenerates the authoring contract from the oracle
+    "pin-oracle",  # re-pins vendored rule data after a reviewed upgrade
+    "oracle-info",  # prints the oracle's version and checksums
+    "score",  # the golden-set harness, which lives in this repository
+}
+
+
+def test_the_walkthrough_covers_every_command_an_operator_runs(repo_root):
+    """`docs/CLI.md` lists commands; GETTING-STARTED is where someone *learns* them.
+
+    Added after two additions to the walkthrough silently failed to apply (a patch
+    matched on whitespace that had changed) and nothing noticed: the reference was
+    complete, the tutorial had quietly stopped covering the tool.
+    """
+    walkthrough = _read(repo_root, "docs/GETTING-STARTED.md")
+    expected = set(_subparsers()) - MAINTAINER_COMMANDS
+    missing = sorted(name for name in expected if f"easkills {name} " not in walkthrough)
+    assert not missing, f"commands absent from the walkthrough: {missing}"
+
+
+def test_the_scaffolded_readme_lists_the_commands_a_new_repository_needs(repo_root):
+    """`template/README.md` is the first thing a new architecture repository shows."""
+    readme = _read(repo_root, "template/README.md")
+    expected = set(_subparsers()) - MAINTAINER_COMMANDS - {"check"}  # check runs elsewhere
+    missing = sorted(name for name in expected if f"easkills {name}" not in readme)
+    assert not missing, f"commands absent from the scaffolded README: {missing}"
+
+
 @pytest.mark.parametrize("relative", ["SECURITY.md"])
 def test_paths_named_in_the_security_policy_exist(repo_root, relative):
     """A scope note that names a path pattern matching nothing is not a scope note."""

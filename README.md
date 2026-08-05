@@ -95,11 +95,19 @@ python -m easkills validate-gov   --root eval/example          # governance gate
 python -m easkills compile        --root eval/example          # -> ArchiMate Open Exchange XML
 python -m easkills docs           --root eval/example          # -> ISO 42010 description + SVGs
 python -m easkills context --root eval/example --scope app-erp-core   # agent context pack
+python -m easkills impact  --root eval/example --scope app-erp-core   # blast radius of a change
+python -m easkills roadmap --root eval/example                        # plateaus, gaps, unscheduled intent
 ```
 
 To start your own architecture repository, copy [`template/`](template/) and follow
 the [Getting-started tutorial](docs/GETTING-STARTED.md) — from a raw interview to a
 validated model, rendered views and a generated architecture description.
+
+**Already have a model?** `import` reads an ArchiMate Open Exchange export (Archi,
+and most commercial tools) into `model/staging/`, and `intake-csv` turns an
+application-inventory spreadsheet into a source document whose quotes stay verifiable.
+Both land as *proposals*: nothing imported counts as evidence until someone vouches
+for it. See [`ea-import`](skills/ea-import/SKILL.md).
 
 ## The pipeline
 
@@ -308,7 +316,8 @@ is the drill.
 
 ```
 easkills/        deterministic tooling (oracle, DSL, validators, compiler, renderer,
-                 docgen, governance, reports, context packs, scorer, CLI)
+                 docgen, governance, correspondences, impact, roadmap reports,
+                 exchange importer, CSV intake, context packs, scorer, CLI)
 oracle/          vendored, hash-pinned rule data + NOTICE.md
 schema/          JSON Schemas -- all generated, never hand-edited
 skills/          the 22 agent skills (this is the product)
