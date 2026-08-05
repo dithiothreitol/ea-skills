@@ -20,6 +20,7 @@ from . import (
     facts as facts_mod,
     genschema,
     govern,
+    impact as impact_mod,
     importer,
     intake,
     oracle,
@@ -179,6 +180,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_context.add_argument("--scope", required=True, help="element id to scope the pack to")
     p_context.add_argument("--out", type=Path, help="write to a file instead of stdout")
     p_context.add_argument("--as-of", dest="as_of", help="evaluate freshness against this date (YYYY-MM-DD)")
+
+    p_impact = sub.add_parser(
+        "impact", help="blast radius of a change to one element, with the Phase H stakeholder count"
+    )
+    p_impact.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_impact.add_argument("--scope", required=True, help="element id the change is about")
+    p_impact.add_argument(
+        "--depth", type=int, help="stop after N hops (default: unbounded, the whole reachable set)"
+    )
+    p_impact.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+    p_impact.add_argument("--as-of", dest="as_of", help="evaluate dispensation expiry against this date")
 
     p_check = sub.add_parser(
         "check", help="lint a consuming repository against the standards its EA element claims (AD-09)"
@@ -443,6 +455,18 @@ def cmd_context(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_impact(args: argparse.Namespace) -> int:
+    try:
+        report = impact_mod.analyse(
+            args.root.resolve(), scope=args.scope, depth=args.depth, today=_parse_as_of(args.as_of)
+        )
+    except impact_mod.ImpactError as exc:
+        print(_error(str(exc)))
+        return 1
+    _emit_report(args, report.as_dict(), impact_mod.render(report))
+    return 0
+
+
 def cmd_check(args: argparse.Namespace) -> int:
     report = check_mod.check(
         args.root.resolve(), args.repo.resolve(), scope=args.scope, today=_parse_as_of(args.as_of)
@@ -574,6 +598,7 @@ HANDLERS = {
     "correspondences": cmd_correspondences,
     "delta": cmd_delta,
     "context": cmd_context,
+    "impact": cmd_impact,
     "check": cmd_check,
     "score": cmd_score,
     "validate-facts": cmd_validate_facts,

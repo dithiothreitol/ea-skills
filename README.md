@@ -135,7 +135,7 @@ and keeps the stage order honest.
 | Publish | `ea-approve` | `promote` — the only write path into `approved/` |
 | Document | `ea-stakeholders`, `ea-views`, `ea-docs` | `docs`, `render`, ISO loop rules, freshness CI check |
 | Govern | `ea-standards-base`, `ea-dispensation`, `ea-adr`, `ea-compliance`, `ea-service` | `validate-gov` — expiry and SLA are enforced, not filed |
-| Maintain | `ea-health`, `ea-change-triage`, `ea-board`, `ea-context` | `kpi`, `debt`, `staleness`, `conformance`, `correspondences`, `delta`, `context` |
+| Maintain | `ea-health`, `ea-change-triage`, `ea-board`, `ea-context` | `kpi`, `debt`, `staleness`, `conformance`, `correspondences`, `delta`, `context`, `impact` |
 | Consume | `ea-check` | `check --scope` inside a product repo — standards lifecycle vs declared dependencies |
 | Evaluate | `ea-eval` | `score --min-f1` against the [golden set](eval/golden/) |
 
@@ -267,6 +267,7 @@ agents. What is not otherwise available is the *combination*:
 | Deterministic semantic validation | ✓ vendored 3.2 matrix | ✓ | — | ✓ (own rules) | — | partial |
 | Standards-shaped documentation (ISO 42010) | ✓ + conformance checklist | — | — | — | — | — |
 | Governance + maintenance (SIB, dispensations with expiry, debt, staleness, service catalog, agent context packs) | ✓ | — | — | partial (PR gate) | partial (docs) | partial |
+| Impact analysis / dependency traversal | ✓ declared propagation per relationship type | — | — | — | — | ✓ |
 
 Verified against the 2026-07-29 competitive survey behind
 [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md); the ea-skills column reflects this

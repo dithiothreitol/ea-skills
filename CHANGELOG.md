@@ -7,6 +7,35 @@ project's build phases (design log with per-decision rationale:
 
 ## [Unreleased]
 
+### Added — `impact`: the deterministic half of change triage
+
+`ea-change-triage` already stated the rule that decides a change's class — *"count the
+stakeholder groups whose concerns are touched; two or more means re-architecting"* —
+and then asked a human to count by eye. `python -m easkills impact --scope <element-id>`
+does the counting.
+
+- **Propagation is declared, never inferred.** The vendored matrix says which
+  relationships are *permitted* and nothing about which way a change travels, so the
+  direction of each type is a stated table with its reasoning attached:
+  `Serving`/`Realization`/`Assignment`/`Triggering`/`Flow` forward,
+  `Access`/`Specialization` backward, `Composition`/`Aggregation` both, `Influence`
+  forward, plus `appliesTo` as an edge from the bound element to the obligation. A test
+  asserts every type the oracle knows has an entry — otherwise a future ArchiMate
+  version adds a type through which impact silently stops flowing.
+- **`Association` is never traversed.** ArchiMate leaves its meaning to the modeller;
+  those neighbours are reported separately as adjacency of unknown direction. Inventing
+  one would let the blast radius look thorough while being made up.
+- **The radius carries its context**: stakeholder groups reached through views and
+  concerns, decisions naming affected elements, obligations binding them, open
+  dispensations, the consumer requests that asked about them, the standards they are
+  built on, and any element with no owner — nobody to consult about the change.
+- **The arithmetic half is the only verdict.** Whether the change invalidates a
+  recorded assumption, decision or capability boundary is judgement; the report states
+  that it did not evaluate it. Zero stakeholder groups is reported as possibly a gap in
+  the views, not as an absence of impact.
+- Breadth-first, so `distance` is the shortest path and the reported cause is the
+  closest one; `--depth N` bounds it; output is byte-stable.
+
 ### Added — brownfield import: the adoption path (`ea-import`)
 
 Everything before this assumed a repository that starts empty, and no organisation
