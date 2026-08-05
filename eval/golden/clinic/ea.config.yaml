@@ -2,9 +2,12 @@
 # produced by the skills against this gold standard (python -m easkills score).
 name: Novak Family Clinic Enterprise Architecture
 documentation: >
-  Golden-set case for the extraction and modelling pipeline: one interview, seven
-  facts, six elements. Small enough to diff by eye, real enough to exercise entity
-  resolution, an integration relationship and a risk statement.
+  Golden-set case for the extraction and modelling pipeline: one interview covering
+  appointment booking and patient records. Small enough to diff by eye, real enough to
+  exercise entity resolution, an integration relationship and a risk statement.
+  Deliberately no counts here -- this file is copied into the scratch repository a
+  candidate is produced in, and stating how many facts and elements gold holds would
+  hand the answer to the run being measured.
 stalenessDays: 365
 quoteMatchThreshold: 0.90
 factsRoot: .

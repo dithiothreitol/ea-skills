@@ -84,7 +84,7 @@ delta is read against the approved model it proposes to change.
 
 | Command | Does |
 |---|---|
-| `score --gold <repo> [--min-f1 PCT] [--json]` | Candidate vs golden repository: precision/recall/F1 for entities, facts, elements and relationships, plus the candidate's own gates — matching gold while failing provenance verification counts as failure. |
+| `score --gold <repo> [--min-f1 PCT] [--json]` | Candidate vs golden repository: precision/recall/F1 for entities, facts, elements and relationships, plus the candidate's own gates — matching gold while failing provenance verification counts as failure. Names resolve through both entity alias tables, facts are matched on the source ground they cover, a type disagreement inside one layer is half a match, and a label-independent relationship count is reported as an ungated diagnostic. It measures **agreement with one gold repository** — a regression signal, not an absolute grade ([what that means](../eval/golden/README.md)). |
 
 ## Housekeeping
 

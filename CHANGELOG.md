@@ -5,6 +5,42 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
+## [Unreleased]
+
+### Changed — the golden-set scorer measures content, not vocabulary
+
+An end-to-end run (2026-08-05) put the pipeline through the documented evaluation
+procedure: blind extraction and modelling from the clinic case's source into a scratch
+repository, then `score`. The pipeline came out well — every gate passed, and `REL001`
+caught a genuine ArchiMate error in the run (`Assignment` from a component to an
+interface, which the 3.2 matrix does not permit). The **harness** came out badly: the
+candidate recalled 100% of gold's elements and relationships and scored **15%** and
+**0%**, purely because it wrote "Electronic Health Record System" where gold wrote
+"EHR", and because one unmatched element zeroes every relationship touching it.
+
+- **Names resolve through the entity alias tables** of both repositories before
+  comparison. The repository already knew "EHR" and "Electronic Health Record System"
+  are one thing; the scorer was ignoring evidence it had.
+- **Facts are matched on the source ground they cover** — the spans their verified
+  quotes occupy — with statement similarity deciding full or half credit. Splitting one
+  gold fact into two atomic ones is now a match, not a miss; quoting the right sentence
+  under a statement that says something else is half a match, so statement quality is
+  still measured.
+- **A type disagreement inside one ArchiMate layer is half a match**
+  (`ApplicationInterface` vs `ApplicationService` for one interview sentence), across
+  layers it is none. Half credits are reported as `(n half)`, never folded in silently.
+- **A label-independent `rel-structural` count** is reported beside the strict one as a
+  diagnostic, never gated: when the strict number collapses, this says whether the shape
+  was right.
+- `eval/golden/README.md` now states what the score **is not**: a regression signal for
+  a change in the skills, not an absolute grade.
+- The clinic case's `ea.config.yaml` no longer states how many facts and elements gold
+  holds. That file is copied into the scratch repository a candidate is produced in — it
+  was handing the answer to the run being measured.
+
+Self-scores stay 100%, so `--min-f1 100` remains a valid CI gate. On the run that
+prompted this: elements 15% → 77%, relationships 0% → 73%, facts 50% → 75%.
+
 ## [0.8.0] — 2026-08-05
 
 ### Added — `ea-check`: compliance lint inside consuming repositories (AD-09 decision taken)

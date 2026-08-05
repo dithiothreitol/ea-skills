@@ -119,6 +119,93 @@ def test_failing_gates_are_reported(candidate):
     assert report.gates["model"]["errors"] >= 1
 
 
+# -------------------------------------------------------------- what the score forgives
+
+# These four are the answer to the 2026-08-05 end-to-end run, where a candidate that
+# recalled 100% of gold's elements and relationships scored 15% and 0% -- entirely on
+# vocabulary. Disagreeing about a label is not the same as missing the thing.
+
+
+def test_an_element_named_by_its_alias_still_matches(candidate):
+    """`facts/entities.yaml` says EHR *is* the electronic health record system."""
+    text = _model_file(candidate).read_text(encoding="utf-8")
+    _model_file(candidate).write_text(
+        text.replace("name: EHR\n", "name: Electronic Health Record System\n"), encoding="utf-8"
+    )
+    report = score.score(candidate, CLINIC)
+    assert report.categories["elements"].f1 == 1.0, "the alias table already knew these are one thing"
+    assert report.categories["relationships"].f1 == 1.0, "so the endpoints resolve too"
+
+
+def test_a_type_disagreement_inside_one_layer_is_half_a_match(candidate):
+    """ApplicationService vs ApplicationInterface for one interview sentence."""
+    text = _model_file(candidate).read_text(encoding="utf-8")
+    _model_file(candidate).write_text(
+        text.replace("    type: ApplicationService", "    type: ApplicationInterface"), encoding="utf-8"
+    )
+    elements = score.score(candidate, CLINIC).categories["elements"]
+    assert elements.partial == 1
+    assert elements.matched == pytest.approx(5.5), "found, but classified differently"
+    assert 0.9 < elements.f1 < 1.0
+
+
+def test_a_type_change_across_layers_is_not_a_match(candidate):
+    """Half credit is for a contested classification, not for a different thing."""
+    text = _model_file(candidate).read_text(encoding="utf-8")
+    _model_file(candidate).write_text(
+        text.replace("    type: ApplicationService", "    type: BusinessService"), encoding="utf-8"
+    )
+    elements = score.score(candidate, CLINIC).categories["elements"]
+    assert elements.partial == 0 and elements.matched == 5
+
+
+def test_splitting_one_gold_fact_into_two_is_not_a_miss(candidate):
+    """The register's own discipline pushes towards atomic facts; gold combined them."""
+    text = _register_file(candidate).read_text(encoding="utf-8")
+    split = """  - id: fact-billing-module
+    statement: Invoices are produced by the billing module inside the EHR.
+    provenance:
+      - file: facts/sources/interview-clinic-2026-07-01.md
+        quote: Invoices are produced by the billing module inside the EHR
+    entities: [ehr]
+
+  - id: fact-no-separate-billing
+    statement: The clinic runs no separate billing system.
+    provenance:
+      - file: facts/sources/interview-clinic-2026-07-01.md
+        quote: we do not run a separate billing system
+    entities: [ehr]
+"""
+    head, sep, tail = text.partition("  - id: fact-billing-inside-ehr")
+    combined = tail.split("\n\n", 1)[1]
+    _register_file(candidate).write_text(head + split + "\n" + combined, encoding="utf-8")
+    report = score.score(candidate, CLINIC)
+    facts_score = report.categories["facts"]
+    assert facts_score.recall > 0.9, "gold's ground is still covered, by two facts instead of one"
+    assert facts_score.gold_credit >= 6.5
+
+
+def test_matching_evidence_under_a_wrong_statement_is_only_half(candidate):
+    """Spans answer 'was this covered?'; the statement still has to say so."""
+    text = _register_file(candidate).read_text(encoding="utf-8")
+    _register_file(candidate).write_text(
+        text.replace(
+            "statement: Nobody has tested the backup restore of the EHR server.",
+            "statement: The practice is generally satisfied with its infrastructure setup.",
+        ),
+        encoding="utf-8",
+    )
+    facts_score = score.score(candidate, CLINIC).categories["facts"]
+    assert facts_score.partial >= 1 and facts_score.f1 < 1.0
+
+
+def test_the_structural_relationship_count_is_reported_and_never_gated(candidate):
+    report = score.score(candidate, CLINIC)
+    assert "rel-structural" in report.diagnostics
+    assert "rel-structural" not in report.categories, "diagnostics explain a number, they are not one"
+    assert report.min_f1 == 1.0
+
+
 # ------------------------------------------------------------------------------- CLI
 
 

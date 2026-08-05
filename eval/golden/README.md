@@ -20,11 +20,37 @@ python -m easkills score --root <scratch-repo> --gold eval/golden/clinic
 python -m easkills score --root <scratch-repo> --gold eval/example
 ```
 
-Precision/recall/F1 per category -- entities (term-set overlap), facts
-(normalized-statement similarity ≥ 0.85), elements (ArchiMate type + normalized
-name), relationships (type + matched endpoints) -- plus the candidate's own
-validation gates, because matching gold while failing provenance verification is a
-fabrication that happens to be right. `--min-f1 <pct>` turns the score into a gate.
+Precision/recall/F1 per category, plus the candidate's own validation gates, because
+matching gold while failing provenance verification is a fabrication that happens to be
+right. `--min-f1 <pct>` turns the score into a gate.
+
+## What the score is, and what it is not
+
+It measures **agreement with one gold repository**. That makes it a regression signal
+for a change in the skills; it is not an absolute grade for a model, and a low number is
+not by itself evidence of a bad architecture.
+
+An end-to-end run on 2026-08-05 made the difference concrete. A candidate produced blind
+from this case's source passed every gate, recalled **100%** of gold's elements and
+relationships -- and scored 15% on elements and **0%** on relationships, because it wrote
+"Electronic Health Record System" where gold wrote "EHR" and because one unmatched
+element zeroed every relationship touching it. The matching rules below are the answer to
+that run:
+
+| Category | Matched when |
+|---|---|
+| entities | term sets (name + aliases, normalized) intersect |
+| facts | the **source ground they cover** overlaps by ≥ 50% of the shorter side; the statement then decides full credit (similarity ≥ 0.85) or half. Splitting one gold fact into two atomic ones is a match, not a miss -- but quoting the right sentence under a statement that says something else is only half |
+| elements | (type, name) with names resolved through **both** repositories' entity alias tables; a type disagreement *inside one ArchiMate layer* is half a match (found it, contested classification), across layers it is no match |
+| relationships | type + endpoints mapped through matched elements. A label-independent `rel-structural` count is reported beside it as a **diagnostic** -- never gated -- so a collapse caused by naming is visible as such |
+
+Half credits are reported, never hidden: the `(n half)` note on a row says how much of the
+number rests on a partial match.
+
+Two consequences worth stating plainly. A perfect self-score stays perfect, so
+`--min-f1 100` remains a valid CI gate. And a candidate that disagrees with gold's
+vocabulary is now separated from one that missed the content -- which is the distinction
+the harness exists to make.
 
 ## Adding a case
 

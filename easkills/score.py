@@ -6,44 +6,79 @@ case's sources into a scratch repository and scoring the result here -- precisio
 recall and F1 per category, computed deterministically:
 
 * **entities**    matched when their term sets (name + aliases, normalized) intersect;
-* **facts**       matched by normalized-statement similarity (one-to-one, greedy best
-                  match at or above ``FACT_MATCH_THRESHOLD``);
-* **elements**    matched by (ArchiMate type, normalized name) -- the standard basis
-                  for model comparison in the EA-model literature;
-* **relationships** matched by type plus endpoints that map through element matches.
+* **facts**       matched by the *source ground they cover*: the spans their verified
+                  quotes occupy in the shared sources, with statement similarity
+                  deciding full or partial credit;
+* **elements**    matched by (ArchiMate type, name) -- with names resolved through the
+                  entity alias tables, and a type disagreement inside one layer scored
+                  as half a match;
+* **relationships** matched by type plus endpoints that map through element matches,
+                  with a label-independent structural count reported alongside.
 
 Candidate *quality* is not inferred from matching alone: the candidate's own gates
 (model and fact-register validators) run too, because a candidate that matches gold
 while failing provenance verification is a fabrication that happens to be right.
+
+**What this score is, and is not.** It measures agreement with one gold repository, so
+it is a regression signal for a change in the skills -- not an absolute grade. An
+end-to-end run (2026-08-05) exposed how sharply that mattered: a model that recalled
+100% of gold's elements and relationships scored 15% and **0%** because it wrote
+"Electronic Health Record System" where gold wrote "EHR", and because one unmatched
+element zeroes every relationship touching it. The matching below is the answer to that
+run: use the knowledge the repository already has (aliases), separate a disagreement
+about labels from a disagreement about content, and stop punishing a register for being
+more atomic than gold.
 """
 
 from __future__ import annotations
 
 import difflib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from . import dsl, facts as facts_mod, ui
+from . import dsl, facts as facts_mod, oracle, ui
 from . import validate as validate_mod
 from .validate import _normalize
 
 FACT_MATCH_THRESHOLD = 0.85
+# Two facts cover the same ground when their evidence overlaps by at least this share of
+# the shorter one -- which is what makes splitting one gold fact into two atomic ones a
+# match rather than a miss.
+SPAN_OVERLAP_THRESHOLD = 0.5
+# Credit for "found it, disagree about its label": a type difference inside one
+# ArchiMate layer, or matching evidence under a diverging statement. Half, deliberately:
+# the thing was located, its classification is contested.
+PARTIAL_CREDIT = 0.5
 
 
 @dataclass(frozen=True)
 class CategoryScore:
+    """Credit is asymmetric on purpose.
+
+    One gold fact may be covered by two candidate facts, and one candidate element may
+    answer a gold element under a different type. Collapsing that into a single
+    ``matched`` count forced a choice between punishing the candidate for being more
+    atomic and crediting it twice; keeping the two numerators apart does neither.
+    """
+
     gold: int
     candidate: int
-    matched: int
+    matched: float  # credit on the candidate side -- the precision numerator
+    matched_gold: float | None = None  # credit on the gold side; defaults to `matched`
+    partial: int = 0  # how many of those credits were half (reported, never hidden)
+
+    @property
+    def gold_credit(self) -> float:
+        return self.matched if self.matched_gold is None else self.matched_gold
 
     @property
     def precision(self) -> float:
-        return self.matched / self.candidate if self.candidate else 1.0
+        return min(1.0, self.matched / self.candidate) if self.candidate else 1.0
 
     @property
     def recall(self) -> float:
-        return self.matched / self.gold if self.gold else 1.0
+        return min(1.0, self.gold_credit / self.gold) if self.gold else 1.0
 
     @property
     def f1(self) -> float:
@@ -54,7 +89,9 @@ class CategoryScore:
         return {
             "gold": self.gold,
             "candidate": self.candidate,
-            "matched": self.matched,
+            "matched": round(self.matched, 2),
+            "matchedGold": round(self.gold_credit, 2),
+            "partial": self.partial,
             "precision": round(self.precision, 4),
             "recall": round(self.recall, 4),
             "f1": round(self.f1, 4),
@@ -79,41 +116,207 @@ def _score_entities(gold: facts_mod.Register, candidate: facts_mod.Register) -> 
     return CategoryScore(gold=len(gold.entities), candidate=len(candidate.entities), matched=matched)
 
 
+def _alias_classes(*registers: facts_mod.Register) -> dict[str, str]:
+    """Union the term sets of every entity in every register, and return term -> class.
+
+    The repository already knows that "EHR" and "Electronic Health Record System" are
+    one thing -- it is written in `facts/entities.yaml`. The scorer used to ignore that
+    and compare raw element names, so two faithful models disagreed to 0%.
+    """
+    parent: dict[str, str] = {}
+
+    def find(term: str) -> str:
+        parent.setdefault(term, term)
+        while parent[term] != term:
+            parent[term] = parent[parent[term]]
+            term = parent[term]
+        return term
+
+    def union(a: str, b: str) -> None:
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[max(ra, rb)] = min(ra, rb)  # smallest term is the class representative
+
+    for register in registers:
+        for entity in register.entities.values():
+            terms = [_normalize(entity.name)] + [_normalize(alias) for alias in entity.aliases]
+            terms = [term for term in terms if term]
+            for term in terms[1:]:
+                union(terms[0], term)
+    return {term: find(term) for term in parent}
+
+
+def _canonical(name: str, classes: dict[str, str]) -> str:
+    key = _normalize(name)
+    return classes.get(key, key)
+
+
+def _fact_spans(register: facts_mod.Register) -> dict[str, list[tuple[str, int, int]]]:
+    """Where each fact's verified quotes sit in the normalized source text.
+
+    Facts are judged on the ground their evidence covers, not on how many sentences
+    they were split into -- the register's own discipline pushes towards atomic facts,
+    and statement-similarity matching punished exactly that.
+    """
+    facts_root = register.facts_root()
+    cache: dict[str, str] = {}
+    spans: dict[str, list[tuple[str, int, int]]] = {}
+    for fact in register.facts.values():
+        for provenance in fact.provenance:
+            if not provenance.file or not provenance.quote:
+                continue
+            if provenance.file not in cache:
+                path = (facts_root / provenance.file).resolve()
+                cache[provenance.file] = (
+                    _normalize(path.read_text(encoding="utf-8", errors="replace"))
+                    if path.is_file()
+                    else ""
+                )
+            text = cache[provenance.file]
+            start = text.find(_normalize(provenance.quote))
+            if start >= 0:
+                spans.setdefault(fact.id, []).append(
+                    (provenance.file, start, start + len(_normalize(provenance.quote)))
+                )
+    return spans
+
+
+def _span_length(spans: list[tuple[str, int, int]]) -> int:
+    return sum(end - start for _file, start, end in spans)
+
+
+def _span_overlap(left: list[tuple[str, int, int]], right: list[tuple[str, int, int]]) -> int:
+    total = 0
+    for lfile, lstart, lend in left:
+        for rfile, rstart, rend in right:
+            if lfile == rfile:
+                total += max(0, min(lend, rend) - max(lstart, rstart))
+    return total
+
+
+def _covers(a: list[tuple[str, int, int]], b: list[tuple[str, int, int]]) -> bool:
+    shorter = min(_span_length(a), _span_length(b))
+    return shorter > 0 and _span_overlap(a, b) >= SPAN_OVERLAP_THRESHOLD * shorter
+
+
 def _score_facts(gold: facts_mod.Register, candidate: facts_mod.Register) -> CategoryScore:
-    available = {f.id: _normalize(f.statement) for f in candidate.facts.values()}
-    matched = 0
-    for gold_fact in sorted(gold.facts.values(), key=lambda f: f.id):
-        gold_statement = _normalize(gold_fact.statement)
-        best_id, best_ratio = None, 0.0
-        for cid, statement in sorted(available.items()):
-            ratio = difflib.SequenceMatcher(None, gold_statement, statement).ratio()
-            if ratio > best_ratio:
-                best_id, best_ratio = cid, ratio
-        if best_id is not None and best_ratio >= FACT_MATCH_THRESHOLD:
-            matched += 1
-            del available[best_id]
-    return CategoryScore(gold=len(gold.facts), candidate=len(candidate.facts), matched=matched)
+    """Credit evidence coverage; let the statement decide full or half credit.
 
+    Spans answer "was this ground covered?", which survives splitting and merging.
+    Statement similarity still matters: matching evidence under a statement that says
+    something else is half a match, not a match -- otherwise the register could describe
+    anything as long as it quoted the right sentence.
+    """
+    gold_spans = _fact_spans(gold)
+    candidate_spans = _fact_spans(candidate)
+    # Keyed per side, never merged: a candidate is usually a *copy* of gold with the same
+    # fact ids, and one shared dict silently compared every statement with itself.
+    gold_statements = {f.id: _normalize(f.statement) for f in gold.facts.values()}
+    candidate_statements = {f.id: _normalize(f.statement) for f in candidate.facts.values()}
 
-def _element_key(element: dsl.Element) -> tuple[str, str]:
-    return (element.type, _normalize(element.name))
+    def credit(
+        statement: str, source_spans: list[tuple[str, int, int]],
+        others: dict[str, list], other_statements: dict[str, str],
+    ) -> float:
+        overlapping = [oid for oid, ospans in sorted(others.items()) if _covers(source_spans, ospans)]
+        if not overlapping:
+            return 0.0
+        best = max(
+            difflib.SequenceMatcher(None, statement, other_statements[oid]).ratio()
+            for oid in overlapping
+            if oid in other_statements
+        )
+        return 1.0 if best >= FACT_MATCH_THRESHOLD else PARTIAL_CREDIT
+
+    def fallback_similarity() -> CategoryScore:
+        """Sources not shared (or quotes unlocatable): fall back to statements alone."""
+        available = dict(candidate_statements)
+        matched = 0
+        for gold_fact in sorted(gold.facts.values(), key=lambda f: f.id):
+            best_id, best_ratio = None, 0.0
+            for cid, statement in sorted(available.items()):
+                ratio = difflib.SequenceMatcher(None, gold_statements[gold_fact.id], statement).ratio()
+                if ratio > best_ratio:
+                    best_id, best_ratio = cid, ratio
+            if best_id is not None and best_ratio >= FACT_MATCH_THRESHOLD:
+                matched += 1
+                del available[best_id]
+        return CategoryScore(gold=len(gold.facts), candidate=len(candidate.facts), matched=matched)
+
+    if not gold_spans or not candidate_spans:
+        return fallback_similarity()
+
+    recall_credit = 0.0
+    partial = 0
+    for fact_id in sorted(gold.facts):
+        value = credit(
+            gold_statements[fact_id], gold_spans.get(fact_id, []), candidate_spans, candidate_statements
+        )
+        recall_credit += value
+        partial += 1 if value == PARTIAL_CREDIT else 0
+    precision_credit = 0.0
+    for fact_id in sorted(candidate.facts):
+        value = credit(
+            candidate_statements[fact_id], candidate_spans.get(fact_id, []), gold_spans, gold_statements
+        )
+        precision_credit += value
+        partial += 1 if value == PARTIAL_CREDIT else 0
+    return CategoryScore(
+        gold=len(gold.facts),
+        candidate=len(candidate.facts),
+        matched=precision_credit,
+        matched_gold=recall_credit,
+        partial=partial,
+    )
 
 
 def _score_elements(
-    gold: dsl.Model, candidate: dsl.Model
+    gold: dsl.Model, candidate: dsl.Model, classes: dict[str, str]
 ) -> tuple[CategoryScore, dict[str, str]]:
-    """Returns the score plus the gold-id -> candidate-id map the relationship
-    scorer needs."""
-    available: dict[tuple[str, str], str] = {}
+    """Score elements and return the gold-id -> candidate-id map relationships need.
+
+    Two passes. First an exact match on (type, canonical name); then, among what is
+    left, a *same layer, different type* match at half credit -- ApplicationInterface
+    versus ApplicationService for one sentence in an interview is a disagreement about
+    classification, not a missing element, and scoring it zero told a model that had
+    found everything that it had found nothing.
+    """
+    exact: dict[tuple[str, str], list[str]] = {}
+    by_name: dict[tuple[str, str], list[str]] = {}
     for element in sorted(candidate.elements.values(), key=lambda e: e.id):
-        available.setdefault(_element_key(element), element.id)
+        name = _canonical(element.name, classes)
+        exact.setdefault((element.type, name), []).append(element.id)
+        by_name.setdefault((oracle.layer_of(element.type), name), []).append(element.id)
+
     mapping: dict[str, str] = {}
+    taken: set[str] = set()
+    credit = 0.0
+    partial = 0
     for gold_element in sorted(gold.elements.values(), key=lambda e: e.id):
-        key = _element_key(gold_element)
-        if key in available:
-            mapping[gold_element.id] = available.pop(key)
+        name = _canonical(gold_element.name, classes)
+        bucket = [cid for cid in exact.get((gold_element.type, name), []) if cid not in taken]
+        if bucket:
+            mapping[gold_element.id] = bucket[0]
+            taken.add(bucket[0])
+            credit += 1.0
+            continue
+        bucket = [
+            cid
+            for cid in by_name.get((oracle.layer_of(gold_element.type), name), [])
+            if cid not in taken
+        ]
+        if bucket:
+            mapping[gold_element.id] = bucket[0]
+            taken.add(bucket[0])
+            credit += PARTIAL_CREDIT
+            partial += 1
     return (
-        CategoryScore(gold=len(gold.elements), candidate=len(candidate.elements), matched=len(mapping)),
+        CategoryScore(
+            gold=len(gold.elements),
+            candidate=len(candidate.elements),
+            matched=credit,
+            partial=partial,
+        ),
         mapping,
     )
 
@@ -143,12 +346,52 @@ def _score_relationships(
     )
 
 
+def _structural_relationships(
+    gold: dsl.Model, candidate: dsl.Model, classes: dict[str, str]
+) -> CategoryScore:
+    """The same graph, judged on endpoint *names* rather than matched elements.
+
+    Reported beside the strict count as a diagnostic, never gated: when the strict
+    number collapses because one element was labelled differently, this says whether
+    the shape was actually right. The 0%-versus-91% gap in the 2026-08-05 end-to-end
+    run was entirely this distinction.
+    """
+
+    def key(model: dsl.Model, relationship: dsl.Relationship) -> tuple[str, str, str] | None:
+        source = model.elements.get(relationship.source)
+        target = model.elements.get(relationship.target)
+        if source is None or target is None:
+            return None
+        return (
+            relationship.type,
+            _canonical(source.name, classes),
+            _canonical(target.name, classes),
+        )
+
+    available: dict[tuple[str, str, str], int] = {}
+    for relationship in candidate.relationships.values():
+        item = key(candidate, relationship)
+        if item:
+            available[item] = available.get(item, 0) + 1
+    matched = 0
+    for relationship in gold.relationships.values():
+        item = key(gold, relationship)
+        if item and available.get(item):
+            available[item] -= 1
+            matched += 1
+    return CategoryScore(
+        gold=len(gold.relationships), candidate=len(candidate.relationships), matched=matched
+    )
+
+
 @dataclass
 class ScoreReport:
     gold_root: Path
     candidate_root: Path
     categories: dict[str, CategoryScore]
     gates: dict[str, dict[str, int]]
+    # Diagnostics are reported and never gated: they explain a number, they are not one.
+    diagnostics: dict[str, CategoryScore] = field(default_factory=dict)
 
     @property
     def min_f1(self) -> float:
@@ -163,6 +406,7 @@ class ScoreReport:
             "gold": str(self.gold_root),
             "candidate": str(self.candidate_root),
             "categories": {name: score.as_dict() for name, score in self.categories.items()},
+            "diagnostics": {name: score.as_dict() for name, score in self.diagnostics.items()},
             "minF1": round(self.min_f1, 4),
             "gates": self.gates,
             "gatesOk": self.gates_ok,
@@ -178,9 +422,17 @@ class ScoreReport:
         for name, score in self.categories.items():
             f1_field = f"{score.f1:>7.2%}"
             f1_styled = ui.green(f1_field) if score.f1 >= 1.0 else ui.yellow(f1_field)
+            note = ui.dim(f"  ({score.partial} half)") if score.partial else ""
             lines.append(
-                f"{ui.bold(f'{name:<15}')} {score.gold:>5} {score.candidate:>5} {score.matched:>6} "
-                f"{score.precision:>7.2%} {score.recall:>7.2%} {f1_styled}"
+                f"{ui.bold(f'{name:<15}')} {score.gold:>5} {score.candidate:>5} {score.matched:>6.1f} "
+                f"{score.precision:>7.2%} {score.recall:>7.2%} {f1_styled}{note}"
+            )
+        for name, score in self.diagnostics.items():
+            lines.append(
+                ui.dim(
+                    f"{name:<15} {score.gold:>5} {score.candidate:>5} {score.matched:>6.1f} "
+                    f"{score.precision:>7.2%} {score.recall:>7.2%} {score.f1:>7.2%}  diagnostic, not gated"
+                )
             )
         lines.append("")
         for gate, counts in self.gates.items():
@@ -204,12 +456,17 @@ def score(candidate_root: Path, gold_root: Path) -> ScoreReport:
     gold_model, _docs, _config = dsl.load(gold_root, "approved")
     candidate_model, _docs, _config = dsl.load(candidate_root, "approved")
 
-    element_score, element_map = _score_elements(gold_model, candidate_model)
+    # The entity tables of *both* repositories define the vocabulary the comparison uses.
+    classes = _alias_classes(gold_register, candidate_register)
+    element_score, element_map = _score_elements(gold_model, candidate_model, classes)
     categories = {
         "entities": _score_entities(gold_register, candidate_register),
         "facts": _score_facts(gold_register, candidate_register),
         "elements": element_score,
         "relationships": _score_relationships(gold_model, candidate_model, element_map),
+    }
+    diagnostics = {
+        "rel-structural": _structural_relationships(gold_model, candidate_model, classes),
     }
 
     model_report = validate_mod.validate(candidate_root, zone="approved")
@@ -219,5 +476,9 @@ def score(candidate_root: Path, gold_root: Path) -> ScoreReport:
         "facts": {"errors": len(facts_report.errors), "warnings": len(facts_report.warnings)},
     }
     return ScoreReport(
-        gold_root=gold_root, candidate_root=candidate_root, categories=categories, gates=gates
+        gold_root=gold_root,
+        candidate_root=candidate_root,
+        categories=categories,
+        gates=gates,
+        diagnostics=diagnostics,
     )
