@@ -5,7 +5,7 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
-## [Unreleased]
+## [0.8.1] — 2026-08-05
 
 ### Changed — the golden-set scorer measures content, not vocabulary
 
