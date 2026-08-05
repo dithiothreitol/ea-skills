@@ -128,7 +128,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_import.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
     p_import.add_argument("--file", type=Path, required=True, help="the exchange XML to import")
     p_import.add_argument(
-        "--out", type=Path, help="target YAML file (default: model/staging/<source-stem>.yaml)"
+        "--out",
+        type=Path,
+        help="write one file here instead of splitting into model/staging/ by layer "
+        "(a single file cannot be promoted in slices)",
     )
     p_import.add_argument(
         "--ids",
@@ -203,6 +206,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_impact.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
     p_impact.add_argument("--scope", required=True, help="element id the change is about")
+    p_impact.add_argument(
+        "--zone",
+        choices=["approved", "staging"],
+        default="approved",
+        help="which zone to read; 'staging' answers what a *proposed* model would touch",
+    )
     p_impact.add_argument(
         "--depth", type=int, help="stop after N hops (default: unbounded, the whole reachable set)"
     )
@@ -356,9 +365,10 @@ def _render_import(report: importer.ImportReport) -> str:
     lines = [
         _ok(
             f"Imported {report.elements} element(s), {report.relationships} relationship(s), "
-            f"{report.views} view(s) into {ui.bold(report.target)}"
+            f"{report.views} view(s) into {len(report.targets)} file(s)"
         ),
         ui.dim(f"source: {report.source} (sha256 {report.sha256[:16]}); ids: {report.ids}"),
+        *(f"  {ui.bold(target)}" for target in report.targets),
     ]
     if report.skipped:
         lines.append("")
@@ -385,7 +395,9 @@ def _render_import(report: importer.ImportReport) -> str:
         "",
         ui.dim(
             "The import is a staging proposal: run `validate --zone staging` to see what it "
-            "still lacks (owners, review dates, evidence), then promote deliberately."
+            "still lacks (owners, review dates, evidence), then promote deliberately -- one "
+            "element file at a time as owners vouch for it, and `relations.yaml` once both "
+            "endpoints are approved."
         ),
     ]
     return "\n".join(lines)
@@ -529,7 +541,11 @@ def cmd_context(args: argparse.Namespace) -> int:
 def cmd_impact(args: argparse.Namespace) -> int:
     try:
         report = impact_mod.analyse(
-            args.root.resolve(), scope=args.scope, depth=args.depth, today=_parse_as_of(args.as_of)
+            args.root.resolve(),
+            scope=args.scope,
+            depth=args.depth,
+            today=_parse_as_of(args.as_of),
+            zone=args.zone,
         )
     except impact_mod.ImpactError as exc:
         print(_error(str(exc)))

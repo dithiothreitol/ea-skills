@@ -7,6 +7,31 @@ project's build phases (design log with per-decision rationale:
 
 ## [Unreleased]
 
+### Changed — what an end-to-end adoption run found
+
+The four additions above were put through the path they exist for, on a scratch
+repository scaffolded from `template/`: a handed-over spreadsheet and an Archi export
+in, a promoted slice out. The pipeline held — the gate caught a planted `Serving`
+Node→DataObject that the previous tool had allowed — and two things did not.
+
+- **The importer wrote one file, so `promote --file` could not promote a slice.** The
+  `ea-import` skill prescribes promoting in slices; the tooling made it impossible
+  without hand-splitting the YAML. It now writes the shape this repository authors:
+  elements per ArchiMate layer, relationships in `relations.yaml`, views in
+  `views.yaml`. That split is **not cosmetic** — an element file has no outbound
+  references and promotes on its own, while a naive split filing relationships with
+  their source's layer produces slices that can never promote independently, because
+  relationships cross layers. (The run hit exactly that wall before the fix.) `--out`
+  still collapses everything into one file, and now says that it cannot be sliced.
+- **`impact` had no `--zone`.** During adoption, or while triaging a proposed change,
+  half the model is a proposal and the approved-only radius is truthfully tiny and
+  practically misleading. `docs` refuses staging because a document mixing proposals
+  with signed content carries false authority; under-reporting impact is the same
+  failure pointed the other way, so `impact` accepts `--zone staging` (default stays
+  `approved`). In the run: 1 element against approved, 4 against the proposal.
+- Imported YAML now indents sequences under their key, like every hand-authored file
+  here. Reviewable diffs are why this DSL is fragmented YAML at all.
+
 ### Added — `intake-csv`: a spreadsheet becomes evidence
 
 The most common EA input in the world is a spreadsheet — an application inventory, a

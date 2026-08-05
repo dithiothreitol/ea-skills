@@ -9,8 +9,10 @@ description: Import an existing architecture model (ArchiMate Open Exchange XML 
 python -m easkills import --root <repo> --file <export>.xml
 ```
 
-Reads an Open Group ArchiMate Model Exchange file and writes one YAML proposal into
-`model/staging/`. From Archi: *File → Export → Model To Open Exchange File*. Most
+Reads an Open Group ArchiMate Model Exchange file and writes proposals into
+`model/staging/`, in the shape this repository authors models: **elements per ArchiMate
+layer** (`application.yaml`, `business.yaml`, …), **relationships in `relations.yaml`**,
+views in `views.yaml`. From Archi: *File → Export → Model To Open Exchange File*. Most
 commercial tools export the same format.
 
 ## What the import does on its own
@@ -45,9 +47,22 @@ noise — **they are the adoption backlog**, already itemised:
 | `STD001`/`STD002` errors | Standards claims with no SIB, or retired ones | Migrate the standards base too (`ea-standards-base`), or drop the claim |
 
 **Promote in slices, not wholesale.** A 400-element import promoted in one move signs
-off 400 unreviewed claims. Promote the slice someone actually vouches for (owner
-assigned, reviewed date set), leave the rest in staging as the visible backlog — an
-honest architecture repository is allowed to know less than the old tool claimed.
+off 400 unreviewed claims. The file split is what makes slicing possible, and it
+dictates the order:
+
+1. **One element file at a time**, as its owners vouch for it. An element file has no
+   outbound references, so it promotes on its own.
+2. **`relations.yaml` last**, once both endpoints of its relationships are approved —
+   relationships cross layers, so promoting them early just dangles (`REF001`).
+3. **`views.yaml`** when the elements it shows are approved.
+
+Leave the rest in staging as the visible backlog. An honest architecture repository is
+allowed to know less than the old tool claimed.
+
+While the model is half-promoted, ask impact questions against the proposal:
+`python -m easkills impact --scope <id> --zone staging`. Against the approved zone
+alone the radius is truthfully tiny and practically misleading — most of the model is
+still a proposal.
 
 **Do not chase a clean import of a dirty model.** If the export names two systems
 identically, the import suffixes the second (`crm-suite-2`) and moves on; deciding

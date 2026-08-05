@@ -90,6 +90,7 @@ class ImpactReport:
     scope: str
     depth: int | None
     as_of: str
+    zone: str = "approved"
     scope_name: str = ""
     affected: list[Hop] = field(default_factory=list)
     stakeholders: list[dict[str, Any]] = field(default_factory=list)
@@ -119,6 +120,7 @@ class ImpactReport:
         return {
             "root": str(self.root),
             "scope": self.scope,
+            "zone": self.zone,
             "scopeName": self.scope_name,
             "asOf": self.as_of,
             "depth": self.depth,
@@ -187,9 +189,24 @@ def _edges(model: dsl.Model) -> dict[str, list[tuple[str, str, str, str]]]:
     return out
 
 
-def analyse(root: Path, scope: str, depth: int | None = None, today: date | None = None) -> ImpactReport:
+def analyse(
+    root: Path,
+    scope: str,
+    depth: int | None = None,
+    today: date | None = None,
+    zone: str = "approved",
+) -> ImpactReport:
+    """Blast radius of a change to ``scope``.
+
+    ``zone`` defaults to ``approved``, but unlike the architecture description this one
+    accepts ``staging``: the dangerous error here is a radius that looks *small*, and
+    during adoption -- or while triaging a proposed change -- half the model can still
+    be a proposal. `docs` refuses staging because a document mixing proposals with
+    signed content carries false authority; a triage that under-reports impact is the
+    same failure pointed the other way.
+    """
     today = today or date.today()
-    model, _documents, _config = dsl.load(root, "approved")
+    model, _documents, _config = dsl.load_zone(root, zone)
     governance = govern.load(root)
     if scope not in model.elements:
         raise ImpactError(f"'{scope}' is not an element in the approved model")
@@ -197,6 +214,7 @@ def analyse(root: Path, scope: str, depth: int | None = None, today: date | None
     report = ImpactReport(
         root=root,
         scope=scope,
+        zone=zone,
         depth=depth,
         as_of=today.isoformat(),
         scope_name=model.elements[scope].name,
@@ -316,7 +334,8 @@ def render(report: ImpactReport, model_names: dict[str, str] | None = None) -> s
     lines = [
         ui.bold(f"Impact of a change to {report.scope_name or report.scope} (`{report.scope}`)"),
         ui.dim(
-            f"as of {report.as_of}; {depth}; {len(report.elements)} element(s) in the blast radius, "
+            f"as of {report.as_of}; zone '{report.zone}'; {depth}; "
+            f"{len(report.elements)} element(s) in the blast radius, "
             f"{len(report.stakeholders)} stakeholder group(s) touched"
         ),
         "",

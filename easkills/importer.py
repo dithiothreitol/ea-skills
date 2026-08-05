@@ -58,7 +58,7 @@ class ImportRefusal(RuntimeError):
 @dataclass
 class ImportReport:
     source: str
-    target: str
+    targets: list[str]
     ids: str
     sha256: str
     elements: int = 0
@@ -73,7 +73,7 @@ class ImportReport:
         return {
             "source": self.source,
             "sourceSha256": self.sha256,
-            "target": self.target,
+            "targets": self.targets,
             "ids": self.ids,
             "counts": {
                 "elements": self.elements,
@@ -304,14 +304,61 @@ def read_exchange(xml: bytes, ids: str, report: ImportReport) -> dict[str, Any]:
     return document
 
 
-def _header(report: ImportReport) -> str:
+def _header(report: ImportReport, part: str) -> str:
     return (
-        f"# Imported from {report.source} (sha256 {report.sha256[:16]}) by\n"
+        f"# {part}, imported from {report.source} (sha256 {report.sha256[:16]}) by\n"
         "# `python -m easkills import`. This file is a *proposal* in staging: every\n"
         "# concept without verified evidence is marked `assumed`, diagram geometry was\n"
         "# discarded (layout is computed at render time), and promotion still runs the\n"
         "# gate. Identifier changes are listed in the import report.\n"
+        "#\n"
+        "# Split the way this repository authors models: elements by ArchiMate layer,\n"
+        "# relationships together. That is what makes a slice promotable on its own --\n"
+        "# an element file has no outbound references, while relationships cross layers\n"
+        "# and are promoted once both endpoints are approved.\n"
     )
+
+
+class _Dumper(yaml.SafeDumper):
+    """Indent sequences under their key, the way every hand-authored file here does.
+
+    PyYAML's default puts ``- id:`` in column 0, which makes an imported file look
+    foreign next to the rest of the model and turns the first hand edit into a noisy
+    diff. Reviewable diffs are the reason this DSL is fragmented YAML at all.
+    """
+
+    def increase_indent(self, flow: bool = False, indentless: bool = False):  # noqa: D102
+        return super().increase_indent(flow, False)
+
+
+def _partition(document: dict[str, Any]) -> list[tuple[str, str, dict[str, Any]]]:
+    """Split one imported document into the files this repository would have written.
+
+    ``(filename, human role, content)``, elements by ArchiMate layer and relationships
+    together. This is not cosmetic: **it is what makes a slice promotable on its own.**
+    An element file has no outbound references, so a layer can be promoted as soon as
+    its owners vouch for it; relationships cross layers, so a split that filed them
+    with their source's layer produces slices that can never promote independently --
+    every one of them dangles into a layer still sitting in staging.
+    """
+    by_layer: dict[str, list[dict[str, Any]]] = {}
+    for element in document.get("elements") or []:
+        by_layer.setdefault(oracle.layer_of(str(element.get("type", ""))).lower() or "other", []).append(element)
+
+    parts: list[tuple[str, str, dict[str, Any]]] = []
+    for layer in sorted(by_layer):
+        parts.append((f"{layer}.yaml", f"{layer.capitalize()}-layer elements", {"elements": by_layer[layer]}))
+    if document.get("relationships"):
+        parts.append(
+            (
+                "relations.yaml",
+                "Relationships (promote after both endpoints are approved)",
+                {"relationships": document["relationships"]},
+            )
+        )
+    if document.get("views"):
+        parts.append(("views.yaml", "Views", {"views": document["views"]}))
+    return parts
 
 
 def import_exchange(
@@ -320,14 +367,10 @@ def import_exchange(
     if not source.is_file():
         raise ImportRefusal(f"{source} does not exist")
     xml = source.read_bytes()
-    target = out or (root / "model" / "staging" / f"{_slugify(source.stem) or 'imported'}.yaml")
-    if target.exists():
-        raise ImportRefusal(
-            f"{target} already exists -- an import never overwrites; move the file aside first"
-        )
+    staging = root / "model" / "staging"
     report = ImportReport(
         source=source.name,
-        target=str(target),
+        targets=[],
         ids=ids,
         sha256=hashlib.sha256(xml).hexdigest(),
     )
@@ -342,9 +385,33 @@ def import_exchange(
     if not document:
         raise ImportRefusal(f"{source.name} contains no importable content")
 
-    target.parent.mkdir(parents=True, exist_ok=True)
-    body = yaml.safe_dump(
-        document, sort_keys=False, allow_unicode=True, default_flow_style=False, width=98
-    )
-    target.write_text(_header(report) + "\n" + body, encoding="utf-8", newline="\n")
+    if out is not None:
+        # An explicit --out means one file, deliberately: the caller has asked for it.
+        parts = [(out.name, "Imported model", document)]
+        directory = out.parent
+    else:
+        parts = _partition(document)
+        directory = staging
+
+    for name, _role, _content in parts:
+        if (directory / name).exists():
+            raise ImportRefusal(
+                f"{directory / name} already exists -- an import never overwrites; move the "
+                "file aside first"
+            )
+
+    directory.mkdir(parents=True, exist_ok=True)
+    for name, role, content in parts:
+        body = yaml.dump(
+            content,
+            Dumper=_Dumper,
+            sort_keys=False,
+            allow_unicode=True,
+            default_flow_style=False,
+            width=98,
+        )
+        (directory / name).write_text(
+            _header(report, role) + "\n" + body, encoding="utf-8", newline="\n"
+        )
+        report.targets.append(str(directory / name))
     return report

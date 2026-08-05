@@ -9,9 +9,12 @@ diagram nodes. The importer's job is to survive all of it *loudly*; judging the 
 stays the gate's job."""
 
 import shutil
+from datetime import date
 from pathlib import Path
 
 import pytest
+
+import yaml
 
 from easkills import aoef, cli, dsl, importer, validate
 
@@ -74,12 +77,73 @@ def test_names_mode_produces_readable_ids_and_remaps_applies_to(exported_example
 
 
 def test_import_is_byte_stable(exported_example, tmp_path):
-    target = tmp_path / "model" / "staging" / "example.yaml"
+    staging = tmp_path / "model" / "staging"
+    first = importer.import_exchange(tmp_path, exported_example)
+    written = {path.name: path.read_bytes() for path in sorted(staging.glob("*.yaml"))}
+    for path in staging.glob("*.yaml"):
+        path.unlink()
+    second = importer.import_exchange(tmp_path, exported_example)
+    assert first.targets == second.targets
+    assert {path.name: path.read_bytes() for path in sorted(staging.glob("*.yaml"))} == written
+
+
+def test_the_import_writes_the_shape_this_repository_authors(exported_example, tmp_path):
+    """Elements by layer, relationships together -- and that is not cosmetic.
+
+    A slice is promotable only if it has no outbound references. Element files have
+    none; relationships cross layers, so filing them with their source's layer would
+    produce slices that can never promote independently. The end-to-end adoption run
+    hit exactly that wall.
+    """
+    report = importer.import_exchange(tmp_path, exported_example)
+    names = sorted(Path(target).name for target in report.targets)
+    assert names == [
+        "application.yaml",
+        "business.yaml",
+        "implementation.yaml",
+        "motivation.yaml",
+        "relations.yaml",
+        "strategy.yaml",
+        "technology.yaml",
+        "views.yaml",
+    ]
+    staging = tmp_path / "model" / "staging"
+    application = yaml.safe_load((staging / "application.yaml").read_text(encoding="utf-8"))
+    assert "relationships" not in application
+    assert {e["type"] for e in application["elements"]} <= {
+        "ApplicationComponent",
+        "ApplicationService",
+        "DataObject",
+    }
+
+
+def test_an_element_slice_promotes_on_its_own(tmp_path):
+    """The discipline `ea-import` prescribes has to be reachable with the files it writes.
+
+    Vouch for one layer -- owner and review date, exactly what promotion demands -- and
+    that file must promote while the rest of the import stays in staging. Before the
+    importer split by layer this was impossible: one file meant all or nothing.
+    """
+    importer.import_exchange(tmp_path, FOREIGN)
+    staging = tmp_path / "model" / "staging"
+    application = staging / "application.yaml"
+    document = yaml.safe_load(application.read_text(encoding="utf-8"))
+    for element in document["elements"]:
+        element["owner"] = "crm-team@meridian.example"
+        element["lastReviewed"] = "2026-08-05"
+    application.write_text(
+        yaml.safe_dump(document, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+        newline="\n",
+    )
+    report = validate.validate_promotion(tmp_path, [application], today=date(2026, 8, 5))
+    assert report.ok, report.render()
+
+
+def test_sequences_are_indented_like_every_hand_authored_file(exported_example, tmp_path):
     importer.import_exchange(tmp_path, exported_example)
-    first = target.read_bytes()
-    target.unlink()
-    importer.import_exchange(tmp_path, exported_example)
-    assert target.read_bytes() == first
+    text = (tmp_path / "model" / "staging" / "application.yaml").read_text(encoding="utf-8")
+    assert "\n  - id:" in text, "PyYAML's column-0 sequences make the first hand edit a noisy diff"
 
 
 # -------------------------------------------------------------------- foreign export
