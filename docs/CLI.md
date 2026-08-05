@@ -28,8 +28,8 @@ parser; `python -m easkills <command> --help` is the same information, per comma
 | `--zone approved\|staging` | Which zone to read; governance metadata is mandatory in `approved` | `validate`, `compile`, `render` |
 | `--strict` | Warnings fail too (on `conformance`: any failed clause fails) | `validate`, `validate-facts`, `validate-gov`, `conformance`, `check` |
 | `--as-of YYYY-MM-DD` | Evaluate date-dependent checks against a fixed date, for reproducibility | `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `roadmap`, `context`, `check`, `impact` |
-| `--json <file>` | Write the machine-readable report alongside the rendered one. On `chunk` it takes **no argument** and prints JSON to stdout instead | `validate`, `validate-facts`, `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `delta`, `roadmap`, `coverage`, `score`, `chunk`, `check`, `import`, `impact` |
-| `--out <path>` | Output file (or directory, for `render`) instead of the default location | `compile`, `render`, `docs`, `context`, `import` |
+| `--json <file>` | Write the machine-readable report alongside the rendered one. On `chunk` it takes **no argument** and prints JSON to stdout instead | `validate`, `validate-facts`, `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `delta`, `roadmap`, `coverage`, `score`, `chunk`, `check`, `import`, `impact`, `intake-csv` |
+| `--out <path>` | Output file (or directory, for `render`) instead of the default location | `compile`, `render`, `docs`, `context`, `import`, `intake-csv` |
 | `--skip-validation` | Build from a model with validation errors (not recommended) | `compile`, `docs` |
 | `--scope <element-id>` | The element the command is about | `context`, `check`, `impact` |
 | `--repo <path>` | The *consuming* repository being checked (`--root` stays the EA repository) | `check` |
@@ -61,6 +61,7 @@ delta is read against the approved model it proposes to change.
 
 | Command | Does |
 |---|---|
+| `intake-csv --file <export>.csv [--out] [--overwrite] [--json]` | Converts a tabular export (CSV, and therefore Excel) into a citable source document in `facts/sources/`: a markdown table whose header records the original file's SHA-256, encoding and delimiter, so a verified quote stays traceable to the bytes it came from. Delimiter is chosen by consistent column count, not frequency; cells keep their pipes (escaped) and lose their line breaks (reported); ragged rows are padded and named. Nothing is interpreted — no column is mapped to a model field. |
 | `chunk [--file <source>] [--max-chars N] [--json]` | Splits sources into deterministic extraction chunks with exact line ranges and stable ids. |
 | `coverage [--min-coverage PCT] [--json]` | Which substantive source statements no fact cites, with line numbers — candidate clarification questions. Advisory unless the threshold gate is used. |
 

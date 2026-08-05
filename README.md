@@ -130,7 +130,7 @@ and keeps the stage order honest.
 
 | Stage | Skills | Deterministic gate |
 |---|---|---|
-| Ingest | `ea-intake`, `ea-delta-ingest`, `ea-import` | `validate-facts`, `coverage --min-coverage`; `import` lands in staging, all `assumed` |
+| Ingest | `ea-intake`, `ea-delta-ingest`, `ea-import` | `validate-facts`, `coverage --min-coverage`; `intake-csv` makes a spreadsheet citable; `import` lands in staging, all `assumed` |
 | Model | `ea-capability-map`, `ea-model`, `ea-validate` | `validate` (staging as overlay), 3-repair cap |
 | Publish | `ea-approve` | `promote` — the only write path into `approved/` |
 | Document | `ea-stakeholders`, `ea-views`, `ea-docs` | `docs`, `render`, ISO loop rules, freshness CI check |
@@ -260,7 +260,7 @@ agents. What is not otherwise available is the *combination*:
 | Capability | ea-skills | mcp-archimate | 7bots / archimate-deep-agent | Transitrix | ArcKit | Ardoq |
 |---|---|---|---|---|---|---|
 | Packaged as agent skills | ✓ | — (MCP server) | — (platform) | partial (plugins) | ✓ | — (SaaS) |
-| Unstructured-input ingestion | ✓ verified quotes | — | ✓ | ✓ | partial | ✓ |
+| Unstructured-input ingestion | ✓ verified quotes (documents *and* spreadsheets) | — | ✓ | ✓ | partial | ✓ |
 | Real ArchiMate model files (Open Exchange) | ✓ XSD-validated, both directions (compile + brownfield import) | ✓ | ✓ | — (custom YAML) | — (markdown) | — |
 | Generated views | ✓ deterministic SVG | ✓ | — | — | — | ✓ |
 | Per-element source traceability | ✓ mechanically verified | — | ✓ claimed | partial | ✓ doc-level | partial |

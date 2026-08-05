@@ -17,6 +17,7 @@ from . import (
     check as check_mod,
     contextpack,
     docgen,
+    dsl,
     facts as facts_mod,
     genschema,
     govern,
@@ -28,6 +29,7 @@ from . import (
     render as render_mod,
     reports,
     score as score_mod,
+    tabular,
     ui,
     validate as validate_mod,
 )
@@ -135,6 +137,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="derive DSL slugs from element names (default; readable) or from XML identifiers (round-trip)",
     )
     p_import.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+
+    p_csv = sub.add_parser(
+        "intake-csv",
+        help="convert a tabular export (CSV/Excel) into a citable source document",
+    )
+    p_csv.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_csv.add_argument("--file", type=Path, required=True, help="the CSV to convert")
+    p_csv.add_argument(
+        "--out", type=Path, help="target markdown file (default: <sourcesDir>/<name>.md)"
+    )
+    p_csv.add_argument(
+        "--overwrite", action="store_true", help="replace an existing converted document"
+    )
+    p_csv.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
 
     p_promote = sub.add_parser(
         "promote", help="move staging files into approved after the promotion gate passes"
@@ -375,6 +391,54 @@ def _render_import(report: importer.ImportReport) -> str:
     return "\n".join(lines)
 
 
+def cmd_intake_csv(args: argparse.Namespace) -> int:
+    root = args.root.resolve()
+    config = dsl.load_config(root)
+    sources_dir = root / str(config.get("sourcesDir", "facts/sources"))
+    target = args.out or (sources_dir / f"{args.file.stem}.md")
+    try:
+        report = tabular.convert(args.file, target, overwrite=args.overwrite)
+    except tabular.TabularError as exc:
+        print(_error(str(exc)))
+        return 1
+    delimiter = "tab" if report.delimiter == "\t" else report.delimiter
+    lines = [
+        _ok(
+            f"Converted {report.rows} row(s) x {len(report.columns)} column(s) -> "
+            f"{ui.bold(report.target)}"
+        ),
+        ui.dim(
+            f"source: {report.source} (sha256 {report.sha256[:16]}); read as {report.encoding}, "
+            f"delimiter '{delimiter}'"
+        ),
+        ui.dim("columns: " + ", ".join(report.columns)),
+    ]
+    if report.ragged:
+        lines.append(
+            ui.yellow(
+                f"{len(report.ragged)} ragged row(s) (cell count differs from the header): "
+                + ", ".join(str(item["row"]) for item in report.ragged)
+            )
+        )
+    if report.flattened:
+        lines.append(
+            ui.dim(
+                f"{len(report.flattened)} row(s) had line breaks inside a cell; flattened so "
+                "each row stays one quotable line"
+            )
+        )
+    lines += [
+        "",
+        ui.dim(
+            "Commit the CSV next to the converted document: the SHA-256 in the header is what "
+            "ties a verified quote back to the original bytes. Extract facts from it with "
+            "ea-intake; nothing here interpreted a single column."
+        ),
+    ]
+    _emit_report(args, report.as_dict(), "\n".join(lines))
+    return 0
+
+
 def cmd_promote(args: argparse.Namespace) -> int:
     try:
         result = promote_mod.promote(args.root.resolve(), files=args.files, dry_run=args.dry_run)
@@ -596,6 +660,7 @@ HANDLERS = {
     "render": cmd_render,
     "docs": cmd_docs,
     "import": cmd_import,
+    "intake-csv": cmd_intake_csv,
     "promote": cmd_promote,
     "validate-gov": cmd_validate_gov,
     "staleness": cmd_staleness,

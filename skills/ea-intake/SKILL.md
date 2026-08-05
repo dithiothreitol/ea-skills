@@ -32,6 +32,27 @@ into them.
 
 ## The pipeline
 
+### 0. If the input is a spreadsheet, convert it first
+
+```bash
+python -m easkills intake-csv --root <repo> --file inventory.csv
+```
+
+An application inventory arrives as a spreadsheet more often than as prose, and a
+spreadsheet is not a document a quote can be located in. The converter writes a
+markdown table into `facts/sources/` whose header records the original file's
+SHA-256, encoding and delimiter -- so a quote verified against it is still traceable
+to the bytes it came from. Commit the CSV next to the converted document.
+
+After conversion the row *is* the quotable unit: cite
+`| CRM Suite | crm-team@x.test | on-premise |` verbatim, exactly as you would a
+sentence from an interview. Do not paraphrase a row into prose and cite that.
+
+**The converter interprets nothing** -- no column is mapped to a model field, no value
+is typed. A column headed "Owner" is a claim in a spreadsheet until a fact says so and
+the model cites the fact. Read the columns yourself and decide what they mean; where a
+header is ambiguous ("Status", "Type"), that is a clarification question, not a guess.
+
 ### 1. Chunk
 
 ```bash

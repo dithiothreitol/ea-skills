@@ -188,6 +188,7 @@ python -m easkills validate-gov --root .
 ## 5a. Already have a model? Import it
 
 ```bash
+python -m easkills intake-csv --root . --file inventory.csv   # a spreadsheet becomes a citable source
 python -m easkills import --root . --file legacy-export.xml   # Archi: File > Export > Model To Open Exchange File
 python -m easkills validate --root . --zone staging           # the findings ARE the adoption backlog
 ```

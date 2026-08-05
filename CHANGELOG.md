@@ -7,6 +7,29 @@ project's build phases (design log with per-decision rationale:
 
 ## [Unreleased]
 
+### Added — `intake-csv`: a spreadsheet becomes evidence
+
+The most common EA input in the world is a spreadsheet — an application inventory, a
+server list, a contract register — and a spreadsheet is not a document a quote can be
+located in. Pasting one into markdown by hand breaks the verbatim chain at exactly the
+point it is supposed to hold.
+
+- **The conversion is done by code and recorded.** The generated document's header
+  carries the original file's SHA-256, its encoding and its delimiter, so a quote
+  verified against the table is traceable to the bytes it came from. Byte-stable, so
+  the CSV and the converted document can both be committed and CI notices divergence.
+- **The delimiter is chosen by consistent column count, not by frequency.** Sniffing
+  by frequency picks the comma out of `"Smith, J.";"Sales"` and produces a table whose
+  columns shift row by row — authoritative-looking and silently misaligned.
+- Excel's realities are handled and reported: a UTF-8 BOM is read rather than pasted
+  into the first header, cp1252 falls back cleanly, pipes inside cells are escaped,
+  line breaks inside cells are flattened (so a row stays one quotable line) and the
+  affected rows are named, and ragged rows are padded rather than dropped.
+- **Nothing is interpreted.** No column is mapped to a model field, no value is typed,
+  no element is created. A tool that guessed which column meant "owner" would invent
+  exactly the claims this pipeline exists to make checkable. `ea-intake` gained the
+  step, including what to do with an ambiguous header: ask, do not guess.
+
 ### Added — the roadmap is a model, not a slide (`PLAT*`, `roadmap`)
 
 ArchiMate's Implementation & Migration layer was already valid in the DSL — `Plateau`,
