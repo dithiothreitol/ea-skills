@@ -28,8 +28,8 @@ parser; `python -m easkills <command> --help` is the same information, per comma
 | `--zone approved\|staging` | Which zone to read; governance metadata is mandatory in `approved` | `validate`, `compile`, `render` |
 | `--strict` | Warnings fail too (on `conformance`: any failed clause fails) | `validate`, `validate-facts`, `validate-gov`, `conformance`, `check` |
 | `--as-of YYYY-MM-DD` | Evaluate date-dependent checks against a fixed date, for reproducibility | `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `context`, `check` |
-| `--json <file>` | Write the machine-readable report alongside the rendered one. On `chunk` it takes **no argument** and prints JSON to stdout instead | `validate`, `validate-facts`, `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `delta`, `coverage`, `score`, `chunk`, `check` |
-| `--out <path>` | Output file (or directory, for `render`) instead of the default location | `compile`, `render`, `docs`, `context` |
+| `--json <file>` | Write the machine-readable report alongside the rendered one. On `chunk` it takes **no argument** and prints JSON to stdout instead | `validate`, `validate-facts`, `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `delta`, `coverage`, `score`, `chunk`, `check`, `import` |
+| `--out <path>` | Output file (or directory, for `render`) instead of the default location | `compile`, `render`, `docs`, `context`, `import` |
 | `--skip-validation` | Build from a model with validation errors (not recommended) | `compile`, `docs` |
 | `--scope <element-id>` | The element the command is about | `context`, `check` |
 | `--repo <path>` | The *consuming* repository being checked (`--root` stays the EA repository) | `check` |
@@ -48,6 +48,7 @@ Full catalogue with severities and rationale: [RULES.md](RULES.md).
 
 | Command | Does |
 |---|---|
+| `import --file <export>.xml [--out] [--ids names\|identifiers] [--json]` | ArchiMate Open Exchange XML → one staging YAML proposal (brownfield adoption). Everything arrives `assumed` (claims, not evidence), owner/review metadata is lifted from exported properties, geometry is discarded, every rename/skip/mapping is in the report, and an existing file is never overwritten. The import does not judge the model — matrix-illegal content is left for `validate` to report. |
 | `compile [--zone] [--out] [--skip-validation]` | DSL → ArchiMate Open Exchange XML (`build/model.xml`), XSD-validated offline, byte-stable. Refuses a model with errors. |
 | `promote [--file <staging-file>]... [--dry-run]` | **The only write path into `approved/`.** Validates the *post-move* result by approved-zone standards — a staging file replaces the approved file of the same name, so the gate sees exactly what the move produces; on a clean gate moves the files, naming any approved concepts the replacement removes. Partial promotion supported. The git commit is the approval record. |
 | `render [--zone] [--out]` | Views → deterministic SVG (`docs/views/`), no external toolchain. |

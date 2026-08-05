@@ -185,6 +185,19 @@ six-level verdict, and your service catalog with SLAs:
 python -m easkills validate-gov --root .
 ```
 
+## 5a. Already have a model? Import it
+
+```bash
+python -m easkills import --root . --file legacy-export.xml   # Archi: File > Export > Model To Open Exchange File
+python -m easkills validate --root . --zone staging           # the findings ARE the adoption backlog
+```
+
+Everything lands in `model/staging/` marked `assumed` — the old tool's content is a
+claim, not evidence. Owners and review dates are lifted where the export carried
+them; what the 3.2 matrix forbids is reported by the gate, not silently kept.
+Promote in slices (`ea-import` explains the discipline), evidence what matters
+through intake, and let the rest sit visibly in staging.
+
 ## 6. Operate — the loops that keep it alive
 
 ```bash
@@ -207,7 +220,7 @@ someone asks EA for something → record it in `governance-log/requests/`
 
 ## Working with the agent skills
 
-Everything above is what the 21 [agent skills](../skills/) instruct an agent to do —
+Everything above is what the 22 [agent skills](../skills/) instruct an agent to do —
 with the judgement calls (what is a capability, which concern a view frames, when to
 decline a request) spelled out per skill. Point your agent at this repository, start
 with `ea-run` (it checks repo state and routes), and keep one rule in view: **the

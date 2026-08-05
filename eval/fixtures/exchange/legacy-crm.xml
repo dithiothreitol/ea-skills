@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A foreign tool's Open Exchange export, shaped like the real thing: mixed-case
+     identifiers, an unnamed junction, a vendor-specific element type, a relationship
+     the ArchiMate 3.2 matrix forbids, and nested diagram nodes with geometry.
+     Everything the importer must survive, rename, map, skip or leave for the gate. -->
+<model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       identifier="id-legacy-model">
+  <name xml:lang="en">Legacy CRM Landscape</name>
+  <elements>
+    <element identifier="id-1A2B" xsi:type="ApplicationComponent">
+      <name xml:lang="en">CRM Suite</name>
+      <documentation>Customer relationship management, on premise since 2014.</documentation>
+      <properties>
+        <property propertyDefinitionRef="propid-owner">
+          <value xml:lang="en">crm-team@meridian.example</value>
+        </property>
+        <property propertyDefinitionRef="propid-vendor">
+          <value xml:lang="en">Solterra</value>
+        </property>
+      </properties>
+    </element>
+    <element identifier="EAID_44F0" xsi:type="BusinessActor">
+      <name xml:lang="en">Sales Rep</name>
+    </element>
+    <element identifier="id-dup1" xsi:type="ApplicationComponent">
+      <name xml:lang="en">CRM Suite</name>
+      <documentation>A second deployment under the same name, as found in the wild.</documentation>
+    </element>
+    <element identifier="id-9Z" xsi:type="Canvas">
+      <name xml:lang="en">Notes Canvas</name>
+    </element>
+    <element identifier="id-and1" xsi:type="AndJunction"/>
+  </elements>
+  <relationships>
+    <relationship identifier="r1" xsi:type="Serving" source="id-1A2B" target="EAID_44F0"/>
+    <relationship identifier="r2" xsi:type="Assignment" source="id-1A2B" target="EAID_44F0">
+      <name xml:lang="en">assigned somehow</name>
+      <documentation>The previous tool allowed this; the 3.2 matrix does not.</documentation>
+    </relationship>
+    <relationship identifier="r3" xsi:type="Association" source="id-9Z" target="id-1A2B"/>
+    <relationship identifier="r4" xsi:type="Flow" source="id-and1" target="id-1A2B"/>
+  </relationships>
+  <propertyDefinitions>
+    <propertyDefinition identifier="propid-owner" type="string">
+      <name>owner</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-vendor" type="string">
+      <name>vendor</name>
+    </propertyDefinition>
+  </propertyDefinitions>
+  <views>
+    <diagrams>
+      <view identifier="id-view-main" xsi:type="Diagram">
+        <name xml:lang="en">Sales Overview</name>
+        <node identifier="n1" xsi:type="Container" x="10" y="10" w="400" h="300">
+          <label xml:lang="en">Applications</label>
+          <node identifier="n2" xsi:type="Element" elementRef="id-1A2B" x="20" y="40" w="145" h="60"/>
+          <node identifier="n3" xsi:type="Element" elementRef="id-9Z" x="200" y="40" w="145" h="60"/>
+        </node>
+        <node identifier="n4" xsi:type="Element" elementRef="EAID_44F0" x="20" y="400" w="145" h="60"/>
+      </view>
+    </diagrams>
+  </views>
+</model>

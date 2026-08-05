@@ -5,6 +5,38 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
+## [Unreleased]
+
+### Added — brownfield import: the adoption path (`ea-import`)
+
+Everything before this assumed a repository that starts empty, and no organisation
+with an existing architecture starts empty. `python -m easkills import --file
+<export>.xml` reads an Open Group ArchiMate Model Exchange file — Archi's *Export →
+Model To Open Exchange File*, or any conforming tool's — and is `aoef.py` run
+backwards, with the repository's rules applied to what comes in:
+
+- **Everything lands in staging**, as one YAML proposal; promotion is still the only
+  write path into `approved/` and still runs the gate. An import never overwrites.
+- **Everything arrives as a claim, not evidence**: concepts are marked
+  `assumed: true` with an import rationale, and a `provenance` property from a
+  previous export is kept as information, never trusted as verification. `PROV006`
+  lists the whole backlog; the fact register starts from an honest zero.
+- **Owner and review metadata are lifted** from exported properties back into DSL
+  fields, with `appliesTo` references renamed together with the elements they bind.
+- **Nothing is dropped silently**: unsupported vendor types, relationships that lose
+  an endpoint, junction mappings, unnamed elements and every identifier rename are in
+  the report (`--json` for the full list). Diagram geometry is discarded by design —
+  layout is computed at render time.
+- **The import never judges the model.** A relationship the previous tool allowed
+  and the 3.2 matrix forbids is imported as-is and left for `validate` to report —
+  "your old tool never checked this" is the migration's first finding, delivered by
+  the same gate as every other finding.
+- `--ids names` (default) derives readable slugs from element names; `--ids
+  identifiers` keeps the export's own, which makes a compile → import round trip
+  structurally lossless (pinned by test against the worked example).
+- Skill `ea-import`: the promotion-in-slices discipline — a 400-element import
+  promoted wholesale signs off 400 unreviewed claims.
+
 ## [0.9.0] — 2026-08-05
 
 ### Added — ISO 42010 §6.9: correspondences, derived rather than authored twice

@@ -124,13 +124,13 @@ flowchart LR
 ```
 
 Every arrow is a deterministic command with an exit-code contract, and every stage is
-driven by one of the **21 [agent skills](skills/)** — from `ea-intake` through
+driven by one of the **22 [agent skills](skills/)** — from `ea-intake` through
 `ea-approve` to `ea-board`. The orchestrator (`ea-run`) routes requests catalog-first
 and keeps the stage order honest.
 
 | Stage | Skills | Deterministic gate |
 |---|---|---|
-| Ingest | `ea-intake`, `ea-delta-ingest` | `validate-facts`, `coverage --min-coverage` |
+| Ingest | `ea-intake`, `ea-delta-ingest`, `ea-import` | `validate-facts`, `coverage --min-coverage`; `import` lands in staging, all `assumed` |
 | Model | `ea-capability-map`, `ea-model`, `ea-validate` | `validate` (staging as overlay), 3-repair cap |
 | Publish | `ea-approve` | `promote` — the only write path into `approved/` |
 | Document | `ea-stakeholders`, `ea-views`, `ea-docs` | `docs`, `render`, ISO loop rules, freshness CI check |
@@ -261,7 +261,7 @@ agents. What is not otherwise available is the *combination*:
 |---|---|---|---|---|---|---|
 | Packaged as agent skills | ✓ | — (MCP server) | — (platform) | partial (plugins) | ✓ | — (SaaS) |
 | Unstructured-input ingestion | ✓ verified quotes | — | ✓ | ✓ | partial | ✓ |
-| Real ArchiMate model files (Open Exchange) | ✓ XSD-validated | ✓ | ✓ | — (custom YAML) | — (markdown) | — |
+| Real ArchiMate model files (Open Exchange) | ✓ XSD-validated, both directions (compile + brownfield import) | ✓ | ✓ | — (custom YAML) | — (markdown) | — |
 | Generated views | ✓ deterministic SVG | ✓ | — | — | — | ✓ |
 | Per-element source traceability | ✓ mechanically verified | — | ✓ claimed | partial | ✓ doc-level | partial |
 | Deterministic semantic validation | ✓ vendored 3.2 matrix | ✓ | — | ✓ (own rules) | — | partial |
@@ -309,7 +309,7 @@ easkills/        deterministic tooling (oracle, DSL, validators, compiler, rende
                  docgen, governance, reports, context packs, scorer, CLI)
 oracle/          vendored, hash-pinned rule data + NOTICE.md
 schema/          JSON Schemas -- all generated, never hand-edited
-skills/          the 21 agent skills (this is the product)
+skills/          the 22 agent skills (this is the product)
 template/        scaffold to copy for a new enterprise
 eval/example/    worked example, clean (doubles as the largest golden case)
 eval/golden/     golden-set cases for the regression harness

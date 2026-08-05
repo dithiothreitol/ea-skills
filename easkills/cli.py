@@ -20,6 +20,7 @@ from . import (
     facts as facts_mod,
     genschema,
     govern,
+    importer,
     intake,
     oracle,
     promote as promote_mod,
@@ -117,6 +118,22 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="generate even if the validator reports errors (not recommended)",
     )
+
+    p_import = sub.add_parser(
+        "import", help="import an ArchiMate Open Exchange file into model/staging/ (brownfield adoption)"
+    )
+    p_import.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_import.add_argument("--file", type=Path, required=True, help="the exchange XML to import")
+    p_import.add_argument(
+        "--out", type=Path, help="target YAML file (default: model/staging/<source-stem>.yaml)"
+    )
+    p_import.add_argument(
+        "--ids",
+        choices=("names", "identifiers"),
+        default="names",
+        help="derive DSL slugs from element names (default; readable) or from XML identifiers (round-trip)",
+    )
+    p_import.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
 
     p_promote = sub.add_parser(
         "promote", help="move staging files into approved after the promotion gate passes"
@@ -290,6 +307,59 @@ def cmd_docs(args: argparse.Namespace) -> int:
         return 1
     print(_ok(f"Rendered {len(result.views_rendered)} view(s); wrote {ui.bold(str(result.path))}"))
     return 0
+
+
+def cmd_import(args: argparse.Namespace) -> int:
+    if not _oracle_intact():
+        return 1
+    try:
+        report = importer.import_exchange(
+            args.root.resolve(), source=args.file, out=args.out, ids=args.ids
+        )
+    except importer.ImportRefusal as exc:
+        print(_error(str(exc)))
+        return 1
+    _emit_report(args, report.as_dict(), _render_import(report))
+    return 0
+
+
+def _render_import(report: importer.ImportReport) -> str:
+    lines = [
+        _ok(
+            f"Imported {report.elements} element(s), {report.relationships} relationship(s), "
+            f"{report.views} view(s) into {ui.bold(report.target)}"
+        ),
+        ui.dim(f"source: {report.source} (sha256 {report.sha256[:16]}); ids: {report.ids}"),
+    ]
+    if report.skipped:
+        lines.append("")
+        lines.append(ui.yellow(ui.bold(f"Not imported ({len(report.skipped)}):")))
+        for item in report.skipped:
+            lines.append(f"  {item['kind']:<13} {ui.bold(item['identifier'])} {ui.dim(item['reason'])}")
+    if report.renamed:
+        lines.append("")
+        lines.append(ui.bold(f"Identifiers renamed ({len(report.renamed)}):"))
+        for item in report.renamed[:20]:
+            lines.append(f"  {item['from']} {ui.dim('->')} {item['to']}")
+        if len(report.renamed) > 20:
+            lines.append(ui.dim(f"  ... and {len(report.renamed) - 20} more (full list in --json)"))
+    for note in report.notes:
+        lines.append(ui.dim(f"note: {note}"))
+    if report.xsd_errors:
+        lines.append(
+            ui.yellow(
+                f"note: the source does not validate against the Open Exchange XSD "
+                f"({len(report.xsd_errors)} finding(s)); imported best-effort"
+            )
+        )
+    lines += [
+        "",
+        ui.dim(
+            "The import is a staging proposal: run `validate --zone staging` to see what it "
+            "still lacks (owners, review dates, evidence), then promote deliberately."
+        ),
+    ]
+    return "\n".join(lines)
 
 
 def cmd_promote(args: argparse.Namespace) -> int:
@@ -494,6 +564,7 @@ HANDLERS = {
     "compile": cmd_compile,
     "render": cmd_render,
     "docs": cmd_docs,
+    "import": cmd_import,
     "promote": cmd_promote,
     "validate-gov": cmd_validate_gov,
     "staleness": cmd_staleness,
