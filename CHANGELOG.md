@@ -5,7 +5,7 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
-## [Unreleased]
+## [0.9.0] — 2026-08-05
 
 ### Added — ISO 42010 §6.9: correspondences, derived rather than authored twice
 
