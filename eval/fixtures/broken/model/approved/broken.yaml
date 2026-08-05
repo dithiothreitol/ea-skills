@@ -33,11 +33,14 @@ elements:
       - file: facts/sources/notes.md
         quote: Order records are held by the finance system
 
+  # --- PLAT005: a portfolio decision no plateau carries -------------------------------
   - id: data-order
     type: DataObject
     name: Order Record
     owner: finance@example.test
     lastReviewed: 2026-07-20
+    properties:
+      timeDisposition: Migrate
     provenance:
       - file: facts/sources/notes.md
         quote: referenced by the customer portal

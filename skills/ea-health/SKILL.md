@@ -9,6 +9,7 @@ description: Run and interpret the model-health reports - EA debt register, stal
 python -m easkills debt      --root <repo>   # EA-smell queries -> debt register
 python -m easkills staleness --root <repo>   # review-age per element
 python -m easkills kpi       --root <repo>   # one-screen metrics
+python -m easkills roadmap   --root <repo>   # plateaus, gaps, and decided-but-unscheduled
 # each takes --json for machine-readable output and --as-of for reproducible runs
 ```
 
@@ -57,9 +58,25 @@ Trends matter more than snapshots: run with `--json`, keep the outputs (e.g. in
   matching dispensations exist and have credible expiry dates);
 * **unframed/unheld concerns** -- the documentation loop is reopening.
 
+## Reading the roadmap
+
+`roadmap` reads the Implementation & Migration layer as a plan. Three things on it
+are worth a human every time:
+
+* **Intent with no plan** -- an element decided `Migrate` or `Eliminate` that no
+  plateau carries (`PLAT005`). This is the most common finding and the most
+  actionable: either schedule it or stop claiming the disposition, because a
+  portfolio decision nobody scheduled quietly becomes a portfolio decision nobody
+  made.
+* **A horizon in the past** (`PLAT006`) -- every plateau already reached. The plan
+  has expired; close it or extend it, and do not let the reports keep reporting it.
+* **A gap with no funding decision behind it.** The tooling cannot see budgets, but
+  it can show you the gap next to the constraint or dispensation that explains why
+  it is still open. If nothing explains it, that is the finding.
+
 ## Reporting back
 
-One paragraph of verdict, then the three lists that need a human: debt items with a
-proposed disposition each, the review queue by owner, and the KPI movements since
-the last run. A health report that ends without owners and dates is a weather
+One paragraph of verdict, then the four lists that need a human: debt items with a
+proposed disposition each, the review queue by owner, the KPI movements since the
+last run, and anything decided but unscheduled on the roadmap. A health report that ends without owners and dates is a weather
 forecast, not maintenance.

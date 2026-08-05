@@ -7,6 +7,35 @@ project's build phases (design log with per-decision rationale:
 
 ## [Unreleased]
 
+### Added — the roadmap is a model, not a slide (`PLAT*`, `roadmap`)
+
+ArchiMate's Implementation & Migration layer was already valid in the DSL — `Plateau`,
+`Gap`, `WorkPackage` and `Deliverable` come from the same oracle-generated enumeration
+as everything else, and have validated since the schema was first built. Nothing about
+planning was *checked*, though, so a target state could be recorded and then quietly
+contradict the portfolio decisions next to it.
+
+- **`plateauDate`, constrained by the schema.** The standard carries no date on a
+  plateau, and without one a sequence of states is a set of states. It is an
+  interpreted key, so it is patterned in the schema — the `timeDisposition` lesson,
+  applied on purpose rather than after an incident.
+- **Seven rules.** `PLAT001` (no date), `PLAT002` (two plateaus at the same instant —
+  not a sequence), `PLAT003` (a date that passes the pattern and is not a calendar
+  date, the `DISP008`/`REQ009` trap), `PLAT004` (a `Gap` associated with no plateau),
+  `PLAT006` (every plateau in the past — a plan whose horizon has expired), `PLAT007`
+  (a `WorkPackage` realizing no `Deliverable`).
+- **`PLAT005` is the one worth having**: an element decided `Migrate` or `Eliminate`
+  that no plateau includes. The portfolio decision has been taken and nothing carries
+  it. Silent when a repository has no plateaus at all — a model that has not started
+  planning is not breaking its roadmap.
+- **`python -m easkills roadmap`** and a new §9 in the architecture description:
+  plateaus in date order with what each holds, the gaps between them, and the decided
+  but unscheduled list. Undated plateaus sort last rather than being given an invented
+  position.
+- The worked example gains a two-plateau migration for the warehouse system, and
+  records the contradiction it actually has: a target plateau exists, and the
+  constraint says the move has no approved budget.
+
 ### Added — `impact`: the deterministic half of change triage
 
 `ea-change-triage` already stated the rule that decides a change's class — *"count the

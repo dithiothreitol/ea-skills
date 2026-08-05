@@ -35,8 +35,8 @@ def test_example_model_is_clean(example_report):
 
 
 def test_example_model_counts(example_report):
-    assert example_report.counts["elements"] == 17
-    assert example_report.counts["relationships"] == 15
+    assert example_report.counts["elements"] == 20
+    assert example_report.counts["relationships"] == 19
     assert example_report.counts["views"] == 4
 
 
@@ -268,5 +268,5 @@ def test_empty_repository_is_valid(tmp_path):
 def test_report_serializes_to_json(example_report):
     payload = example_report.as_dict()
     assert payload["ok"] is True
-    assert payload["counts"]["elements"] == 17
+    assert payload["counts"]["elements"] == 20
     assert isinstance(payload["findings"], list)

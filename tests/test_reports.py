@@ -13,7 +13,7 @@ TODAY = date(2026, 8, 3)
 
 def test_staleness_counts_and_ages(example_root):
     data = reports.staleness(example_root, today=TODAY)
-    assert data["elements"] == 17
+    assert data["elements"] == 20
     assert data["stale"] == 0 and data["unreviewed"] == 0
     oldest = max(r["age"] for r in data["rows"])
     assert oldest == (TODAY - date(2026, 6, 30)).days
@@ -29,7 +29,7 @@ def test_staleness_flags_old_content(example_root):
 
 def test_kpi_metrics(example_root):
     data = reports.kpi(example_root, today=TODAY)
-    assert data["size"]["elements"] == 17
+    assert data["size"]["elements"] == 20
     assert data["evidence"]["assumed"] == 2
     assert data["governance"]["ownedShare"] == 1.0
     assert data["governance"]["openDispensations"] == 1
@@ -106,7 +106,7 @@ def test_staleness_carries_demand(example_root):
     assert by_id["app-erp-core"]["demand"] == 1
     assert by_id["app-order-portal"]["demand"] == 1
     assert by_id["app-wms"]["demand"] == 0
-    assert data["neverRequested"] == 14
+    assert data["neverRequested"] == 17
 
 
 # ------------------------------------------------------------------------------ debt

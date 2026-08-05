@@ -932,6 +932,172 @@ def check_smells(model: dsl.Model) -> list[Finding]:
     return findings
 
 
+def _plateaus(model: dsl.Model) -> list[dsl.Element]:
+    return sorted((e for e in model.elements.values() if e.type == "Plateau"), key=lambda e: e.id)
+
+
+def check_roadmap(model: dsl.Model, today: date | None = None) -> list[Finding]:
+    """The Implementation & Migration layer, held to what a roadmap has to be.
+
+    ArchiMate already has the concepts -- ``Plateau``, ``Gap``, ``WorkPackage``,
+    ``Deliverable`` -- so nothing new is invented here; they validated the day the
+    schema was generated from the oracle. What the standard does not carry is a *date*
+    on a plateau, without which a sequence of states is a set of states. That is one
+    interpreted property key, so the schema constrains it (the ``timeDisposition``
+    lesson) and these rules make it mean something.
+
+    A plateau's membership is the ArchiMate idiom: the plateau aggregates or composes
+    the elements that exist in that state. A gap is associated with the plateau it sits
+    before -- association is the only relationship the matrix permits there.
+    """
+    today = today or date.today()
+    findings: list[Finding] = []
+    plateaus = _plateaus(model)
+
+    by_date: dict[str, list[str]] = {}
+    parsed: dict[str, date] = {}
+    for plateau in plateaus:
+        rel_file = _rel(model.root, plateau.source_path)
+        raw = plateau.properties.get("plateauDate", "")
+        if not raw:
+            findings.append(
+                Finding(
+                    "PLAT001",
+                    SEVERITY_ERROR,
+                    "Plateau has no 'plateauDate' property -- a plateau without a date is a "
+                    "state, not a step: nothing can order it, and the roadmap cannot say what "
+                    "comes first",
+                    file=rel_file,
+                    locator=plateau.locator,
+                    concept=plateau.id,
+                )
+            )
+            continue
+        try:
+            parsed[plateau.id] = datetime.strptime(raw, "%Y-%m-%d").date()
+        except ValueError:
+            # Same trap as DISP008/REQ009: shape-valid, calendar-impossible, and it
+            # would silently drop the plateau out of every ordering that reads it.
+            findings.append(
+                Finding(
+                    "PLAT003",
+                    SEVERITY_ERROR,
+                    f"plateauDate {raw!r} is not a real calendar date -- the roadmap is ordered "
+                    "by it, so an unreadable date removes this plateau from the sequence",
+                    file=rel_file,
+                    locator=plateau.locator,
+                    concept=plateau.id,
+                )
+            )
+            continue
+        by_date.setdefault(raw, []).append(plateau.id)
+
+    for raw, ids in sorted(by_date.items()):
+        if len(ids) > 1:
+            for plateau_id in sorted(ids[1:]):
+                findings.append(
+                    Finding(
+                        "PLAT002",
+                        SEVERITY_ERROR,
+                        f"shares plateauDate {raw} with {', '.join(sorted(set(ids) - {plateau_id}))} -- "
+                        "two states of the architecture at the same instant is not a sequence",
+                        file=_rel(model.root, model.elements[plateau_id].source_path),
+                        locator=model.elements[plateau_id].locator,
+                        concept=plateau_id,
+                    )
+                )
+
+    # Gap -> Plateau is Association in the 3.2 matrix, and association is exactly the
+    # relationship `impact` refuses to traverse -- so this rule is what makes the link
+    # load-bearing anywhere.
+    plateau_ids = {p.id for p in plateaus}
+    associated_gaps: set[str] = set()
+    for relationship in model.relationships.values():
+        for near, far in ((relationship.source, relationship.target), (relationship.target, relationship.source)):
+            if near in model.elements and model.elements[near].type == "Gap" and far in plateau_ids:
+                associated_gaps.add(near)
+    for element in sorted(model.elements.values(), key=lambda e: e.id):
+        if element.type == "Gap" and element.id not in associated_gaps:
+            findings.append(
+                Finding(
+                    "PLAT004",
+                    SEVERITY_WARNING,
+                    "Gap is associated with no Plateau -- a gap describes the distance between "
+                    "two states, so one that names neither cannot be planned or closed",
+                    file=_rel(model.root, element.source_path),
+                    locator=element.locator,
+                    concept=element.id,
+                )
+            )
+
+    in_a_plateau: set[str] = set()
+    for relationship in model.relationships.values():
+        if relationship.source in plateau_ids and relationship.type in {"Aggregation", "Composition"}:
+            in_a_plateau.add(relationship.target)
+
+    # The flagship: an intent with no plan. Only when a roadmap exists at all -- a
+    # repository that has not started planning is not failing this rule, it simply has
+    # no roadmap, and `kpi`/`debt` are where that shows.
+    if plateau_ids:
+        for element in sorted(model.elements.values(), key=lambda e: e.id):
+            disposition = element.properties.get("timeDisposition")
+            if disposition in {"Migrate", "Eliminate"} and element.id not in in_a_plateau:
+                findings.append(
+                    Finding(
+                        "PLAT005",
+                        SEVERITY_WARNING,
+                        f"TIME disposition is '{disposition}' but no Plateau includes it -- the "
+                        "portfolio decision has been taken and no plan carries it; either add it "
+                        "to a plateau or stop claiming the disposition",
+                        file=_rel(model.root, element.source_path),
+                        locator=element.locator,
+                        concept=element.id,
+                    )
+                )
+
+    if parsed and all(reached < today for reached in parsed.values()):
+        latest = max(parsed.items(), key=lambda item: (item[1], item[0]))
+        findings.append(
+            Finding(
+                "PLAT006",
+                SEVERITY_WARNING,
+                f"every Plateau is in the past (the last, '{latest[0]}', on {latest[1].isoformat()}) -- "
+                "a roadmap whose horizon has passed is a record of intentions, not a plan; "
+                "close it or extend it",
+                file=_rel(model.root, model.elements[latest[0]].source_path),
+                locator=model.elements[latest[0]].locator,
+                concept=latest[0],
+            )
+        )
+
+    delivered: set[str] = set()
+    for relationship in model.relationships.values():
+        source = model.elements.get(relationship.source)
+        target = model.elements.get(relationship.target)
+        if (
+            source is not None
+            and target is not None
+            and source.type == "WorkPackage"
+            and target.type == "Deliverable"
+            and relationship.type == "Realization"
+        ):
+            delivered.add(source.id)
+    for element in sorted(model.elements.values(), key=lambda e: e.id):
+        if element.type == "WorkPackage" and element.id not in delivered:
+            findings.append(
+                Finding(
+                    "PLAT007",
+                    SEVERITY_WARNING,
+                    "WorkPackage realizes no Deliverable -- a work package with no output is a "
+                    "project nobody can accept or refuse",
+                    file=_rel(model.root, element.source_path),
+                    locator=element.locator,
+                    concept=element.id,
+                )
+            )
+    return findings
+
+
 # --------------------------------------------------------------------------- entry point
 
 CHECK_ORDER = (
@@ -950,6 +1116,7 @@ CHECK_ORDER = (
     "iso",
     "naming",
     "smells",
+    "roadmap",
 )
 
 
@@ -974,6 +1141,7 @@ def _run_checks(
     findings += check_iso_alignment(model)
     findings += check_naming(model)
     findings += check_smells(model)
+    findings += check_roadmap(model, today=today)
 
     severity_rank = {SEVERITY_ERROR: 0, SEVERITY_WARNING: 1, SEVERITY_INFO: 2}
     findings.sort(key=lambda f: (severity_rank.get(f.severity, 3), f.code, f.file, f.concept))

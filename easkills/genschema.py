@@ -121,7 +121,15 @@ def build_schema() -> dict[str, Any]:
                 "timeDisposition": {
                     "enum": list(TIME_DISPOSITIONS),
                     "description": "Gartner TIME portfolio quadrant; read by 'docs' and 'kpi'.",
-                }
+                },
+                "plateauDate": {
+                    "type": "string",
+                    "pattern": DATE_PATTERN,
+                    "description": (
+                        "When a Plateau is reached; orders the roadmap. Read by 'roadmap' "
+                        "and 'docs', checked by PLAT001-PLAT003."
+                    ),
+                },
             },
             "additionalProperties": {"type": ["string", "number", "boolean", "null"]},
         },

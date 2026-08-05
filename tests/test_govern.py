@@ -36,7 +36,7 @@ def test_example_governance_counts(example_report):
         "assessments": 1,
         "services": 3,
         "requests": 2,
-        "correspondences": 13,
+        "correspondences": 20,
     }
 
 

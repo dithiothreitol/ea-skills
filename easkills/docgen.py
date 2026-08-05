@@ -380,6 +380,69 @@ def build_markdown(model: dsl.Model) -> str:
                     f"(`{violation.kind}`, {violation.code}): {_md_escape(violation.detail)}"
                 )
 
+    # --------------------------------------------------------------------- roadmap
+    out += ["", "## 9. Roadmap", ""]
+    plateaus = [e for e in model.elements.values() if e.type == "Plateau"]
+    if not plateaus:
+        out.append(
+            "*No plateaus recorded. This description says what the architecture is, not "
+            "where it is going.*"
+        )
+    else:
+        out.append(
+            "The Implementation & Migration layer, ordered by `plateauDate`. Plateaus "
+            "aggregate what the migration changes; an element carrying a Migrate or "
+            "Eliminate disposition that no plateau holds is listed as unscheduled, "
+            "because a portfolio decision nothing carries is an intention."
+        )
+        out.append("")
+        membership: dict[str, list[str]] = {}
+        plateau_ids = {p.id for p in plateaus}
+        for relationship in sorted(model.relationships.values(), key=lambda r: r.id):
+            if relationship.source in plateau_ids and relationship.type in {"Aggregation", "Composition"}:
+                target = model.elements.get(relationship.target)
+                if target is not None:
+                    membership.setdefault(relationship.source, []).append(target.name)
+        rows = []
+        for plateau in sorted(plateaus, key=lambda p: (p.properties.get("plateauDate", "9999"), p.id)):
+            rows.append(
+                [
+                    plateau.properties.get("plateauDate", "**undated**"),
+                    _md_escape(plateau.name),
+                    ", ".join(sorted(membership.get(plateau.id, []))) or "—",
+                    _md_escape(plateau.documentation),
+                ]
+            )
+        out += _table(["Reached", "Plateau", "Holds", "What it is"], rows)
+
+        gaps = [e for e in sorted(model.elements.values(), key=lambda e: e.id) if e.type == "Gap"]
+        if gaps:
+            out.append("")
+            out.append("**Gaps:** " + "; ".join(
+                f"**{_md_escape(gap.name)}** — {_md_escape(gap.documentation)}" for gap in gaps
+            ))
+
+        scheduled = {
+            r.target
+            for r in model.relationships.values()
+            if r.source in plateau_ids and r.type in {"Aggregation", "Composition"}
+        }
+        unscheduled = [
+            e
+            for e in sorted(model.elements.values(), key=lambda e: e.id)
+            if e.properties.get("timeDisposition") in {"Migrate", "Eliminate"}
+            and e.id not in scheduled
+        ]
+        if unscheduled:
+            out.append("")
+            out.append(
+                "**Decided but unscheduled:** "
+                + ", ".join(
+                    f"{_md_escape(e.name)} ({e.properties['timeDisposition']})" for e in unscheduled
+                )
+                + ". The portfolio decision exists; no plateau carries it."
+            )
+
     out += ["", ""]
     return "\n".join(out)
 

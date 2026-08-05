@@ -11,7 +11,7 @@ Severity meanings:
 * **info** -- a declared, accepted state worth surfacing (currently: assumptions).
 
 Three validators share this catalogue: `python -m easkills validate` covers the model
-zones (`ORACLE`/`SCHEMA`/`ID`/`REF`/`PROV`/`GOV`/`MOT`/`STD`/`ISO`/`REL`/`NAME`/`SMELL`),
+zones (`ORACLE`/`SCHEMA`/`ID`/`REF`/`PROV`/`GOV`/`MOT`/`STD`/`ISO`/`REL`/`NAME`/`SMELL`/`PLAT`),
 `python -m easkills validate-facts` covers the fact register (`FACT`/`ENT`/`SRC`), and
 `python -m easkills validate-gov` covers the standards base, governance log, the
 service layer and the correspondences that cross between them
@@ -264,6 +264,30 @@ service line).
 | `REQ008` | warning | Requests a retired offering. |
 | `REQ009` | error | `requested` or `fulfilled` passes the date pattern but is not a real calendar date. SLA and fulfilment timing are computed from these fields, so an unreadable date quietly removes the request from the ledger's arithmetic. |
 | `REQ010` | error | `fulfilled` is before `requested`. Both dates are real, so `REQ009` stays silent -- but the service line averages the interval between them, and a negative one reports EA as faster than it is. (The waiver-side counterpart is `DISP007`.) |
+
+## Roadmap -- the Implementation & Migration layer
+
+ArchiMate already carries the concepts: a `Plateau` is the architecture at a point in
+time, a `Gap` is the distance between two of them, a `WorkPackage` produces a
+`Deliverable`. They validated the day the schema was generated from the oracle, so
+nothing is invented here. The one thing the standard does not carry is a **date**, and
+without it a sequence of states is a set of states -- so `plateauDate` is a constrained
+property (the `timeDisposition` lesson: if the tooling interprets a key, the schema
+enumerates or patterns it) and these rules make the plan answerable.
+
+Membership is the standard idiom: a plateau *aggregates or composes* the elements that
+exist in that state. Plateaus here are expected to hold what the migration changes, not
+a full copy of the architecture per plateau -- the duplicate is what goes stale first.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `PLAT001` | error | A `Plateau` with no `plateauDate`. A plateau without a date is a state, not a step: nothing can order it. |
+| `PLAT002` | error | Two plateaus share a `plateauDate`. Two states of the architecture at the same instant is not a sequence. Reported once, against the second. |
+| `PLAT003` | error | `plateauDate` passes the schema pattern but is not a real calendar date (`2027-03-32`). The roadmap is ordered by it, so an unreadable date silently drops the plateau out of the sequence -- the same trap as `DISP008`/`REQ009`. |
+| `PLAT004` | warning | A `Gap` associated with no `Plateau`. A gap describes the distance between two states; one that names neither cannot be planned or closed. (Association is the only relationship the 3.2 matrix permits here -- and the one `impact` refuses to traverse, so this rule is what makes the link load-bearing.) |
+| `PLAT005` | warning | An element whose TIME disposition is `Migrate` or `Eliminate` that **no plateau includes**. The portfolio decision has been taken and no plan carries it. Silent when the repository has no plateaus at all: a model that has not started planning is not breaking its roadmap. |
+| `PLAT006` | warning | Every plateau is in the past. A roadmap whose horizon has passed is a record of intentions; close it or extend it. |
+| `PLAT007` | warning | A `WorkPackage` that realizes no `Deliverable` -- a project with no output is one nobody can accept or refuse. |
 
 ## Correspondences (ISO 42010 §6.9)
 

@@ -1,0 +1,91 @@
+# Roadmap rules, one case each (PLAT001-PLAT007). Kept in its own file so the
+# Implementation & Migration cases stay readable next to each other.
+
+elements:
+  # --- PLAT001: a plateau with no date -------------------------------------------------
+  - id: plateau-undated
+    type: Plateau
+    name: Plateau Without A Date
+    owner: ea@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data centre hosts two application servers
+
+  # --- PLAT003: shape-valid, calendar-impossible ---------------------------------------
+  - id: plateau-impossible-date
+    type: Plateau
+    name: Plateau Dated The Thirty-Second Of March
+    owner: ea@example.test
+    lastReviewed: 2026-07-20
+    properties:
+      # Quoted, or PyYAML resolves it during parsing and takes the whole file down
+      # with a ValueError -- the same trap GOV003's fixture documents.
+      plateauDate: "2027-03-32"
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data centre hosts two application servers
+
+  # --- PLAT002: two plateaus at the same instant ---------------------------------------
+  # (also PLAT006: every readable plateau date here is in the past)
+  - id: plateau-collision-a
+    type: Plateau
+    name: Collision A
+    owner: ea@example.test
+    lastReviewed: 2026-07-20
+    properties:
+      plateauDate: 2025-01-01
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data centre hosts two application servers
+
+  - id: plateau-collision-b
+    type: Plateau
+    name: Collision B
+    owner: ea@example.test
+    lastReviewed: 2026-07-20
+    properties:
+      plateauDate: 2025-01-01
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data centre hosts two application servers
+
+  # --- PLAT004: a gap associated with no plateau ---------------------------------------
+  - id: gap-floating
+    type: Gap
+    name: Gap Between Nothing And Nothing
+    owner: ea@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: facts/sources/notes.md
+        quote: Order records are held by the finance system
+
+  # --- PLAT007: a work package that delivers nothing ------------------------------------
+  - id: work-package-empty
+    type: WorkPackage
+    name: Project With No Output
+    owner: ea@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - file: facts/sources/notes.md
+        quote: Order records are held by the finance system
+
+relationships:
+  # The collision plateaus hold `app-finance`, which is TIME 'Eliminate' -- so PLAT005
+  # is *not* triggered by it. `data-order` carries the disposition with no plateau,
+  # over in broken.yaml, and that is the PLAT005 case.
+  - id: rel-collision-a-aggregates-finance
+    type: Aggregation
+    source: plateau-collision-a
+    target: app-finance
+    provenance:
+      - file: facts/sources/notes.md
+        quote: Order records are held by the finance system
+
+  - id: rel-gap-associates-work-package
+    type: Association
+    source: gap-floating
+    target: work-package-empty
+    provenance:
+      - file: facts/sources/notes.md
+        quote: Order records are held by the finance system

@@ -2,7 +2,7 @@
 
 Worked example shipped with the ea-skills repository. Aurora Foods is fictional; the model exists to exercise the validator and compiler end to end, and to show what evidence-backed modelling looks like in practice.
 
-**As of:** 2026-07-15 (newest `lastReviewed` in the approved model) · 17 elements, 15 relationships, 4 views.
+**As of:** 2026-07-15 (newest `lastReviewed` in the approved model) · 20 elements, 19 relationships, 4 views.
 
 > Generated from `model/approved/` by `python -m easkills docs`. Do not edit; change the model and regenerate. Structured after ISO/IEC/IEEE 42010:2022 Clause 6 (stakeholders → concerns → viewpoints → views).
 
@@ -141,5 +141,16 @@ ISO 42010 §6.9: relations between AD elements that no ArchiMate relationship ca
 | `binds` | motivation element → element | 3 | 0 | A requirement, constraint, principle or goal binds elements that exist and can still carry it. An obligation whose only bearers are slated for elimination outlives the systems that meet it -- the retention requirement nobody notices until the system holding the records is switched off. |
 | `governed-by` | element → standard | 4 | 0 | An element's standards reference resolves to a SIB entry that is not retired, unless an open dispensation covers the pair. |
 | `assessed-by` | compliance assessment → element | 1 | 0 | A compliance assessment names elements that are in the approved model. |
-| `evidenced-by` | concept → fact | 2 | 0 | A model concept's provenance resolves to a fact in the register whose quotes are located mechanically in their sources -- or the concept declares itself assumed, with a rationale. |
+| `evidenced-by` | concept → fact | 9 | 0 | A model concept's provenance resolves to a fact in the register whose quotes are located mechanically in their sources -- or the concept declares itself assumed, with a rationale. |
+
+## 9. Roadmap
+
+The Implementation & Migration layer, ordered by `plateauDate`. Plateaus aggregate what the migration changes; an element carrying a Migrate or Eliminate disposition that no plateau holds is listed as unscheduled, because a portfolio decision nothing carries is an intention.
+
+| Reached | Plateau | Holds | What it is |
+|---|---|---|---|
+| 2026-07-01 | 2026 Baseline | Warehouse Management System | The architecture as inventoried in mid-2026: the warehouse management system running on premise, alongside the ERP core and the order portal. |
+| 2028-06-30 | WMS In The Cloud | Warehouse Management System | The state after the warehouse management system moves to cloud hosting. Dated 2028-06-30 as the earliest plateau consistent with the on-premise dispensation expiring 2027-06-30 and no budget agreed at the time of writing. |
+
+**Gaps:** **WMS Hosting Gap** — Between the two plateaus: cloud hosting for the warehouse management system, with no agreed date and no approved budget. Closing this gap needs a funding decision first, which is why the constraint binds the system today.
 

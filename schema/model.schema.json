@@ -135,6 +135,11 @@
                 "Eliminate"
               ],
               "description": "Gartner TIME portfolio quadrant; read by 'docs' and 'kpi'."
+            },
+            "plateauDate": {
+              "type": "string",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+              "description": "When a Plateau is reached; orders the roadmap. Read by 'roadmap' and 'docs', checked by PLAT001-PLAT003."
             }
           },
           "additionalProperties": {
@@ -283,6 +288,11 @@
                 "Eliminate"
               ],
               "description": "Gartner TIME portfolio quadrant; read by 'docs' and 'kpi'."
+            },
+            "plateauDate": {
+              "type": "string",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+              "description": "When a Plateau is reached; orders the roadmap. Read by 'roadmap' and 'docs', checked by PLAT001-PLAT003."
             }
           },
           "additionalProperties": {

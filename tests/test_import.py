@@ -217,12 +217,12 @@ def test_cli_import_reports_and_writes_json(exported_example, tmp_path, capsys):
         == 0
     )
     out = capsys.readouterr().out
-    assert "Imported 17 element(s), 15 relationship(s), 4 view(s)" in out
+    assert "Imported 20 element(s), 19 relationship(s), 4 view(s)" in out
     assert "staging proposal" in out
     import json
 
     data = json.loads(target_json.read_text(encoding="utf-8"))
-    assert data["counts"] == {"elements": 17, "relationships": 15, "views": 4}
+    assert data["counts"] == {"elements": 20, "relationships": 19, "views": 4}
     assert data["sourceSha256"]
 
 

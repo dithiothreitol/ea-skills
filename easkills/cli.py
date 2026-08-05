@@ -163,6 +163,7 @@ def build_parser() -> argparse.ArgumentParser:
         ("debt", "EA-debt register from deterministic smell queries"),
         ("conformance", "ISO 42010 Clause 6 conformance checklist (checkable subset)"),
         ("correspondences", "ISO 42010 §6.9 correspondences across the AD, and their rules"),
+        ("roadmap", "plateaus, gaps, and the portfolio decisions no plateau carries"),
         ("delta", "what the fact register knows that the approved model does not"),
     ):
         p_report = sub.add_parser(name, help=help_text)
@@ -428,6 +429,12 @@ def cmd_conformance(args: argparse.Namespace) -> int:
     return 1 if getattr(args, "strict", False) and data["failed"] else 0
 
 
+def cmd_roadmap(args: argparse.Namespace) -> int:
+    data = reports.roadmap(args.root.resolve(), today=_parse_as_of(args.as_of))
+    _emit_report(args, data, reports.render_roadmap(data))
+    return 0
+
+
 def cmd_correspondences(args: argparse.Namespace) -> int:
     data = reports.correspondences(args.root.resolve(), today=_parse_as_of(args.as_of))
     _emit_report(args, data, reports.render_correspondences(data))
@@ -596,6 +603,7 @@ HANDLERS = {
     "debt": cmd_debt,
     "conformance": cmd_conformance,
     "correspondences": cmd_correspondences,
+    "roadmap": cmd_roadmap,
     "delta": cmd_delta,
     "context": cmd_context,
     "impact": cmd_impact,

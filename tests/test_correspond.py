@@ -175,7 +175,7 @@ def test_clause_6_9_passes_on_the_example(example_root):
     data = reports.conformance(example_root, today=TODAY)
     item = next(i for i in data["items"] if i["clause"] == "6.9")
     assert item["status"] == "pass"
-    assert "13 correspondence(s)" in item["detail"]
+    assert "20 correspondence(s)" in item["detail"]
 
 
 def test_clause_6_9_fails_when_a_correspondence_is_violated(repo):
@@ -222,7 +222,8 @@ def test_the_description_does_not_move_with_the_wall_clock(repo):
     freshness gate cannot fail on a day nobody touched the repository."""
     first = docgen.build_markdown(dsl.load(repo, "approved")[0])
     assert first == docgen.build_markdown(dsl.load(repo, "approved")[0])
-    assert "2027-06-30" not in first.split("## 8. Correspondences")[1], (
+    section = first.split("## 8. Correspondences", 1)[1].split("## 9.", 1)[0]
+    assert "2027-06-30" not in section, (
         "the on-premise waiver expires in 2027; the table must not depend on whether it has"
     )
 
@@ -233,7 +234,7 @@ def test_the_description_does_not_move_with_the_wall_clock(repo):
 def test_cli_correspondences_report(example_root, capsys):
     assert cli.main(["correspondences", "--root", str(example_root), "--as-of", "2026-07-30"]) == 0
     out = capsys.readouterr().out
-    assert "13 relation(s), 0 violated" in out
+    assert "20 relation(s), 0 violated" in out
     assert "decision-order-api-single-integration -> app-erp-core" in out
 
 
@@ -244,5 +245,5 @@ def test_cli_correspondences_json(example_root, tmp_path, capsys):
     import json
 
     data = json.loads(target.read_text(encoding="utf-8"))
-    assert data["total"] == 13 and data["violated"] == 0
+    assert data["total"] == 20 and data["violated"] == 0
     assert {k["kind"] for k in data["kinds"]} == {rule.kind for rule in correspond.RULES}

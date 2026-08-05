@@ -1,0 +1,93 @@
+# Implementation & Migration layer: the plan, in the same model as the architecture.
+#
+# ArchiMate already has the concepts, so nothing is invented here -- a Plateau is a
+# state of the architecture at a point in time, a Gap is the distance between two of
+# them. The one thing the standard does not carry is a *date*, so `plateauDate` is a
+# constrained property (schema-enforced, PLAT001-PLAT003) and the roadmap is ordered
+# by it rather than by the order somebody typed the plateaus in.
+#
+# **Plateaus here aggregate only what the migration changes.** A full snapshot of the
+# architecture per plateau duplicates the model without adding information, and the
+# duplicate is what goes stale first. What matters is that every element carrying a
+# Migrate or Eliminate disposition appears in a plateau (PLAT005) -- otherwise the
+# portfolio decision has been taken and nothing schedules it.
+#
+# Note what this roadmap honestly records: the target plateau exists, and the
+# constraint says the move has no approved budget. That contradiction is the plan's
+# actual state, and it belongs in the model rather than in a slide nobody validates.
+
+elements:
+  - id: plateau-2026-baseline
+    type: Plateau
+    name: 2026 Baseline
+    documentation: >
+      The architecture as inventoried in mid-2026: the warehouse management system
+      running on premise, alongside the ERP core and the order portal.
+    owner: ea@aurorafoods.example
+    lastReviewed: 2026-07-15
+    properties:
+      plateauDate: 2026-07-01
+    provenance:
+      - fact: fact-wms-inventory-entry
+
+  - id: plateau-2028-wms-cloud
+    type: Plateau
+    name: WMS In The Cloud
+    documentation: >
+      The state after the warehouse management system moves to cloud hosting. Dated
+      2028-06-30 as the earliest plateau consistent with the on-premise dispensation
+      expiring 2027-06-30 and no budget agreed at the time of writing.
+    owner: ea@aurorafoods.example
+    lastReviewed: 2026-07-15
+    properties:
+      plateauDate: 2028-06-30
+    provenance:
+      - fact: fact-wms-cloud-move-unfunded
+
+  - id: gap-wms-hosting
+    type: Gap
+    name: WMS Hosting Gap
+    documentation: >
+      Between the two plateaus: cloud hosting for the warehouse management system,
+      with no agreed date and no approved budget. Closing this gap needs a funding
+      decision first, which is why the constraint binds the system today.
+    owner: ea@aurorafoods.example
+    lastReviewed: 2026-07-15
+    provenance:
+      - fact: fact-wms-cloud-move-unfunded
+
+relationships:
+  # A plateau aggregates the elements that exist in that state (the 3.2 matrix permits
+  # Aggregation, Composition, Association and Realization from Plateau to a core element).
+  - id: rel-baseline-aggregates-wms
+    type: Aggregation
+    source: plateau-2026-baseline
+    target: app-wms
+    provenance:
+      - fact: fact-wms-inventory-entry
+
+  - id: rel-cloud-plateau-aggregates-wms
+    type: Aggregation
+    source: plateau-2028-wms-cloud
+    target: app-wms
+    provenance:
+      - fact: fact-wms-cloud-move-unfunded
+
+  # Triggering is how the matrix lets one plateau follow another: the sequence is
+  # modelled, not implied by the dates alone.
+  - id: rel-baseline-triggers-cloud-plateau
+    type: Triggering
+    source: plateau-2026-baseline
+    target: plateau-2028-wms-cloud
+    provenance:
+      - fact: fact-wms-cloud-move-unfunded
+
+  # Association is the only relationship the matrix permits between a Gap and a
+  # Plateau -- and association is exactly what `impact` refuses to traverse, so
+  # PLAT004 is what keeps this link load-bearing.
+  - id: rel-gap-at-cloud-plateau
+    type: Association
+    source: gap-wms-hosting
+    target: plateau-2028-wms-cloud
+    provenance:
+      - fact: fact-wms-cloud-move-unfunded

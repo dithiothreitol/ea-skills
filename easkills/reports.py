@@ -349,6 +349,132 @@ def render_debt(data: dict[str, Any]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+# ------------------------------------------------------------------------- roadmap
+
+
+def roadmap(root: Path, today: date | None = None) -> dict[str, Any]:
+    """The Implementation & Migration layer read as a plan: plateaus in date order,
+    what each one holds, the gaps between them, and the portfolio decisions no plateau
+    carries. That last number is the one worth looking at -- a TIME disposition with no
+    plateau is an intention nobody has scheduled."""
+    today = today or date.today()
+    model, _documents, _config = dsl.load(root, "approved")
+
+    plateaus = [e for e in model.elements.values() if e.type == "Plateau"]
+    membership: dict[str, list[str]] = {}
+    for relationship in model.relationships.values():
+        if relationship.source in {p.id for p in plateaus} and relationship.type in {
+            "Aggregation",
+            "Composition",
+        }:
+            membership.setdefault(relationship.source, []).append(relationship.target)
+
+    rows: list[dict[str, Any]] = []
+    for plateau in plateaus:
+        raw = plateau.properties.get("plateauDate", "")
+        try:
+            reached: date | None = datetime.strptime(raw, "%Y-%m-%d").date() if raw else None
+        except ValueError:
+            reached = None  # PLAT003 reports it; the report shows the raw value
+        rows.append(
+            {
+                "id": plateau.id,
+                "name": plateau.name,
+                "date": raw,
+                "state": "unscheduled" if reached is None else ("reached" if reached < today else "planned"),
+                "includes": sorted(set(membership.get(plateau.id, []))),
+            }
+        )
+    # Undated plateaus sort last: they have no place in the sequence, which is the
+    # finding PLAT001 makes, and inventing one here would hide it.
+    rows.sort(key=lambda r: (r["date"] == "", r["date"], r["id"]))
+
+    gaps = []
+    plateau_ids = {p.id for p in plateaus}
+    for element in sorted(model.elements.values(), key=lambda e: e.id):
+        if element.type != "Gap":
+            continue
+        related = sorted(
+            {
+                far
+                for r in model.relationships.values()
+                for near, far in ((r.source, r.target), (r.target, r.source))
+                if near == element.id and far in plateau_ids
+            }
+        )
+        gaps.append({"id": element.id, "name": element.name, "plateaus": related})
+
+    scheduled = {member for row in rows for member in row["includes"]}
+    unscheduled = [
+        {
+            "id": e.id,
+            "name": e.name,
+            "timeDisposition": e.properties.get("timeDisposition", ""),
+        }
+        for e in sorted(model.elements.values(), key=lambda e: e.id)
+        if e.properties.get("timeDisposition") in {"Migrate", "Eliminate"} and e.id not in scheduled
+    ]
+
+    return {
+        "asOf": today.isoformat(),
+        "plateaus": rows,
+        "gaps": gaps,
+        "unscheduledIntent": unscheduled,
+        "counts": {
+            "plateaus": len(rows),
+            "gaps": len(gaps),
+            "scheduled": len(scheduled),
+            "unscheduledIntent": len(unscheduled),
+        },
+    }
+
+
+def render_roadmap(data: dict[str, Any]) -> str:
+    counts = data["counts"]
+    lines = [
+        ui.bold(f"Roadmap as of {data['asOf']} -- {counts['plateaus']} plateau(s), {counts['gaps']} gap(s)"),
+        "",
+    ]
+    if not data["plateaus"]:
+        lines.append(
+            ui.dim(
+                "No plateaus. The model records what is, not what is planned -- add "
+                "Plateau elements with a plateauDate to make the migration a model rather "
+                "than a slide."
+            )
+        )
+        return "\n".join(lines) + "\n"
+
+    for row in data["plateaus"]:
+        marker = ui.dim("[reached]") if row["state"] == "reached" else ui.green("[planned]")
+        if row["state"] == "unscheduled":
+            marker = ui.red("[no date]")
+        lines.append(f"  {marker} {ui.bold(row['date'] or '????-??-??')}  {row['name']} ({row['id']})")
+        for member in row["includes"]:
+            lines.append(f"      {ui.cyan(member)}")
+        if not row["includes"]:
+            lines.append(f"      {ui.dim('nothing aggregated -- the plateau holds no elements')}")
+    lines.append("")
+
+    if data["gaps"]:
+        lines.append(ui.bold(f"Gaps ({len(data['gaps'])}):"))
+        for gap in data["gaps"]:
+            between = ", ".join(gap["plateaus"]) or ui.red("no plateau")
+            lines.append(f"  {ui.bold(gap['id'])} {gap['name']} {ui.dim('-- ' + between)}")
+        lines.append("")
+
+    if data["unscheduledIntent"]:
+        lines.append(ui.yellow(ui.bold(f"Intent with no plan ({len(data['unscheduledIntent'])}):")))
+        for row in data["unscheduledIntent"]:
+            lines.append(
+                f"  {ui.bold('{:<40}'.format(row['id']))} {row['timeDisposition']} "
+                + ui.dim("-- decided, but no plateau carries it")
+            )
+    else:
+        lines.append(ui.green(f"{ui.check()} Every Migrate/Eliminate disposition is in a plateau."))
+    return "\n".join(lines).rstrip() + "\n"
+
+
 # -------------------------------------------------------- ISO 42010 §6.9 correspondences
 
 
