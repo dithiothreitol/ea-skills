@@ -113,4 +113,15 @@ def test_the_api_key_is_never_committed():
             capture_output=True,
             text=True,
         )
-        assert not listed.stdout.strip(), f"a secrets file is tracked: {listed.stdout!r}"
+        # `.env.example` is tracked on purpose -- it is the placeholder that tells a
+        # contributor which variable to set. Everything else with that shape is a leak.
+        tracked = {line for line in listed.stdout.split() if line != ".env.example"}
+        assert not tracked, f"a secrets file is tracked: {sorted(tracked)}"
+
+    example = REPO_ROOT / ".env.example"
+    if example.is_file():
+        body = example.read_text(encoding="utf-8")
+        assert "sk-ant-..." in body or "..." in body, "the example must hold a placeholder"
+        assert len([line for line in body.splitlines() if len(line) > 60]) == 0, (
+            "a line long enough to be a real key is in .env.example"
+        )
