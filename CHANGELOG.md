@@ -7,6 +7,140 @@ project's build phases (design log with per-decision rationale:
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-08-06 — the measurement release
+
+The mechanism was complete; the product was under-measured. Six weaknesses were listed
+rather than hedged, verified mechanically before anything was planned — which changed one
+verdict, and found a seventh nobody had noticed.
+
+### Added — ArchiMate's derivation rules (DR1–DR8)
+
+`easkills/derive.py` implements Appendix B.2 of the specification: the eight derivations
+that are *valid in any model where they apply*, with the structural strength order
+(Realization weakest → Composition strongest), the B.4 restriction on deriving through a
+third domain, and every derived edge filtered through the vendored relationship matrix.
+The potential rules of B.3 stay out, by their own description: the specification calls them
+uncertain, and a deterministic core does not guess.
+
+This closes the measurement limit the first baseline reported. A run whose every element
+matched still scored **0%** on relationships, because it routed `SchedPro → Dispatch`
+through a process it invented — and gold's edge is *derivable* from the candidate's two by
+DR4, a rule the standard states in one sentence. The scorer now gives such an edge **half a
+match** (found the connection, contested the grain) and credits the candidate edges carrying
+the derivation the same way. `docs/RULES.md` narrows its "not yet implemented" entry to B.3
+and B.4 accordingly.
+
+### Added — the score names what it did not match
+
+Every category now carries `unmatchedGold`, `unmatchedCandidate`, `partialGold` and
+`partialCandidate`: identifiers for facts and entities, `type name` for elements, and
+`type source -> target` for relationships, with the derivation rule and the abstracted-away
+element cited where half credit was given. The terminal prints the first eight per line;
+`--json` carries all of them. Three separate investigations of a fallen category were
+hand-diffs of two YAML trees before this existed, and each cost more than the run that
+produced the number.
+
+### Added — three more skills measured, and an honest coverage page
+
+- **The harness reads five skills instead of two**, declared in `MEASURED_SKILLS` and pinned
+  to its README by a test: `ea-intake`; `ea-model` + `ea-capability-map`; and a new
+  *apparatus* phase reading `ea-stakeholders` + `ea-views`.
+- **The apparatus phase is judged by contract, not by similarity.** Gold holds no
+  stakeholders, concerns or views, and inventing them would make the number a similarity to
+  one author's documentation taste. What is checkable is whether ISO 42010's loop closes, so
+  the measurement is the `conformance` checklist the core computes — reported, never gated.
+- **`eval/harness/contracts.py`** measures the governance skills the same way: a scenario
+  plus `ea-adr` or `ea-dispensation`, then deterministic properties on the record produced —
+  MADR fields, rejected options with pros *and* cons, a bounded expiry, a real standard
+  waived, tight scope, and the three-move supersession that leaves no element realising a
+  withdrawn decision (`CORR001`). `tests/test_contract_harness.py` proves each contract is
+  satisfiable by a hand-written reference answer and that it fails on the specific mutation
+  it exists to catch — an unsatisfiable contract looks exactly like a bad skill, forever.
+- **`docs/SKILL-COVERAGE.md`** classifies all 22 skills by instrument — scored, contract,
+  deterministic path test, or *manual only* — with the two `manual only` rows (`ea-run`,
+  `ea-eval`) printed rather than quietly rounded up.
+
+### Added — the adoption path as a deterministic test
+
+`tests/test_adoption_path.py` walks the whole brownfield path on committed fixtures
+(`eval/fixtures/adoption/`): scaffold from `template/`, a handed-over spreadsheet through
+`intake-csv`, a foreign tool's export through `import`, the gate refusing the
+`Serving`-from-a-Node-to-a-DataObject the previous tool allowed, the 2026-08-05 run's human
+decisions recorded as code, one vouched-for slice promoted, `impact` in both zones, and an
+architecture description generated. No network, no model.
+
+Two end-to-end runs had found defects no unit test could see, both of the same kind —
+output that is correct and *unusable*. That class now has a regression test.
+
+### Changed — the regression gate reads the spread it measured
+
+A median that falls **below the baseline's own minimum** is a regression and exits 1. A
+median that falls but stays inside the measured spread is printed as a *movement*. With
+three runs at API default temperature a three-point median move says nothing, and the first
+comparison duly flagged one such beside a real one; a gate that cries wolf gets ignored.
+
+### Fixed — the harness could report a previous run's numbers as this run's
+
+The work directory is reused across invocations, and both report files (`*-score.json`,
+`conformance.json`) were read back after the command that writes them. A scoring step that
+failed while last week's file sat there would have been scored as a result. Both are now
+removed before the command runs, and a test asserts that every file the harness reads back
+is deleted first — the one failure mode a measurement harness must not have is a failure
+that looks like a result.
+
+### Fixed — a converted spreadsheet no longer loses a cell
+
+`intake-csv` truncated any row wider than its header (a semicolon inside an unquoted cell is
+enough) while the document politely said "truncated". Wide rows now widen the table under
+generated column names, short rows are still padded, and the ragged rows are still reported:
+a converted document is quoted from, so a dropped cell is evidence that cannot be cited.
+Found by building the adoption fixture.
+
+### Changed — the second baseline, and what it is and is not comparable to
+
+Re-measured after all of the above (claude-sonnet-5, 3 runs per case, all six green on
+their own gates): `clinic` facts 74% → **87%**, entities 67%, elements 43%, relationships
+20%; `contested` facts 67%, entities 71%, elements **56%**, relationships 0% → **11%**;
+apparatus 2–3 stakeholders, 3 concerns, 2–3 views with 7 ISO clauses passing per run.
+
+Two of those moves are comparable to the old baseline and explained: `clinic/facts` gained
+exactly the nine half credits the compound gold statements were costing, and `contested`
+relationships came off zero because a gold edge the candidate reaches in two hops is now
+recognised. The element-driven numbers are **not** comparable: adding `ea-capability-map` to
+the measured phase changed the prose the runs read, and they duly produced a capability
+layer against a `clinic` gold model that has none. The baseline was moved because the
+instrument changed, with the reasoning written into `eval/harness/README.md` — and the
+question that leaves (three runs, three identical capabilities, gold has no Strategy layer,
+`ea-model` says the capability map is the spine) is recorded there and deliberately not
+answered in the release that measured it.
+
+The governance contracts held on every run, including the three-move supersession, for
+≈25k input / 8k output tokens over six runs.
+
+**Across tiers** (`clinic`, 3 runs each, informational — the baseline stays defined for the
+default model): haiku-4.5 79/60/55/9, sonnet-5 87/67/43/20, opus-5 77/57/44/30
+(facts/entities/elements/relationships). No tier dominates, so the prose is not tuned to
+one; relationships improve monotonically with tier; and elements score *highest* on the
+weakest model because two of its three runs produced no capability layer — the same
+granularity effect, from the other side. A weaker model spends its budget on repairs: haiku
+used 2.5× the input tokens for two-thirds of the output, which is what the three-iteration
+cap exists to bound.
+
+Two harness reporting fixes came out of reading those runs: the final gate verdict of each
+phase is now recorded rather than inferred from the repair count (exhausting the cap and
+converging on the last attempt produced the same number), and `baseline.json` is written
+with LF newlines so its bytes do not depend on the author's operating system.
+
+### Changed — gold's compound facts, split
+
+`eval/golden/clinic` carried two compound statements — *"…through the online booking portal
+**or by calling the front desk**"* and *"…inside the EHR**; we do not run a separate billing
+system**"* — where `ea-intake` defines a fact as **one atomic statement**. Three measured
+runs split both and were charged half credit nine times over for following the skill more
+closely than the golden case did. The register is now nine atomic facts, the model's
+provenance follows, and `eval/golden/README.md` gains the rule this establishes: a golden
+case may be corrected against the skills' own stated rules, never against a run's output.
+
 ### Changed — the first skill fixes the harness paid for
 
 Three prose defects, found by measurement rather than by reading, and re-measured after

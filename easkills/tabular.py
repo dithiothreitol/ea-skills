@@ -116,15 +116,23 @@ def build_markdown(text: str, report: TabularReport) -> str:
     if not rows:
         raise TabularError(f"{report.source} has no rows")
     header = [_cell(cell) or f"column{index + 1}" for index, cell in enumerate(rows[0])]
+    declared = len(header)
+    # A row wider than the header gets extra columns rather than a truncation: a converted
+    # document is quoted from, and a cell dropped here is evidence that cannot be cited at
+    # all. Short rows are padded, long rows widen the table, and either way the row number
+    # is reported -- the reader is told the export was ragged, never quietly shown less
+    # than it contained.
+    widest = max([declared] + [len(row) for row in rows[1:]])
+    header += [f"column{index + 1}" for index in range(declared, widest)]
     report.columns = header
 
     body: list[list[str]] = []
     for number, row in enumerate(rows[1:], start=2):
         if any("\n" in cell or "\r" in cell for cell in row):
             report.flattened.append(number)
-        if len(row) != len(header):
-            report.ragged.append({"row": number, "cells": len(row), "expected": len(header)})
-        cells = [_cell(cell) for cell in row[: len(header)]]
+        if len(row) != declared:
+            report.ragged.append({"row": number, "cells": len(row), "expected": declared})
+        cells = [_cell(cell) for cell in row]
         cells += [""] * (len(header) - len(cells))
         body.append(cells)
     report.rows = len(body)
@@ -145,8 +153,8 @@ def build_markdown(text: str, report: TabularReport) -> str:
     if report.ragged:
         out.append(
             f"- **Ragged rows:** {', '.join(str(item['row']) for item in report.ragged)} "
-            "(cell count differs from the header; padded or truncated here, and reported "
-            "by the conversion)"
+            f"(cell count differs from the {declared} header column(s); short rows padded, "
+            "extra cells kept under generated column names -- nothing dropped)"
         )
     if report.flattened:
         out.append(

@@ -109,6 +109,22 @@ def test_ragged_rows_are_padded_and_named(tmp_path):
     text = (tmp_path / "out.md").read_text(encoding="utf-8")
     assert "Ragged rows" in text
     assert "| 4 | 5 |  |" in text, "short rows are padded, never dropped"
+    assert report.columns == ["A", "B", "C", "column4"]
+    assert "| 6 | 7 | 8 | 9 |" in text, "and long rows widen the table instead of losing a cell"
+
+
+def test_no_cell_is_ever_dropped(tmp_path):
+    """A converted document is quoted from; a silently truncated cell is evidence lost.
+
+    The adoption fixture found this: a semicolon inside an unquoted Notes cell made one
+    row wider than its header, and the overflow -- "no owner named for the batch
+    scheduler" -- vanished from the table while the header politely said "truncated".
+    """
+    source = _csv(tmp_path, "wide.csv", "App;Note\nBilling;Nightly batch; no owner named\n")
+    report = tabular.convert(source, tmp_path / "out.md")
+    text = (tmp_path / "out.md").read_text(encoding="utf-8")
+    assert "no owner named" in text
+    assert report.ragged and "nothing dropped" in text
 
 
 def test_a_blank_line_is_not_a_row(tmp_path):

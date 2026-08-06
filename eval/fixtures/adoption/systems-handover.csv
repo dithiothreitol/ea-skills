@@ -1,0 +1,4 @@
+Application;Owner;Hosting;Notes
+CRM Suite;crm-team@meridian.example;on-premise;"Solterra, licensed until 2027"
+Billing Engine;finance-it@meridian.example;on-premise;Nightly batch; no owner named for the batch scheduler
+Route Planner;;managed cloud;"Bought by logistics, unknown to IT"

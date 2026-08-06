@@ -93,7 +93,7 @@ unevidenced dependency is a guess, and guesses are what make a model untrustwort
 ## Granularity: model what the evidence names, at the grain it names it
 
 This is the measured failure mode of this skill, so it is stated as a rule. A run
-against a **seven-fact** source produced **nineteen to twenty-three elements**, among
+against a **single short interview** produced **nineteen to twenty-three elements**, among
 them a "Current State" and "Target State" pair from a source that describes no plan.
 Every one of them passed the gate, because inventing a *plausible* element breaks no
 rule — which is exactly why the discipline has to be yours.

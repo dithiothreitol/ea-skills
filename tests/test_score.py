@@ -32,6 +32,21 @@ def test_golden_clinic_facts_are_clean():
     assert report.ok and not report.warnings, report.render()
 
 
+def test_the_measured_cases_carry_atomic_statements():
+    """Gold must obey the rule the skill it measures states.
+
+    `ea-intake`: a fact is *one atomic statement*. Gold's clinic register carried two
+    compound ones, three measured runs split them, and the scorer charged the runs half
+    credit for being more correct than gold. Semicolons are the shape that defect took;
+    this pins it for the two cases the baseline depends on. `eval/example/` is deliberately
+    not covered -- it is a lifecycle fixture, not a measured case.
+    """
+    for case in (CLINIC, REPO_ROOT / "eval" / "golden" / "contested"):
+        register, _documents, _entities = facts.load(case)
+        compound = [f.id for f in register.facts.values() if ";" in f.statement]
+        assert not compound, f"{case.name}: compound statements in {compound}"
+
+
 def test_self_score_is_perfect():
     report = score.score(CLINIC, CLINIC)
     assert report.min_f1 == 1.0
@@ -159,30 +174,45 @@ def test_a_type_change_across_layers_is_not_a_match(candidate):
     assert elements.partial == 0 and elements.matched == 5
 
 
-def test_splitting_one_gold_fact_into_two_is_not_a_miss(candidate):
-    """The register's own discipline pushes towards atomic facts; gold combined them."""
+def test_regrouping_gold_facts_covers_the_same_ground(candidate):
+    """Coverage survives regrouping; only the statement decides full or half credit.
+
+    This test used to run the other way round -- gold carried two compound statements and
+    the candidate split them. Gold was atomized (it was breaking `ea-intake`'s own rule),
+    so the surviving property is tested from the merging side: a candidate that writes one
+    compound fact where gold has two atomic ones still covers gold's ground, and pays half
+    credit per side for saying something different, never a zero.
+    """
     text = _register_file(candidate).read_text(encoding="utf-8")
-    split = """  - id: fact-billing-module
-    statement: Invoices are produced by the billing module inside the EHR.
+    merged = """  - id: fact-billing-inside-ehr
+    statement: Invoices are produced by the billing module inside the EHR; there is no separate billing system.
     provenance:
       - file: facts/sources/interview-clinic-2026-07-01.md
         quote: Invoices are produced by the billing module inside the EHR
-    entities: [ehr]
-
-  - id: fact-no-separate-billing
-    statement: The clinic runs no separate billing system.
-    provenance:
       - file: facts/sources/interview-clinic-2026-07-01.md
         quote: we do not run a separate billing system
     entities: [ehr]
 """
-    head, sep, tail = text.partition("  - id: fact-billing-inside-ehr")
-    combined = tail.split("\n\n", 1)[1]
-    _register_file(candidate).write_text(head + split + "\n" + combined, encoding="utf-8")
+    head, _sep, tail = text.partition("  - id: fact-billing-module-in-ehr")
+    rest = tail.split("  - id: fact-portal-hosting", 1)[1]
+    _register_file(candidate).write_text(
+        head + merged + "\n  - id: fact-portal-hosting" + rest, encoding="utf-8"
+    )
+    # Keep the candidate's own gates green: it must cite the fact it actually wrote.
+    model = _model_file(candidate).read_text(encoding="utf-8")
+    _model_file(candidate).write_text(
+        model.replace(
+            "      - fact: fact-billing-module-in-ehr\n      - fact: fact-no-separate-billing",
+            "      - fact: fact-billing-inside-ehr",
+        ),
+        encoding="utf-8",
+    )
     report = score.score(candidate, CLINIC)
+    assert report.gates_ok, report.render()
     facts_score = report.categories["facts"]
-    assert facts_score.recall > 0.9, "gold's ground is still covered, by two facts instead of one"
-    assert facts_score.gold_credit >= 6.5
+    assert facts_score.candidate == facts_score.gold - 1, "the merge is what is being scored"
+    assert facts_score.gold_credit >= 8.0, "both atomic facts are covered, at half credit each"
+    assert facts_score.partial >= 2 and facts_score.f1 < 1.0
 
 
 def test_matching_evidence_under_a_wrong_statement_is_only_half(candidate):
@@ -199,11 +229,165 @@ def test_matching_evidence_under_a_wrong_statement_is_only_half(candidate):
     assert facts_score.partial >= 1 and facts_score.f1 < 1.0
 
 
+def test_an_edge_the_candidate_only_implies_is_half_a_match(candidate):
+    """The measured 0% case, scored end to end.
+
+    The candidate routes the portal's service to the patient *through a process it
+    invented*, exactly as three measured runs did. Gold's direct edge is derivable from
+    the candidate's two by DR4, so it is half a match instead of a miss -- and the two
+    edges carrying that derivation are half matches too, not inventions.
+    """
+    text = _model_file(candidate).read_text(encoding="utf-8")
+    text = text.replace(
+        "relationships:",
+        """  - id: proc-booking
+    type: BusinessProcess
+    name: Booking Flow
+    owner: practice-manager@novakclinic.example
+    lastReviewed: 2026-07-01
+    assumed: true
+    rationale: Intermediate behaviour the sources do not name; inserted by the run.
+
+relationships:""",
+    ).replace(
+        """  - id: rel-portal-serves-patient
+    type: Serving
+    source: app-booking-portal
+    target: actor-patient""",
+        """  - id: rel-portal-serves-flow
+    type: Serving
+    source: app-booking-portal
+    target: proc-booking
+    provenance:
+      - fact: fact-booking-portal-channel
+
+  - id: rel-patient-does-flow
+    type: Assignment
+    source: actor-patient
+    target: proc-booking""",
+    )
+    _model_file(candidate).write_text(text, encoding="utf-8")
+    report = score.score(candidate, CLINIC)
+    assert report.gates_ok, report.render()
+    relationships = report.categories["relationships"]
+    assert relationships.unmatched_gold == (), "nothing was missed, only re-grained"
+    assert relationships.partial_gold == (
+        "Serving Booking Portal -> Patient (derived DR4 via Booking Flow)",
+    )
+    assert relationships.gold_credit == pytest.approx(4.5)
+    assert set(relationships.partial_candidate) == {
+        "Serving Booking Portal -> Booking Flow",
+        "Assignment Patient -> Booking Flow",
+    }
+    assert relationships.matched == pytest.approx(5.0)
+    assert relationships.recall == pytest.approx(0.9)
+    # The invented element still costs element precision -- derivation forgives the edge,
+    # not the elaboration.
+    assert report.categories["elements"].precision < 1.0
+
+
+def test_a_wrong_edge_is_not_forgiven_by_derivation(candidate):
+    """Half credit is for a re-grained connection, never for a connection gold denies."""
+    text = _model_file(candidate).read_text(encoding="utf-8")
+    _model_file(candidate).write_text(
+        text.replace(
+            """  - id: rel-server-serves-ehr
+    type: Serving
+    source: node-ehr-server
+    target: app-ehr""",
+            """  - id: rel-server-serves-portal
+    type: Serving
+    source: node-ehr-server
+    target: app-booking-portal""",
+        ),
+        encoding="utf-8",
+    )
+    relationships = score.score(candidate, CLINIC).categories["relationships"]
+    assert relationships.unmatched_gold == ("Serving EHR Server -> EHR",)
+    assert relationships.partial_gold == ()
+    assert relationships.unmatched_candidate == ("Serving EHR Server -> Booking Portal",)
+
+
 def test_the_structural_relationship_count_is_reported_and_never_gated(candidate):
     report = score.score(candidate, CLINIC)
     assert "rel-structural" in report.diagnostics
     assert "rel-structural" not in report.categories, "diagnostics explain a number, they are not one"
     assert report.min_f1 == 1.0
+
+
+# -------------------------------------------------------- the score names its own items
+
+# A ratio alone made every investigation of a fallen category a manual diff of two YAML
+# trees. Three such investigations produced three different verdicts, and all three cost
+# more than the run that produced the number.
+
+
+def test_a_perfect_score_names_nothing():
+    report = score.score(CLINIC, CLINIC)
+    for name, category in report.categories.items():
+        assert not category.unmatched_gold, name
+        assert not category.unmatched_candidate, name
+        assert not category.partial_gold, name
+    assert "what did not match" not in report.render()
+
+
+def test_the_score_names_the_element_it_missed_and_the_one_it_got_instead(candidate):
+    text = _model_file(candidate).read_text(encoding="utf-8")
+    _model_file(candidate).write_text(
+        text.replace("name: Booking Portal", "name: Appointment App"), encoding="utf-8"
+    )
+    report = score.score(candidate, CLINIC)
+    elements = report.categories["elements"]
+    assert elements.unmatched_gold == ("ApplicationComponent Booking Portal",)
+    assert elements.unmatched_candidate == ("ApplicationComponent Appointment App",)
+    # And the relationships it dragged down are named by endpoint, not by id.
+    relationships = report.categories["relationships"]
+    assert "Serving Booking Portal -> Patient" in relationships.unmatched_gold
+    assert "Serving Appointment App -> Patient" in relationships.unmatched_candidate
+    assert "Appointment App" in report.render()
+
+
+def test_a_half_credit_names_both_sides_of_the_disagreement(candidate):
+    text = _model_file(candidate).read_text(encoding="utf-8")
+    _model_file(candidate).write_text(
+        text.replace("    type: ApplicationService", "    type: ApplicationInterface"), encoding="utf-8"
+    )
+    elements = score.score(candidate, CLINIC).categories["elements"]
+    assert elements.partial_gold == ("ApplicationService Scheduling Interface",)
+    assert elements.partial_candidate == ("ApplicationInterface Scheduling Interface",)
+    assert not elements.unmatched_gold, "it was found, only classified differently"
+
+
+def test_the_missing_fact_is_named_in_the_json(candidate):
+    text = _register_file(candidate).read_text(encoding="utf-8")
+    head, _sep, _tail = text.partition("  - id: fact-backup-untested")
+    _register_file(candidate).write_text(head, encoding="utf-8")
+    payload = score.score(candidate, CLINIC).as_dict()["categories"]["facts"]
+    assert payload["unmatchedGold"] == ["fact-backup-untested"]
+    assert payload["unmatchedCandidate"] == []
+
+
+def test_the_terminal_listing_is_capped_but_the_json_is_not(candidate):
+    """Twenty invented elements must not push the gate verdict off the screen."""
+    extra = "".join(
+        f"""
+  - id: app-invented-{index}
+    type: ApplicationComponent
+    name: Invented System {index}
+    owner: practice-manager@novakclinic.example
+    lastReviewed: 2026-07-01
+    assumed: true
+    rationale: Deliberately invented for the render-cap test.
+"""
+        for index in range(20)
+    )
+    text = _model_file(candidate).read_text(encoding="utf-8")
+    head, sep, tail = text.partition("relationships:")
+    _model_file(candidate).write_text(head + extra + "\n" + sep + tail, encoding="utf-8")
+    report = score.score(candidate, CLINIC)
+    assert len(report.categories["elements"].unmatched_candidate) == 20
+    assert "(+12 more)" in report.render()
+    assert len(report.as_dict()["categories"]["elements"]["unmatchedCandidate"]) == 20
 
 
 # ------------------------------------------------------------------------------- CLI

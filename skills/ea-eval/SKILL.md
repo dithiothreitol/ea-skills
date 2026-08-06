@@ -36,6 +36,15 @@ number (the research reason this repository exists) -- watch it hardest. The
 candidate's own gates run too: a run that matches gold but fails provenance
 verification is fabrication that happens to be right, and counts as a failure.
 
+**Read the item lists, not only the ratios.** Every category names what it did not
+match: `unmatchedGold` is what the run missed, `unmatchedCandidate` is what it wrote
+that gold does not support, and the half-credit lists name both sides of each
+disagreement. A relationship credited half says *how* -- `derived DR4 via <element>`
+means the run connected the same things through an intermediate element, which is a
+granularity disagreement rather than a missing dependency. Diagnose from those lists;
+reverse-engineering a number from two YAML trees is how three investigations were
+spent before they existed.
+
 4. **Compare against the previous run**, not against perfection. Keep the JSON
    outputs; a skill change is acceptable when no category regresses and the target
    category improves. 100% on these small cases is expected for extraction of
@@ -45,11 +54,29 @@ verification is fabrication that happens to be right, and counts as a failure.
 ## Discipline
 
 * Run **every** case, not the one that flatters the change.
-* Never edit gold to make a run pass. If you believe gold is wrong, that is a
-  reviewed change with its own justification -- gold changes and skill changes never
-  land together.
+* Never edit gold to make a run pass. Gold may be corrected when it breaks a rule the
+  skills themselves state -- that happened once, and the register was atomized because
+  `ea-intake` defines a fact as one atomic statement -- but never because a run
+  disagreed with it. Gold changes and skill changes do not land together.
 * Nondeterminism is data: run the changed pipeline twice; if scores differ, report
-  the spread, not the better number.
+  the spread, not the better number. A median that moves inside a previously measured
+  spread is not a finding.
+
+## When an API key is available
+
+Two harnesses automate the loop above, and neither is part of the push gate:
+
+```bash
+python eval/harness/run.py --all --runs 3        # scored against the golden set
+python eval/harness/contracts.py --runs 3        # governance records vs their own rules
+```
+
+`run.py` measures five skills' prose (`ea-intake`; `ea-model` + `ea-capability-map`;
+`ea-stakeholders` + `ea-views`) and fails when a median drops below the spread the
+committed baseline measured. `contracts.py` gives `ea-adr` and `ea-dispensation` a
+scenario and checks properties of the record produced -- there is no gold for a decision
+record, but there are rules it must not break. `docs/SKILL-COVERAGE.md` says which
+instrument covers which skill, and names the two that nothing mechanical covers.
 
 ## Reporting back
 

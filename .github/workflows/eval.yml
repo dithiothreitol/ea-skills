@@ -20,6 +20,10 @@ on:
         description: "Model id"
         required: false
         default: "claude-sonnet-5"
+      contracts:
+        description: "Also run the governance contract harness (true/false)"
+        required: false
+        default: "false"
 
 jobs:
   evaluate:
@@ -44,6 +48,16 @@ jobs:
             --model ${{ github.event.inputs.model }} \
             --out run-records.json
 
+      - name: Run the governance contracts
+        if: ${{ github.event.inputs.contracts == 'true' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python eval/harness/contracts.py \
+            --runs ${{ github.event.inputs.runs }} \
+            --model ${{ github.event.inputs.model }} \
+            --out contract-records.json
+
       # Uploaded rather than committed: a number produced by a non-deterministic run
       # becomes the baseline only when a human has read it and decided it should.
       - name: Keep the records
@@ -51,4 +65,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: eval-records
-          path: run-records.json
+          path: |
+            run-records.json
+            contract-records.json

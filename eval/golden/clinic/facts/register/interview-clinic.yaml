@@ -1,12 +1,25 @@
+# Facts are one atomic statement each -- the rule `ea-intake` states. Two entries here
+# used to carry compound statements (booking channels, and billing); a measured run split
+# both, scored half credit on each, and was following the skill more closely than gold
+# was. Gold was corrected rather than the scorer (BLUEPRINT 8a, 2026-08-06).
+
 facts:
-  - id: fact-booking-channels
-    statement: Patients book appointments through the online booking portal or by calling the front desk.
+  - id: fact-booking-portal-channel
+    statement: Patients book appointments through the online booking portal.
+    provenance:
+      - file: facts/sources/interview-clinic-2026-07-01.md
+        quote: Patients book appointments through the online booking portal
+    entities: [patient, booking-portal]
+    topics: [business]
+
+  - id: fact-booking-front-desk-channel
+    statement: Patients book appointments by calling the front desk.
     provenance:
       - file: facts/sources/interview-clinic-2026-07-01.md
         quote: >-
-          Patients book appointments through the online booking portal or by calling the front
+          by calling the front
           desk.
-    entities: [patient, booking-portal, front-desk]
+    entities: [patient, front-desk]
     topics: [business]
 
   - id: fact-ehr-role
@@ -27,13 +40,19 @@ facts:
     entities: [booking-portal, ehr, scheduling-interface]
     topics: [integration]
 
-  - id: fact-billing-inside-ehr
-    statement: Invoices are produced by the billing module inside the EHR; there is no separate billing system.
+  - id: fact-billing-module-in-ehr
+    statement: Invoices are produced by the billing module inside the EHR.
     provenance:
       - file: facts/sources/interview-clinic-2026-07-01.md
-        quote: >-
-          Invoices are produced by the billing module inside the EHR; we do not run a separate
-          billing system.
+        quote: Invoices are produced by the billing module inside the EHR
+    entities: [ehr]
+    topics: [application]
+
+  - id: fact-no-separate-billing
+    statement: The clinic runs no separate billing system.
+    provenance:
+      - file: facts/sources/interview-clinic-2026-07-01.md
+        quote: we do not run a separate billing system
     entities: [ehr]
     topics: [application]
 

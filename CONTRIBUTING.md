@@ -33,14 +33,22 @@ follows -- so a change to `skills/*/SKILL.md` is measured instead:
 ```bash
 pip install -r requirements-eval.txt
 export ANTHROPIC_API_KEY=...          # or .env, which is gitignored
-python eval/harness/run.py --all --runs 3
+python eval/harness/run.py --all --runs 3      # scored against the golden set
+python eval/harness/contracts.py --runs 3      # governance records against their own rules
 ```
 
-The harness runs the skills blind against the golden cases and scores the result
-against `eval/harness/baseline.json`, failing if any category's median falls. It calls
-an API, so it is deliberately **not** in the gate: see
-[`eval/harness/README.md`](eval/harness/README.md) for what the number means and what
-it does not.
+The first runs the skills blind against the golden cases and compares the result to
+`eval/harness/baseline.json`, failing when a median drops below the spread the baseline
+itself measured. The second gives `ea-adr` and `ea-dispensation` a scenario and checks
+deterministic properties of the record they produce. Both call an API, so neither is in the
+gate: see [`eval/harness/README.md`](eval/harness/README.md) for what the numbers mean, and
+[`docs/SKILL-COVERAGE.md`](docs/SKILL-COVERAGE.md) for which skills they cover and which
+nothing does.
+
+Their *logic* is in the gate even though their runs are not:
+`tests/test_contract_harness.py` proves each contract passes a hand-written reference answer
+and fails the mutation it exists to catch, and `tests/test_harness_quarantine.py` pins the
+measured-skill list to the README and keeps the network out of `easkills/`.
 
 ## Run the full gate before pushing
 

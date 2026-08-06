@@ -100,6 +100,68 @@ def test_the_harness_never_reads_gold_into_the_scratch_repository():
         )
 
 
+def test_the_harness_cannot_read_a_previous_runs_answer():
+    """Every report file the harness reads back must be removed before it is written.
+
+    The work directory is reused across invocations. A scoring step that fails while a
+    file from last week's run sits there would report last week's numbers as this run's --
+    a failure indistinguishable from a result, which is the one failure mode this whole
+    harness exists to avoid.
+    """
+    source = (HARNESS / "run.py").read_text(encoding="utf-8")
+    read_back = [
+        line.strip()
+        for line in source.splitlines()
+        if "workdir /" in line and ".json" in line
+    ]
+    assert read_back, "expected the harness to write report files into the work directory"
+    assert source.count("unlink(missing_ok=True)") >= len(read_back), (
+        f"{len(read_back)} file(s) written into the work directory, "
+        f"{source.count('unlink(missing_ok=True)')} removed first"
+    )
+
+
+def _measured_skills() -> dict[str, tuple[str, ...]]:
+    """Read ``MEASURED_SKILLS`` out of the harness source without importing it.
+
+    Importing would need the SDK installed, and this must hold in the default gate.
+    """
+    tree = ast.parse((HARNESS / "run.py").read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.AnnAssign) and getattr(node.target, "id", "") == "MEASURED_SKILLS":
+            return ast.literal_eval(node.value)
+    raise AssertionError("MEASURED_SKILLS is not declared in the harness")
+
+
+def test_every_measured_skill_exists():
+    for phase, names in _measured_skills().items():
+        for name in names:
+            assert (REPO_ROOT / "skills" / name / "SKILL.md").is_file(), f"{phase}: {name}"
+
+
+def test_the_harness_readme_names_exactly_the_skills_it_measures():
+    """The claim and the code must not drift.
+
+    They did once: `docs/GETTING-STARTED.md` stopped covering two commands while
+    `docs/CLI.md` stayed complete, and nothing failed. "Which skills are measured" is the
+    load-bearing claim of this harness, so it is pinned rather than trusted.
+    """
+    measured = {name for names in _measured_skills().values() for name in names}
+    readme = (HARNESS / "README.md").read_text(encoding="utf-8")
+    section = readme.split("## What it does", 1)[1].split("## Regression gate", 1)[0]
+    for name in sorted(measured):
+        assert f"`{name}`" in section, f"{name} is measured but the README does not say so"
+
+
+def test_the_measured_count_matches_the_readme_claim():
+    measured = {name for names in _measured_skills().values() for name in names}
+    readme = (HARNESS / "README.md").read_text(encoding="utf-8")
+    total = len([p for p in (REPO_ROOT / "skills").iterdir() if p.is_dir()])
+    assert f"{len(measured)} of the {total} skills" in readme, (
+        f"the README must state the ratio it measures: {len(measured)} of {total}"
+    )
+
+
 def test_the_api_key_is_never_committed():
     gitignore = (REPO_ROOT / ".gitignore").read_text(encoding="utf-8")
     assert ".env" in gitignore

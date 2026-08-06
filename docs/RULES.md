@@ -343,10 +343,16 @@ range logic would answer questions it cannot settle.
 
 Stated so nobody mistakes silence for a clean bill of health:
 
-* **Derivation rules** (DR1--DR8) and **potential derivation rules** (PDR1--PDR12) from
-  Appendix B of the specification, and the Appendix B.4 restrictions on cross-domain
-  derivation. The direct-relationship matrix is enforced; derived relationships are not
-  yet checked.
+* **Potential derivation rules** (Appendix B.3) -- the derivations the specification
+  itself calls *uncertain*, whose probability "depends on the specifics of the model
+  concerned". A deterministic core does not guess, so they stay out.
+  The **valid** derivation rules DR1--DR8 of Appendix B.2 **are** implemented
+  (`easkills/derive.py`) and used by the golden-set scorer to tell "you did not draw this
+  edge" from "your model implies this edge at a finer grain". They are not a *gate*: the
+  relationship matrix already permits every derivable pair, so a derived relationship
+  cannot be a violation. The B.4 restriction on deriving through a third domain is
+  enforced in `derive.py`; the remainder of B.4 is enforced by construction, because the
+  vendored matrix is what those restrictions produced.
 * **The wider EA smells catalogue.** The gate implements `SMELL001` plus duplicate
   naming; the debt register (`python -m easkills debt`) adds unsupported capabilities,
   hub elements, stale content and dead-standard references as report-level queries.

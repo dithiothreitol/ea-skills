@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The adoption fixture: what an incumbent tool hands over on day one.
+
+     Three layers, so promoting in slices is a real decision rather than a formality;
+     mixed-case foreign identifiers; owners recorded as tool properties for some elements
+     and missing for others; and one relationship the ArchiMate 3.2 matrix forbids
+     (Serving from a Node to a DataObject), which is the exact class the gate caught on live
+     material during the 2026-08-05 adoption run. Everything here must survive import
+     loudly, and the model that comes out is the adoption backlog, not an approved model. -->
+<model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       identifier="id-meridian-model">
+  <name xml:lang="en">Meridian Logistics Landscape</name>
+  <documentation>Exported from the incumbent repository at handover.</documentation>
+  <elements>
+    <element identifier="id-CRM01" xsi:type="ApplicationComponent">
+      <name xml:lang="en">CRM Suite</name>
+      <documentation>Customer relationship management, on premise since 2014.</documentation>
+      <properties>
+        <property propertyDefinitionRef="propid-owner">
+          <value xml:lang="en">crm-team@meridian.example</value>
+        </property>
+        <property propertyDefinitionRef="propid-vendor">
+          <value xml:lang="en">Solterra</value>
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-BILL02" xsi:type="ApplicationComponent">
+      <name xml:lang="en">Billing Engine</name>
+      <documentation>Invoicing, batch nightly.</documentation>
+    </element>
+    <element identifier="id-DATA03" xsi:type="DataObject">
+      <name xml:lang="en">Customer Record</name>
+    </element>
+    <element identifier="EAID_SALES" xsi:type="BusinessActor">
+      <name xml:lang="en">Sales Rep</name>
+      <properties>
+        <property propertyDefinitionRef="propid-owner">
+          <value xml:lang="en">sales-ops@meridian.example</value>
+        </property>
+      </properties>
+    </element>
+    <element identifier="EAID_INTAKE" xsi:type="BusinessProcess">
+      <name xml:lang="en">Order Intake</name>
+    </element>
+    <element identifier="id-NODE04" xsi:type="Node">
+      <name xml:lang="en">App Server 01</name>
+      <properties>
+        <property propertyDefinitionRef="propid-owner">
+          <value xml:lang="en">infra@meridian.example</value>
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-NODE05" xsi:type="Node">
+      <name xml:lang="en">Database Host</name>
+    </element>
+  </elements>
+  <relationships>
+    <relationship identifier="rel-crm-serves-intake" xsi:type="Serving"
+                  source="id-CRM01" target="EAID_INTAKE"/>
+    <relationship identifier="rel-bill-serves-intake" xsi:type="Serving"
+                  source="id-BILL02" target="EAID_INTAKE"/>
+    <relationship identifier="rel-sales-does-intake" xsi:type="Assignment"
+                  source="EAID_SALES" target="EAID_INTAKE"/>
+    <relationship identifier="rel-crm-reads-data" xsi:type="Access"
+                  source="id-CRM01" target="id-DATA03"/>
+    <relationship identifier="rel-node-serves-crm" xsi:type="Serving"
+                  source="id-NODE04" target="id-CRM01"/>
+    <!-- The illegal one: the previous tool allowed it, the 3.2 matrix does not. -->
+    <relationship identifier="rel-host-serves-data" xsi:type="Serving"
+                  source="id-NODE05" target="id-DATA03">
+      <documentation>Hosting, as the previous tool modelled it.</documentation>
+    </relationship>
+  </relationships>
+  <propertyDefinitions>
+    <propertyDefinition identifier="propid-owner" type="string">
+      <name>owner</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-vendor" type="string">
+      <name>vendor</name>
+    </propertyDefinition>
+  </propertyDefinitions>
+  <views>
+    <diagrams>
+      <view identifier="id-view-order" xsi:type="Diagram">
+        <name xml:lang="en">Order Intake Overview</name>
+        <node identifier="n1" xsi:type="Element" elementRef="id-CRM01" x="20" y="40" w="145" h="60"/>
+        <node identifier="n2" xsi:type="Element" elementRef="EAID_INTAKE" x="220" y="40" w="145" h="60"/>
+        <node identifier="n3" xsi:type="Element" elementRef="EAID_SALES" x="420" y="40" w="145" h="60"/>
+      </view>
+    </diagrams>
+  </views>
+</model>

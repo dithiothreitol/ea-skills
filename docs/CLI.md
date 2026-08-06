@@ -89,7 +89,7 @@ delta is read against the approved model it proposes to change.
 
 | Command | Does |
 |---|---|
-| `score --gold <repo> [--min-f1 PCT] [--json]` | Candidate vs golden repository: precision/recall/F1 for entities, facts, elements and relationships, plus the candidate's own gates — matching gold while failing provenance verification counts as failure. Names resolve through both entity alias tables, facts are matched on the source ground they cover, a type disagreement inside one layer is half a match, and a label-independent relationship count is reported as an ungated diagnostic. It measures **agreement with one gold repository** — a regression signal, not an absolute grade ([what that means](../eval/golden/README.md)). |
+| `score --gold <repo> [--min-f1 PCT] [--json]` | Candidate vs golden repository: precision/recall/F1 for entities, facts, elements and relationships, plus the candidate's own gates — matching gold while failing provenance verification counts as failure. Names resolve through both entity alias tables, facts are matched on the source ground they cover, a type disagreement inside one layer is half a match, an edge the candidate does not draw but its model *implies* under ArchiMate's derivation rules (DR1–DR8) is half a match, and a label-independent relationship count is reported as an ungated diagnostic. Every category also **names its items**: what gold had and the candidate missed, what the candidate has and gold does not support, and which credits were half (with the derivation rule cited) — eight per line in the terminal, all of them under `--json`. It measures **agreement with one gold repository** — a regression signal, not an absolute grade ([what that means](../eval/golden/README.md)). |
 
 ## Housekeeping
 

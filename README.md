@@ -145,7 +145,7 @@ and keeps the stage order honest.
 | Govern | `ea-standards-base`, `ea-dispensation`, `ea-adr`, `ea-compliance`, `ea-service` | `validate-gov` — expiry and SLA are enforced, not filed |
 | Maintain | `ea-health`, `ea-change-triage`, `ea-board`, `ea-context` | `kpi`, `debt`, `staleness`, `conformance`, `correspondences`, `roadmap`, `delta`, `context`, `impact` |
 | Consume | `ea-check` | `check --scope` inside a product repo — standards lifecycle vs declared dependencies |
-| Evaluate | `ea-eval` | `score --min-f1` against the [golden set](eval/golden/) |
+| Evaluate | `ea-eval` | `score --min-f1` against the [golden set](eval/golden/); the score names every unmatched item, and relationships the model only *implies* count as half a match via ArchiMate's derivation rules |
 
 ## Design principles
 
@@ -161,6 +161,15 @@ delta rather than copying the world. The only way into `approved` is
 `python -m easkills promote`, whose gate validates the merged result by approved-zone
 standards — ownership and review dates, advisory while drafting, block there. The git
 commit of the move is the approval record.
+
+**The skills are measured, not just the tooling.** Prose cannot be executed by pytest, so
+the product used to be the untested half. `eval/harness/` now runs the skills against the
+golden set with an API key — a blind scratch repository, the pipeline the prose describes,
+three runs per case because the spread is the honest part — and scores the result; a second
+harness checks that the governance skills produce records satisfying their own rules. Five
+of the 22 skills are measured that way and [the coverage page](docs/SKILL-COVERAGE.md) says
+exactly which, including the two nothing mechanical covers. The first baseline paid for the
+harness the same day by exposing three prose defects invisible to reading.
 
 **Intake comes first and is measured.** `ea-intake` extracts a **fact register**
 (`facts/register/*.yaml`) from raw sources chunk by chunk: atomic statements, each with
@@ -324,6 +333,8 @@ skills/          the 22 agent skills (this is the product)
 template/        scaffold to copy for a new enterprise
 eval/example/    worked example, clean (doubles as the largest golden case)
 eval/golden/     golden-set cases for the regression harness
+eval/harness/    the skill-prose harnesses: scored runs + governance contracts (API key,
+                 never in the default gate -- the only code here that reaches a network)
 eval/fixtures/   negative fixtures -- every rule violated on purpose, proven by tests
 tests/           pytest suite: the gates, the generators, and the claims these docs make
 docs/            GETTING-STARTED, CLI reference, RULES catalogue, BLUEPRINT (design)
@@ -338,6 +349,7 @@ docs/            GETTING-STARTED, CLI reference, RULES catalogue, BLUEPRINT (des
 | [Rule catalogue](docs/RULES.md) | All 118 validation rules with severities and rationale |
 | [Blueprint](docs/BLUEPRINT.md) | The research-verified design: decisions, evidence, per-phase log |
 | [Golden set](eval/golden/README.md) | How pipeline quality is measured |
+| [Skill coverage](docs/SKILL-COVERAGE.md) | Which instrument measures which skill — including where nothing does |
 | [Contributing](CONTRIBUTING.md) | Dev setup, conventions, how to add a rule or a skill |
 
 ## Contributing

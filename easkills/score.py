@@ -12,8 +12,10 @@ recall and F1 per category, computed deterministically:
 * **elements**    matched by (ArchiMate type, name) -- with names resolved through the
                   entity alias tables, and a type disagreement inside one layer scored
                   as half a match;
-* **relationships** matched by type plus endpoints that map through element matches,
-                  with a label-independent structural count reported alongside.
+* **relationships** matched by type plus endpoints that map through element matches; an
+                  edge the candidate did not draw but its model *implies* under the
+                  specification's derivation rules (`derive.py`) is half a match, and a
+                  label-independent structural count is reported alongside.
 
 Candidate *quality* is not inferred from matching alone: the candidate's own gates
 (model and fact-register validators) run too, because a candidate that matches gold
@@ -37,7 +39,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from . import dsl, facts as facts_mod, oracle, ui
+from . import derive, dsl, facts as facts_mod, oracle, ui
 from . import validate as validate_mod
 from .validate import _normalize
 
@@ -60,6 +62,11 @@ class CategoryScore:
     answer a gold element under a different type. Collapsing that into a single
     ``matched`` count forced a choice between punishing the candidate for being more
     atomic and crediting it twice; keeping the two numerators apart does neither.
+
+    Every score also carries **which items** it is about. A number alone sent every
+    investigation of a fallen category back through two YAML trees by hand; the four
+    label tuples below are the same information the ratio was computed from, so the
+    question "what did it miss, and what did it invent" is answered by reading the report.
     """
 
     gold: int
@@ -67,6 +74,14 @@ class CategoryScore:
     matched: float  # credit on the candidate side -- the precision numerator
     matched_gold: float | None = None  # credit on the gold side; defaults to `matched`
     partial: int = 0  # how many of those credits were half (reported, never hidden)
+    unmatched_gold: tuple[str, ...] = ()  # gold items that earned no credit at all
+    unmatched_candidate: tuple[str, ...] = ()  # candidate items nothing in gold answers
+    partial_gold: tuple[str, ...] = ()  # gold items credited half
+    partial_candidate: tuple[str, ...] = ()  # candidate items credited half
+    # `partial` is a count of halved *credits*, and the label tuples are a count of items:
+    # a halved element is one credit and two labels (gold's type and the candidate's),
+    # while a halved fact is scored once per numerator. Kept separate rather than derived,
+    # because deriving it needs exactly that distinction as a hidden rule.
 
     @property
     def gold_credit(self) -> float:
@@ -95,6 +110,11 @@ class CategoryScore:
             "precision": round(self.precision, 4),
             "recall": round(self.recall, 4),
             "f1": round(self.f1, 4),
+            # Uncapped and sorted: this is the machine-readable half of the diagnosis.
+            "unmatchedGold": list(self.unmatched_gold),
+            "unmatchedCandidate": list(self.unmatched_candidate),
+            "partialGold": list(self.partial_gold),
+            "partialCandidate": list(self.partial_candidate),
         }
 
 
@@ -104,6 +124,7 @@ def _score_entities(gold: facts_mod.Register, candidate: facts_mod.Register) -> 
 
     available = {e.id: terms(e) for e in candidate.entities.values()}
     matched = 0
+    missed: list[str] = []
     for gold_entity in sorted(gold.entities.values(), key=lambda e: e.id):
         gold_terms = terms(gold_entity)
         hit = next(
@@ -113,7 +134,15 @@ def _score_entities(gold: facts_mod.Register, candidate: facts_mod.Register) -> 
         if hit is not None:
             matched += 1
             del available[hit]
-    return CategoryScore(gold=len(gold.entities), candidate=len(candidate.entities), matched=matched)
+        else:
+            missed.append(gold_entity.id)
+    return CategoryScore(
+        gold=len(gold.entities),
+        candidate=len(candidate.entities),
+        matched=matched,
+        unmatched_gold=tuple(missed),
+        unmatched_candidate=tuple(sorted(available)),
+    )
 
 
 def _alias_classes(*registers: facts_mod.Register) -> dict[str, str]:
@@ -232,6 +261,7 @@ def _score_facts(gold: facts_mod.Register, candidate: facts_mod.Register) -> Cat
         """Sources not shared (or quotes unlocatable): fall back to statements alone."""
         available = dict(candidate_statements)
         matched = 0
+        missed: list[str] = []
         for gold_fact in sorted(gold.facts.values(), key=lambda f: f.id):
             best_id, best_ratio = None, 0.0
             for cid, statement in sorted(available.items()):
@@ -241,33 +271,64 @@ def _score_facts(gold: facts_mod.Register, candidate: facts_mod.Register) -> Cat
             if best_id is not None and best_ratio >= FACT_MATCH_THRESHOLD:
                 matched += 1
                 del available[best_id]
-        return CategoryScore(gold=len(gold.facts), candidate=len(candidate.facts), matched=matched)
+            else:
+                missed.append(gold_fact.id)
+        return CategoryScore(
+            gold=len(gold.facts),
+            candidate=len(candidate.facts),
+            matched=matched,
+            unmatched_gold=tuple(missed),
+            unmatched_candidate=tuple(sorted(available)),
+        )
 
     if not gold_spans or not candidate_spans:
         return fallback_similarity()
 
-    recall_credit = 0.0
-    partial = 0
-    for fact_id in sorted(gold.facts):
-        value = credit(
-            gold_statements[fact_id], gold_spans.get(fact_id, []), candidate_spans, candidate_statements
-        )
-        recall_credit += value
-        partial += 1 if value == PARTIAL_CREDIT else 0
-    precision_credit = 0.0
-    for fact_id in sorted(candidate.facts):
-        value = credit(
-            candidate_statements[fact_id], candidate_spans.get(fact_id, []), gold_spans, gold_statements
-        )
-        precision_credit += value
-        partial += 1 if value == PARTIAL_CREDIT else 0
+    def side(
+        ids: list[str], statements: dict[str, str], spans: dict[str, list],
+        others: dict[str, list], other_statements: dict[str, str],
+    ) -> tuple[float, list[str], list[str]]:
+        total, missed, half = 0.0, [], []
+        for fact_id in ids:
+            value = credit(statements[fact_id], spans.get(fact_id, []), others, other_statements)
+            total += value
+            if value == 0.0:
+                missed.append(fact_id)
+            elif value == PARTIAL_CREDIT:
+                half.append(fact_id)
+        return total, missed, half
+
+    recall_credit, missed_gold, half_gold = side(
+        sorted(gold.facts), gold_statements, gold_spans, candidate_spans, candidate_statements
+    )
+    precision_credit, missed_candidate, half_candidate = side(
+        sorted(candidate.facts), candidate_statements, candidate_spans, gold_spans, gold_statements
+    )
     return CategoryScore(
         gold=len(gold.facts),
         candidate=len(candidate.facts),
         matched=precision_credit,
         matched_gold=recall_credit,
-        partial=partial,
+        partial=len(half_gold) + len(half_candidate),
+        unmatched_gold=tuple(missed_gold),
+        unmatched_candidate=tuple(missed_candidate),
+        partial_gold=tuple(half_gold),
+        partial_candidate=tuple(half_candidate),
     )
+
+
+def _element_label(element: dsl.Element) -> str:
+    return f"{element.type} {element.name}"
+
+
+def _relationship_label(model: dsl.Model, relationship: dsl.Relationship) -> str:
+    """Name the endpoints, not their ids -- gold and candidate never share ids."""
+
+    def name(element_id: str) -> str:
+        element = model.elements.get(element_id)
+        return element.name if element else element_id
+
+    return f"{relationship.type} {name(relationship.source)} -> {name(relationship.target)}"
 
 
 def _score_elements(
@@ -291,7 +352,9 @@ def _score_elements(
     mapping: dict[str, str] = {}
     taken: set[str] = set()
     credit = 0.0
-    partial = 0
+    missed: list[str] = []
+    half_gold: list[str] = []
+    half_candidate: list[str] = []
     for gold_element in sorted(gold.elements.values(), key=lambda e: e.id):
         name = _canonical(gold_element.name, classes)
         bucket = [cid for cid in exact.get((gold_element.type, name), []) if cid not in taken]
@@ -309,13 +372,25 @@ def _score_elements(
             mapping[gold_element.id] = bucket[0]
             taken.add(bucket[0])
             credit += PARTIAL_CREDIT
-            partial += 1
+            half_gold.append(_element_label(gold_element))
+            half_candidate.append(_element_label(candidate.elements[bucket[0]]))
+        else:
+            missed.append(_element_label(gold_element))
+    extra = [
+        _element_label(element)
+        for element in sorted(candidate.elements.values(), key=lambda e: e.id)
+        if element.id not in taken
+    ]
     return (
         CategoryScore(
             gold=len(gold.elements),
             candidate=len(candidate.elements),
             matched=credit,
-            partial=partial,
+            partial=len(half_gold),
+            unmatched_gold=tuple(missed),
+            unmatched_candidate=tuple(extra),
+            partial_gold=tuple(half_gold),
+            partial_candidate=tuple(half_candidate),
         ),
         mapping,
     )
@@ -329,20 +404,62 @@ def _score_relationships(
         key = (relationship.type, relationship.source, relationship.target)
         available.setdefault(key, []).append(relationship.id)
     matched = 0
+    used: set[str] = set()
+    unresolved: list[dsl.Relationship] = []
     for gold_rel in sorted(gold.relationships.values(), key=lambda r: r.id):
         source = element_map.get(gold_rel.source)
         target = element_map.get(gold_rel.target)
-        if source is None or target is None:
-            continue
-        key = (gold_rel.type, source, target)
-        bucket = available.get(key)
+        bucket = available.get((gold_rel.type, source, target)) if source and target else None
         if bucket:
-            bucket.pop()
+            used.add(bucket.pop())
             matched += 1
             if not bucket:
-                del available[key]
+                del available[(gold_rel.type, source, target)]
+        else:
+            unresolved.append(gold_rel)
+
+    # Second pass: is the edge the candidate did not draw one its model *implies*?
+    # ArchiMate's own abstraction rules answer that (derive.py, Appendix B.2), and until
+    # they existed this whole category read 0% whenever two models differed in
+    # granularity. Half credit: the connection is there, the grain is contested.
+    implied = derive.closure(candidate) if unresolved else {}
+    missed: list[str] = []
+    derived_gold: list[str] = []
+    supporting: set[str] = set()
+    for gold_rel in unresolved:
+        source = element_map.get(gold_rel.source)
+        target = element_map.get(gold_rel.target)
+        derivation = (
+            implied.get(derive.Edge(gold_rel.type, source, target)) if source and target else None
+        )
+        if derivation is not None and derivation.is_derived:
+            derived_gold.append(
+                f"{_relationship_label(gold, gold_rel)} ({derive.describe(candidate, derivation)})"
+            )
+            supporting |= derivation.used - used
+        else:
+            missed.append(_relationship_label(gold, gold_rel))
+
+    extra: list[str] = []
+    derived_candidate: list[str] = []
+    for relationship in sorted(candidate.relationships.values(), key=lambda r: r.id):
+        if relationship.id in used:
+            continue
+        label = _relationship_label(candidate, relationship)
+        # An edge that carries a derivation of a gold edge is not an invention; it is the
+        # same content at a finer grain, so it earns the same half credit on this side.
+        (derived_candidate if relationship.id in supporting else extra).append(label)
+
     return CategoryScore(
-        gold=len(gold.relationships), candidate=len(candidate.relationships), matched=matched
+        gold=len(gold.relationships),
+        candidate=len(candidate.relationships),
+        matched=matched + PARTIAL_CREDIT * len(derived_candidate),
+        matched_gold=matched + PARTIAL_CREDIT * len(derived_gold),
+        partial=len(derived_gold) + len(derived_candidate),
+        unmatched_gold=tuple(missed),
+        unmatched_candidate=tuple(extra),
+        partial_gold=tuple(derived_gold),
+        partial_candidate=tuple(derived_candidate),
     )
 
 
@@ -412,6 +529,24 @@ class ScoreReport:
             "gatesOk": self.gates_ok,
         }
 
+    RENDER_LIMIT = 8  # the terminal gets a readable sample; `--json` gets all of it
+
+    def _render_unmatched(self) -> list[str]:
+        lines: list[str] = []
+        for name, score in self.categories.items():
+            for side, items in (
+                ("gold", score.unmatched_gold),
+                ("cand", score.unmatched_candidate),
+                ("half", score.partial_gold),
+            ):
+                if not items:
+                    continue
+                shown = ", ".join(items[: self.RENDER_LIMIT])
+                if len(items) > self.RENDER_LIMIT:
+                    shown += f" (+{len(items) - self.RENDER_LIMIT} more)"
+                lines.append(f"  {name:<15} {side}: {shown}")
+        return lines
+
     def render(self) -> str:
         lines = [
             ui.bold(f"Golden-set score: candidate {self.candidate_root}"),
@@ -434,6 +569,10 @@ class ScoreReport:
                     f"{score.precision:>7.2%} {score.recall:>7.2%} {score.f1:>7.2%}  diagnostic, not gated"
                 )
             )
+        detail = self._render_unmatched()
+        if detail:
+            lines += ["", ui.dim("what did not match (gold side = missed, cand side = unsupported):")]
+            lines += detail
         lines.append("")
         for gate, counts in self.gates.items():
             verdict = ui.status("PASS") if counts["errors"] == 0 else ui.status("FAIL")

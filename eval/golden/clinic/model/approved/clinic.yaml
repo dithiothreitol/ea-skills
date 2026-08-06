@@ -8,7 +8,8 @@ elements:
     owner: practice-manager@novakclinic.example
     lastReviewed: 2026-07-01
     provenance:
-      - fact: fact-booking-channels
+      - fact: fact-booking-portal-channel
+      - fact: fact-booking-front-desk-channel
 
   - id: actor-front-desk
     type: BusinessActor
@@ -17,7 +18,7 @@ elements:
     owner: practice-manager@novakclinic.example
     lastReviewed: 2026-07-01
     provenance:
-      - fact: fact-booking-channels
+      - fact: fact-booking-front-desk-channel
 
   - id: app-booking-portal
     type: ApplicationComponent
@@ -28,7 +29,7 @@ elements:
     properties:
       hosting: external provider
     provenance:
-      - fact: fact-booking-channels
+      - fact: fact-booking-portal-channel
       - fact: fact-portal-hosting
 
   - id: app-ehr
@@ -41,7 +42,8 @@ elements:
     lastReviewed: 2026-07-01
     provenance:
       - fact: fact-ehr-role
-      - fact: fact-billing-inside-ehr
+      - fact: fact-billing-module-in-ehr
+      - fact: fact-no-separate-billing
 
   - id: service-scheduling
     type: ApplicationService
@@ -91,11 +93,11 @@ relationships:
     source: app-booking-portal
     target: actor-patient
     provenance:
-      - fact: fact-booking-channels
+      - fact: fact-booking-portal-channel
 
   - id: rel-frontdesk-serves-patient
     type: Serving
     source: actor-front-desk
     target: actor-patient
     provenance:
-      - fact: fact-booking-channels
+      - fact: fact-booking-front-desk-channel

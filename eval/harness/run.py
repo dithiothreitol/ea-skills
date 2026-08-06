@@ -1,4 +1,4 @@
-"""Run the extraction and modelling skills against a golden case, and score the result.
+"""Run the extraction, modelling and documentation skills against a golden case.
 
 This is the only code in the repository that touches the network, and it is deliberately
 **outside** ``easkills/``. The core's security posture -- "no network at runtime",
@@ -12,6 +12,12 @@ model that prose, the deterministic command output it prescribes, and the repair
 prescribes (three iterations, then stop), and scores what comes out against gold. That
 is the product's central claim under test: *do the written instructions, over this
 deterministic core, produce a faithful model?*
+
+Five skills' prose is measured, declared in ``MEASURED_SKILLS`` and pinned to the README
+by a test: `ea-intake`; `ea-model` + `ea-capability-map`; `ea-stakeholders` + `ea-views`.
+The first two phases are scored against gold. The third is judged by **contract** -- gold
+holds no stakeholders or views, so the measurement is the ISO 42010 conformance checklist
+the core computes, reported and never gated.
 
 **What it does not measure.** A host like Claude Code executing the same skills with its
 own tools, multi-turn, with its own planning. The number here is a regression signal for
@@ -30,95 +36,49 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import shutil
-import subprocess
-import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-HARNESS_DIR = Path(__file__).resolve().parent
-# Run as a script (`python eval/harness/run.py`), so the repository root is not on the
-# path. The harness reads the core's vocabulary; it never writes to it.
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+# Run as a script (`python eval/harness/run.py`), so this directory is sys.path[0] and the
+# shared plumbing imports plainly. `common` puts the repository root on the path too: the
+# harness reads the core's vocabulary, and never writes to it.
+from common import (  # noqa: E402
+    DEFAULT_MODEL,
+    HARNESS_DIR,
+    MAX_REPAIRS,
+    OUTPUT_CONTRACT,
+    REPO_ROOT,
+    Session,
+    Usage,
+    client as api_client,
+    easkills,
+    extract_files,
+    skill,
+    write_files,
+)
+
 BASELINE_PATH = HARNESS_DIR / "baseline.json"
 CASES = {
     "clinic": REPO_ROOT / "eval" / "golden" / "clinic",
     "contested": REPO_ROOT / "eval" / "golden" / "contested",
 }
-DEFAULT_MODEL = "claude-sonnet-5"
-MAX_REPAIRS = 3  # the cap the skills themselves prescribe (research: repair loops plateau at 3-4)
-MAX_TOKENS = 16000
-
-FILE_MARKER = re.compile(r"^FILE:\s*(?P<path>[A-Za-z0-9._/-]+)\s*$", re.MULTILINE)
-FENCE = re.compile(r"```(?:yaml|yml)?\s*\n(?P<body>.*?)```", re.DOTALL)
-
-
-# --------------------------------------------------------------------------- plumbing
-
-
-def load_key() -> str:
-    """Environment first, then a local ``.env``. The value is never logged."""
-    key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-    if key:
-        return key
-    env_file = REPO_ROOT / ".env"
-    if env_file.is_file():
-        for line in env_file.read_text(encoding="utf-8").splitlines():
-            if line.startswith("ANTHROPIC_API_KEY="):
-                return line.split("=", 1)[1].strip().strip('"').strip("'")
-    raise SystemExit(
-        "ANTHROPIC_API_KEY is not set. Export it, or put it in .env (which is gitignored)."
-    )
+# Which skills' prose this harness actually puts in front of the model, per phase. The
+# list is the honest answer to "what is measured here" -- everything else in `skills/` is
+# unmeasured, and a test pins this declaration to the claim in README.md so the two
+# cannot drift apart the way the tutorial once drifted from the CLI.
+MEASURED_SKILLS: dict[str, tuple[str, ...]] = {
+    "intake": ("ea-intake",),
+    "modelling": ("ea-model", "ea-capability-map"),
+    "apparatus": ("ea-stakeholders", "ea-views"),
+}
 
 
-def easkills(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
-    """Run a core command exactly as a user would, from the repository root."""
-    return subprocess.run(
-        [sys.executable, "-m", "easkills", *args],
-        cwd=str(cwd or REPO_ROOT),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
-
-
-def skill(name: str) -> str:
-    return (REPO_ROOT / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
-
-
-def extract_files(text: str) -> dict[str, str]:
-    """Parse ``FILE: <path>`` + fenced block pairs out of a model reply.
-
-    A reply that produces no parseable file is a failed run, reported as such -- the
-    harness never falls back to "best effort", because a scored run that silently used
-    half an answer is worse than no number.
-    """
-    out: dict[str, str] = {}
-    markers = list(FILE_MARKER.finditer(text))
-    for index, marker in enumerate(markers):
-        end = markers[index + 1].start() if index + 1 < len(markers) else len(text)
-        fence = FENCE.search(text, marker.end(), end)
-        if fence:
-            out[marker.group("path")] = fence.group("body")
-    return out
-
-
-@dataclass
-class Usage:
-    input_tokens: int = 0
-    output_tokens: int = 0
-    calls: int = 0
-
-    def add(self, response: Any) -> None:
-        self.calls += 1
-        self.input_tokens += getattr(response.usage, "input_tokens", 0)
-        self.output_tokens += getattr(response.usage, "output_tokens", 0)
+def phase_system(phase: str) -> str:
+    """The system prompt for a phase: every skill it measures, then the output contract."""
+    return "\n\n".join([skill(name) for name in MEASURED_SKILLS[phase]] + [OUTPUT_CONTRACT])
 
 
 @dataclass
@@ -129,45 +89,50 @@ class RunResult:
     scores: dict[str, Any] = field(default_factory=dict)
     gates: dict[str, Any] = field(default_factory=dict)
     repairs: dict[str, int] = field(default_factory=dict)
+    # The apparatus phase is judged by contract, not by matching gold: ISO 42010's loop
+    # either closes or it does not. Reported, never gated.
+    apparatus: dict[str, Any] = field(default_factory=dict)
     usage: dict[str, int] = field(default_factory=dict)
     error: str = ""
     seconds: float = 0.0
 
 
-class Session:
-    """One conversation per phase, so a repair sees what it is repairing."""
-
-    def __init__(self, client: Any, model: str, system: str, usage: Usage) -> None:
-        self.client = client
-        self.model = model
-        self.system = system
-        self.usage = usage
-        self.messages: list[dict[str, Any]] = []
-
-    def ask(self, prompt: str) -> str:
-        self.messages.append({"role": "user", "content": prompt})
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=MAX_TOKENS,
-            system=self.system,
-            messages=self.messages,
-        )
-        self.usage.add(response)
-        text = "".join(block.text for block in response.content if block.type == "text")
-        self.messages.append({"role": "assistant", "content": text})
-        return text
-
-
 # ------------------------------------------------------------------------- the pipeline
 
-OUTPUT_CONTRACT = """
-Reply with nothing but the files. For each file, one line
 
-FILE: <path relative to the repository root>
+def measure_apparatus(scratch: Path, workdir: Path) -> dict[str, Any]:
+    """Judge the apparatus phase by contract: does ISO 42010's loop close?
 
-followed by one fenced ```yaml block holding that file's entire content. No prose
-before, between or after the blocks -- anything else is discarded by the harness.
-"""
+    Gold has no stakeholders, concerns or views, so there is nothing to match against --
+    and inventing gold for them would make the number a similarity to one author's
+    documentation taste. The clauses below are checkable properties instead: concerns held
+    by someone, views governed by a viewpoint, every concern framed. Never gated, because
+    an unframed concern is an honest finding about a repository, not a skill regression.
+    """
+    from easkills import dsl  # local import: the harness reads the core, never the reverse
+
+    report = workdir / "conformance.json"
+    report.unlink(missing_ok=True)  # never read a previous invocation's answer
+    easkills("conformance", "--root", str(scratch), "--json", str(report))
+    clauses: dict[str, str] = {}
+    if report.is_file():
+        payload = json.loads(report.read_text(encoding="utf-8"))
+        clauses = {item["clause"]: item["status"] for item in payload.get("items", [])}
+    try:
+        promoted, _documents, _config = dsl.load(scratch, "approved")
+        counts = {
+            "stakeholders": len(promoted.stakeholders),
+            "concerns": len(promoted.concerns),
+            "views": len(promoted.views),
+        }
+    except Exception:  # noqa: BLE001 - an unloadable model is data, not a crash
+        counts = {"stakeholders": 0, "concerns": 0, "views": 0}
+    return {
+        "clauses": clauses,
+        "clausesPassed": sum(1 for status in clauses.values() if status == "pass"),
+        "clausesFailed": sum(1 for status in clauses.values() if status == "fail"),
+        **counts,
+    }
 
 
 def run_case(client: Any, case: str, model: str, workdir: Path) -> RunResult:
@@ -200,12 +165,43 @@ def run_case(client: Any, case: str, model: str, workdir: Path) -> RunResult:
             handle.write(f"\n\n## {phase}\n\n{text}\n")
 
     def write(files: dict[str, str]) -> None:
-        for relative, body in files.items():
-            target = (scratch / relative).resolve()
-            if not target.is_relative_to(scratch.resolve()):
-                raise ValueError(f"refusing to write outside the scratch repository: {relative}")
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(body, encoding="utf-8", newline="\n")
+        write_files(scratch, files)
+
+    def phase(label: str, session: Session, prompt: str, gate: list[str]) -> int:
+        """Ask, write the files, then repair against the real gate until it passes.
+
+        One shape for all three phases: the skills prescribe exactly this loop, capped at
+        three iterations, and a phase that cannot produce a parseable file is a failed run
+        rather than a partial one.
+
+        The final gate verdict is recorded, not inferred from the repair count. Exhausting
+        the cap and converging on the last attempt produce the same number, and a run that
+        gave up must not be reported beside one that succeeded.
+        """
+        reply = session.ask(prompt)
+        record(label, reply)
+        files = extract_files(reply)
+        if not files:
+            raise ValueError(f"{label} produced no parseable file")
+        write(files)
+        repairs = 0
+        while repairs < MAX_REPAIRS:
+            checked = easkills(*gate)
+            if checked.returncode == 0:
+                break
+            repairs += 1
+            reply = session.ask(
+                "The gate refused this. Repair it and reply with the corrected files in "
+                "the same format.\n\n" + checked.stdout
+            )
+            record(f"{label} repair {repairs}", reply)
+            files = extract_files(reply)
+            if not files:
+                raise ValueError(f"{label} repair produced no parseable file")
+            write(files)
+        result.repairs[label] = repairs
+        result.gates[label] = easkills(*gate).returncode
+        return repairs
 
     try:
         # ---------------------------------------------------------------- intake
@@ -214,43 +210,17 @@ def run_case(client: Any, case: str, model: str, workdir: Path) -> RunResult:
             f"=== {path.name} ===\n{path.read_text(encoding='utf-8')}"
             for path in sorted((scratch / "facts" / "sources").iterdir())
         )
-        intake = Session(
-            client,
-            model,
-            skill("ea-intake") + "\n\n" + OUTPUT_CONTRACT,
-            usage,
-        )
-        reply = intake.ask(
+        intake = Session(client, model, phase_system("intake"), usage)
+        phase(
+            "intake",
+            intake,
             "Extract the fact register for this repository.\n\n"
             "Write exactly two files: `facts/register/extracted.yaml` (key `facts:`) and "
             "`facts/entities.yaml` (key `entities:`). Every fact needs a verbatim quote "
             "that occurs in the source character-for-character.\n\n"
-            f"Deterministic chunking:\n{chunks.stdout}\n\nSources:\n{sources}"
+            f"Deterministic chunking:\n{chunks.stdout}\n\nSources:\n{sources}",
+            ["validate-facts", "--root", str(scratch)],
         )
-        record("intake", reply)
-        files = extract_files(reply)
-        if not files:
-            raise ValueError("intake produced no parseable file")
-        write(files)
-
-        repairs = 0
-        while repairs < MAX_REPAIRS:
-            gate = easkills("validate-facts", "--root", str(scratch))
-            if gate.returncode == 0:
-                break
-            repairs += 1
-            reply = intake.ask(
-                "The evidence gate refused this register. Repair it and reply with the "
-                "corrected files in the same format.\n\n" + gate.stdout
-            )
-            record(f"intake repair {repairs}", reply)
-            files = extract_files(reply)
-            if not files:
-                raise ValueError("intake repair produced no parseable file")
-            write(files)
-        result.repairs["facts"] = repairs
-        facts_gate = easkills("validate-facts", "--root", str(scratch))
-        result.gates["facts"] = facts_gate.returncode
 
         # ---------------------------------------------------------------- modelling
         register = "\n\n".join(
@@ -259,51 +229,54 @@ def run_case(client: Any, case: str, model: str, workdir: Path) -> RunResult:
         )
         from easkills import oracle  # local: the harness reads the same vocabulary the gate does
 
-        modelling = Session(
-            client,
-            model,
-            skill("ea-model") + "\n\n" + OUTPUT_CONTRACT,
-            usage,
-        )
-        reply = modelling.ask(
+        modelling = Session(client, model, phase_system("modelling"), usage)
+        phase(
+            "modelling",
+            modelling,
             "Model this fact register. Write the ArchiMate model into files under "
             "`model/staging/` (elements by layer, relationships in "
-            "`model/staging/relations.yaml`, views in `model/staging/views.yaml`), plus "
-            "stakeholders and concerns.\n\n"
+            "`model/staging/relations.yaml`).\n\n"
             "Every concept needs `owner`, `lastReviewed` (use 2026-08-06) and provenance "
             "citing a fact id, because these files will be promoted to the approved zone.\n\n"
             f"Permitted element types: {', '.join(sorted(oracle.element_types()))}\n"
             f"Permitted relationship types: {', '.join(sorted(oracle.relationship_types()))}\n\n"
-            f"The register:\n{register}"
+            f"The register:\n{register}",
+            ["validate", "--root", str(scratch), "--zone", "staging"],
         )
-        record("modelling", reply)
-        files = extract_files(reply)
-        if not files:
-            raise ValueError("modelling produced no parseable file")
-        write(files)
 
-        repairs = 0
-        while repairs < MAX_REPAIRS:
-            gate = easkills("validate", "--root", str(scratch), "--zone", "staging")
-            if gate.returncode == 0:
-                break
-            repairs += 1
-            reply = modelling.ask(
-                "The model gate refused this. Repair it and reply with the corrected files "
-                "in the same format.\n\n" + gate.stdout
-            )
-            record(f"modelling repair {repairs}", reply)
-            files = extract_files(reply)
-            if not files:
-                raise ValueError("modelling repair produced no parseable file")
-            write(files)
-        result.repairs["model"] = repairs
+        # ---------------------------------------------------------------- apparatus
+        # Stakeholders, concerns and views: the ISO 42010 loop. Gold holds none of these,
+        # so nothing here is scored against it -- the measurement is the conformance
+        # checklist the core computes, which is a contract rather than a similarity.
+        staged = "\n\n".join(
+            f"=== {path.relative_to(scratch)} ===\n{path.read_text(encoding='utf-8')}"
+            for path in sorted((scratch / "model" / "staging").rglob("*.yaml"))
+        )
+        apparatus = Session(client, model, phase_system("apparatus"), usage)
+        phase(
+            "apparatus",
+            apparatus,
+            "Add the ISO 42010 apparatus to this model: write "
+            "`model/staging/stakeholders.yaml` (keys `stakeholders:` and `concerns:`) and "
+            "`model/staging/views.yaml` (key `views:`).\n\n"
+            "Every stakeholder holds at least one concern, every concern is framed by at "
+            "least one view, every view declares a viewpoint and a `documentation` line "
+            "naming the concern it frames and for whom. Do not restate the elements; the "
+            "model below is already staged.\n\n"
+            f"The staged model:\n{staged}\n\nThe register:\n{register}",
+            ["validate", "--root", str(scratch), "--zone", "staging"],
+        )
 
         # ---------------------------------------------------------------- promote & score
         promotion = easkills("promote", "--root", str(scratch))
         result.gates["promotion"] = promotion.returncode
+        result.apparatus = measure_apparatus(scratch, workdir)
 
+        # Removed before the run, not after: the work directory is reused across
+        # invocations, and reading a file the *previous* run left behind would report last
+        # week's numbers as this run's -- a failure that looks exactly like a result.
         score_json = workdir / f"{case}-score.json"
+        score_json.unlink(missing_ok=True)
         scored = easkills(
             "score", "--root", str(scratch), "--gold", str(gold), "--json", str(score_json)
         )
@@ -314,11 +287,7 @@ def run_case(client: Any, case: str, model: str, workdir: Path) -> RunResult:
             raise ValueError(f"scoring produced no report: {scored.stdout[-600:]}")
     except Exception as exc:  # noqa: BLE001 - a failed run is data, not a crash
         result.error = f"{type(exc).__name__}: {exc}"
-    result.usage = {
-        "calls": usage.calls,
-        "inputTokens": usage.input_tokens,
-        "outputTokens": usage.output_tokens,
-    }
+    result.usage = usage.as_dict()
     result.seconds = round(time.monotonic() - started, 1)
     return result
 
@@ -338,6 +307,19 @@ def summarise(runs: list[RunResult]) -> dict[str, Any]:
             "failures": [run.error for run in of_case if not run.ok],
             "repairs": [run.repairs for run in of_case],
             "gatesGreen": sum(1 for run in good if run.scores.get("gatesOk")),
+            # Two different claims, kept apart: `gatesGreen` is the candidate repository
+            # passing its own validators at the end; `phasesGreen` is every phase gate
+            # having passed within the three-repair cap. A run that gave up on the third
+            # attempt can still leave a repository that validates, and reporting only the
+            # first number would hide the giving up.
+            "phasesGreen": sum(
+                1 for run in good if all(code == 0 for code in run.gates.values())
+            ),
+            "gaveUp": [
+                sorted(label for label, code in run.gates.items() if code != 0)
+                for run in good
+                if any(code != 0 for code in run.gates.values())
+            ],
         }
         categories: dict[str, list[float]] = {}
         for run in good:
@@ -348,6 +330,25 @@ def summarise(runs: list[RunResult]) -> dict[str, Any]:
             for name, values in sorted(categories.items())
         }
         entry["minF1"] = [round(run.scores.get("minF1", 0.0), 4) for run in good]
+        # Apparatus: reported per run, aggregated as a median, never compared to a baseline.
+        entry["apparatus"] = {
+            metric: sorted(values)[len(values) // 2]
+            for metric, values in sorted(
+                {
+                    metric: [run.apparatus[metric] for run in good if metric in run.apparatus]
+                    for metric in ("clausesPassed", "clausesFailed", "stakeholders", "concerns", "views")
+                }.items()
+            )
+            if values
+        }
+        entry["apparatusClauseFailures"] = sorted(
+            {
+                clause
+                for run in good
+                for clause, status in (run.apparatus.get("clauses") or {}).items()
+                if status == "fail"
+            }
+        )
         entry["tokens"] = {
             "input": sum(run.usage.get("inputTokens", 0) for run in of_case),
             "output": sum(run.usage.get("outputTokens", 0) for run in of_case),
@@ -359,12 +360,31 @@ def summarise(runs: list[RunResult]) -> dict[str, Any]:
 def render(summary: dict[str, Any], model: str) -> str:
     lines = [f"Golden-set harness -- model {model}", ""]
     for case, entry in summary.items():
-        lines.append(f"{case}: {entry['completed']}/{entry['runs']} runs completed, "
-                     f"{entry['gatesGreen']} with green gates")
+        lines.append(
+            f"{case}: {entry['completed']}/{entry['runs']} runs completed, "
+            f"{entry['gatesGreen']} with green gates, "
+            f"{entry.get('phasesGreen', entry['gatesGreen'])} with every phase gate passed"
+            + (f"  (gave up on: {entry['gaveUp']})" if entry.get("gaveUp") else "")
+        )
         for name, spread in entry["f1"].items():
             width = "{:<16}".format(name)
             lines.append(
                 f"  {width} min {spread['min']:.0%}  median {spread['median']:.0%}  max {spread['max']:.0%}"
+            )
+        if entry.get("apparatus"):
+            apparatus = entry["apparatus"]
+            failures = entry.get("apparatusClauseFailures") or []
+            lines.append(
+                "  {:<16} {} stakeholder(s), {} concern(s), {} view(s); ISO clauses "
+                "{} pass / {} fail{}  -- diagnostic, not gated".format(
+                    "apparatus",
+                    apparatus.get("stakeholders", 0),
+                    apparatus.get("concerns", 0),
+                    apparatus.get("views", 0),
+                    apparatus.get("clausesPassed", 0),
+                    apparatus.get("clausesFailed", 0),
+                    f" ({', '.join(failures)})" if failures else "",
+                )
             )
         if entry["failures"]:
             lines.append("  failures: " + "; ".join(entry["failures"]))
@@ -376,20 +396,34 @@ def render(summary: dict[str, Any], model: str) -> str:
     return "\n".join(lines)
 
 
-def compare(summary: dict[str, Any], baseline: dict[str, Any]) -> list[str]:
-    """Regressions against the committed baseline, by median F1 per category."""
+def compare(summary: dict[str, Any], baseline: dict[str, Any]) -> tuple[list[str], list[str]]:
+    """Regressions and movements against the committed baseline, per category.
+
+    Returns ``(regressions, movements)``. A regression is a median that fell **below the
+    baseline's observed minimum** -- outside the spread the baseline itself measured. A
+    median that fell but stayed inside that spread is a *movement*: reported, not a
+    failure. With three runs at API default temperature, a three-point median move says
+    nothing, and the first baseline comparison duly flagged one (`contested/entities`
+    83% -> 80%, spread 77-83 versus 67-86) alongside a real one. A gate that cries wolf
+    gets ignored, which costs more than the noise it reports.
+    """
     regressions: list[str] = []
+    movements: list[str] = []
     for case, entry in summary.items():
         before = (baseline.get("cases") or {}).get(case)
         if not before:
             continue
         for name, spread in entry["f1"].items():
             was = (before.get("f1") or {}).get(name)
-            if was and spread["median"] + 1e-9 < was["median"]:
-                regressions.append(
-                    f"{case}/{name}: median {was['median']:.0%} -> {spread['median']:.0%}"
-                )
-    return regressions
+            if not was or spread["median"] + 1e-9 >= was["median"]:
+                continue
+            moved = f"{case}/{name}: median {was['median']:.0%} -> {spread['median']:.0%}"
+            if spread["median"] + 1e-9 < was.get("min", was["median"]):
+                regressions.append(f"{moved} (below the baseline's own minimum {was['min']:.0%})")
+            else:
+                movements.append(f"{moved} (inside the baseline spread "
+                                 f"{was['min']:.0%}-{was['max']:.0%})")
+    return regressions, movements
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -422,6 +456,7 @@ def main(argv: list[str] | None = None) -> int:
                 ok=record["ok"],
                 scores=record["scores"],
                 repairs=record["repairs"],
+                apparatus=record.get("apparatus") or {},  # absent in pre-v2 record files
                 usage=record["usage"],
                 error=record["error"],
             )
@@ -436,16 +471,13 @@ def main(argv: list[str] | None = None) -> int:
             )
             + "\n",
             encoding="utf-8",
+            newline="\n",  # a baseline whose bytes depend on the author's OS is diff noise
         )
         print(f"baseline written from {args.from_records}")
         return 0
 
     cases = [args.case] if args.case else sorted(CASES)
-    try:
-        import anthropic
-    except ImportError:
-        raise SystemExit("pip install -r requirements-eval.txt") from None
-    client = anthropic.Anthropic(api_key=load_key())
+    client = api_client()
 
     workdir = args.workdir or Path(os.environ.get("TEMP", "/tmp")) / "ea-harness"
     workdir.mkdir(parents=True, exist_ok=True)
@@ -467,6 +499,7 @@ def main(argv: list[str] | None = None) -> int:
         args.out.write_text(
             json.dumps([run.__dict__ for run in runs], indent=2, default=str) + "\n",
             encoding="utf-8",
+            newline="\n",
         )
 
     baseline = json.loads(BASELINE_PATH.read_text(encoding="utf-8")) if BASELINE_PATH.is_file() else {}
@@ -474,11 +507,14 @@ def main(argv: list[str] | None = None) -> int:
         BASELINE_PATH.write_text(
             json.dumps({"model": args.model, "runs": args.runs, "cases": summary}, indent=2) + "\n",
             encoding="utf-8",
+            newline="\n",
         )
         print(f"baseline written to {BASELINE_PATH}")
         return 0
 
-    regressions = compare(summary, baseline)
+    regressions, movements = compare(summary, baseline)
+    for line in movements:
+        print(f"moved, within the measured spread: {line}")
     if regressions:
         print("REGRESSION against the baseline:")
         for line in regressions:

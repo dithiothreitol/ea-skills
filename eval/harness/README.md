@@ -22,8 +22,10 @@ Then the pipeline the skills describe, driven by the model:
 1. `chunk` (deterministic), then `ea-intake`'s prose → `facts/register/` + `entities.yaml`
 2. `validate-facts` → repair → revalidate, **three iterations then stop** (the cap the
    skills prescribe, and the research they cite)
-3. `ea-model`'s prose → `model/staging/` → `validate --zone staging` → same repair loop
-4. `promote` → `score --gold <case>`
+3. `ea-model` + `ea-capability-map` → `model/staging/` → `validate --zone staging` → same
+   repair loop
+4. `ea-stakeholders` + `ea-views` → the ISO 42010 apparatus → same gate, same repair loop
+5. `promote` → `score --gold <case>` + `conformance` for the apparatus
 
 Every gate is the real command, run as a subprocess exactly as a user would run it.
 
@@ -32,13 +34,27 @@ Every gate is the real command, run as a subprocess exactly as a user would run 
 It measures **agreement with one gold repository**, which is a regression signal for the
 skill text — not an absolute grade. A candidate that models at finer granularity than
 gold scores low on precision while being defensible architecture; read the categories,
-not the headline.
+not the headline. Since 0.11.0 the score also **names** what it did not match, so reading
+the categories no longer means diffing two YAML trees by hand.
 
-It measures **two skills**: `ea-intake` and `ea-model`, whose prose is what the harness
-puts in front of the model. Everything else in `skills/` is unmeasured — including
-`ea-capability-map`, even though the modelling phase produces capabilities, because
-`ea-model` is the file the run actually reads. Widening the harness means widening that
-list deliberately, not assuming coverage it does not have.
+It measures the prose of **5 of the 22 skills**, declared in `MEASURED_SKILLS` in
+`run.py` and pinned to this file by a test:
+
+| Phase | Skills | Judged by |
+|---|---|---|
+| intake | `ea-intake` | score against gold (facts, entities) |
+| modelling | `ea-model`, `ea-capability-map` | score against gold (elements, relationships) |
+| apparatus | `ea-stakeholders`, `ea-views` | **contract**: ISO 42010 conformance clauses |
+
+The apparatus phase is judged differently on purpose. Gold holds no stakeholders, concerns
+or views, and inventing them would turn the number into a similarity to one author's
+documentation taste. What is checkable is whether the loop closes — concerns held by
+someone, views governed by a viewpoint, every concern framed — so the measurement is the
+`conformance` checklist the core already computes, reported and never gated. An unframed
+concern is an honest finding about a repository, not a skill regression.
+
+Everything else in `skills/` is unmeasured by this harness; `docs/SKILL-COVERAGE.md` says
+which instrument covers which skill, and where nothing does.
 
 It does **not** measure a host like Claude Code executing the same skills with its own
 tools, planning and multi-turn behaviour. This harness scripts the loop; a real agent
@@ -51,9 +67,17 @@ skills and quite a lot about that particular sample.
 
 ## Regression gate
 
-`baseline.json` holds the committed medians. A plain run compares against it and exits
-1 if any category's median falls. Rewrite it with `--baseline` only when the new numbers
-are understood and deliberate — the point of a baseline is that moving it is a decision.
+`baseline.json` holds the committed spread — min, median and max per category. A plain run
+compares against it and exits 1 when a median falls **below the baseline's own minimum**,
+which is a move outside the variation the baseline itself measured. A median that falls but
+stays inside that spread is printed as a *movement*, not a failure: with three runs at API
+default temperature a three-point median move says nothing, and the first comparison duly
+flagged one such (`contested/entities` 83% → 80%, baseline spread 77–83) beside a real one.
+A gate that cries wolf gets ignored, which costs more than the noise it reports.
+
+Rewrite the baseline with `--baseline` only when the new numbers are understood and
+deliberate — the point of a baseline is that moving it is a decision. `--from-records`
+rebuilds it from a saved `--out` file, so accepting a number never costs another run.
 
 ## Why it lives here and not in `easkills/`
 
@@ -96,13 +120,15 @@ behaviour it invented*: `SchedPro → Weekend Run Planning` where gold has
 present as a direct edge.
 
 That last one is not a scoring bug and was checked before being reported. It is the
-**derived-relationship gap** already listed in [RULES.md](../../docs/RULES.md) as not
+**derived-relationship gap** then listed in [RULES.md](../../docs/RULES.md) as not
 implemented: ArchiMate's derivation rules (DR1–DR8) are exactly the machinery that would
-say "gold's edge is this candidate's two-hop path". Until that exists, relationship F1
-compares direct edges between models of different granularity, and two such models share
-none. Read it as *"the candidate did not draw the same edges"*, never as *"the candidate
-connected nothing"* — `rel-structural`, the label-independent diagnostic, cascades the
-same way and cannot separate them either.
+say "gold's edge is this candidate's two-hop path". Read it as *"the candidate did not draw
+the same edges"*, never as *"the candidate connected nothing"* — `rel-structural`, the
+label-independent diagnostic, cascades the same way and cannot separate them either.
+
+*(Since 0.11.0 those rules exist — `easkills/derive.py` — and this measured case is
+literally an instance of DR4. A gold edge the candidate's model implies is now half a
+match, with the rule and the abstracted-away element printed beside the number.)*
 
 The first two are actionable against skill prose. The third is a measurement limit,
 recorded rather than papered over — and rewriting the scorer a third time to make a
@@ -137,3 +163,91 @@ The candidate is arguably following the skill more closely than gold does. Chang
 golden case is a separate decision from changing a skill, so it is recorded here and not
 taken quietly — but it is the reason this baseline was accepted with a category lower
 than before, which is exactly the kind of trade-off a baseline exists to make visible.
+
+**That question was answered in the next release, in gold's favour of the run:** the two
+compound facts were split into four atomic ones (`clinic` now has nine), and
+`eval/golden/README.md` records the rule it establishes — a case may be corrected against a
+rule the skills state, never against a run's output.
+
+## The second baseline (2026-08-06, claude-sonnet-5, 3 runs/case, harness v2)
+
+Three things changed at once, so read the table with the caveat that follows it: gold's
+facts are atomic, the scorer credits derived relationships, and the modelling phase now
+also reads `ea-capability-map`.
+
+| Case | facts | entities | elements | relationships | apparatus |
+|---|---|---|---|---|---|
+| `clinic` | 74% → **87%** | 71% → 67% | 50% → 43% | 25% → 20% | 3 stakeholders, 3 concerns, 3 views; 7 ISO clauses pass |
+| `contested` | 67% → 67% | 80% → 71% | 50% → **56%** | 0% → **11%** | 2 stakeholders, 3 concerns, 2 views; 7 ISO clauses pass |
+
+All six runs green on their own gates; two needed one repair, none needed three.
+
+**What is comparable, and what is not.** `facts` is: +13 points on `clinic`, exactly the
+nine half credits the compound statements were costing. `relationships` on `contested` is:
+0% → 11%, and the derivation rules are why — a `Serving` edge gold draws directly is now
+recognised in a candidate's two-hop chain (`derived DR4 via <element>`), which is printed
+beside the number. Everything touching **element counts is not comparable**: adding
+`ea-capability-map` to the measured phase changed the prose the run reads, and the runs
+duly produced a capability layer — three capabilities per `clinic` run, against a gold
+model that has none. That is the whole of `clinic/elements` 50% → 43% and most of
+`clinic/relationships` 25% → 20%, and the gate flagged the latter as a regression because
+it fell below the old baseline's minimum.
+
+**It was re-baselined rather than "fixed", and the reason is the honest one:** the harness
+now measures a different, larger surface of prose, so the old numbers are not a yardstick
+for the new ones. Moving a baseline because the instrument changed is legitimate; moving it
+because the result was disappointing is not, and the difference has to be written down each
+time — which is what this section is.
+
+**The open question this leaves, pointing at gold again.** Three independent runs each
+produced the same three capabilities from the clinic interview (appointment scheduling,
+patient records, billing), and gold's `clinic` model has no Strategy layer at all — while
+`ea-model` says to build the capability map **first** and treat it as the spine. Either the
+runs are inventing a layer the source does not support, or the golden case contradicts the
+method the skills teach. It is recorded here and **not** acted on in the same release that
+measured it: the last time a question pointed at gold, answering it in the next release,
+with the rule stated, is what kept the correction from looking like a number being tuned.
+
+## Across model tiers (2026-08-06, `clinic`, 3 runs each, informational)
+
+The baseline is defined for the default model; these runs answer a different question —
+does the prose carry across tiers, or is it tuned to one?
+
+| Model | facts | entities | elements | relationships | repair loops | tokens in/out |
+|---|---|---|---|---|---|---|
+| `claude-haiku-4-5` | 79% | 60% | **55%** | 9% | **two runs used all three** | 200k / 38k |
+| `claude-sonnet-5` | **87%** | **67%** | 43% | 20% | at most one | 79k / 61k |
+| `claude-opus-5` | 77% | 57% | 44% | **30%** | at most one | 90k / 57k |
+
+Every run of every tier passed its own gates. Three things worth reading off this:
+
+- **No tier dominates**, so the prose is not tuned to one model. Extraction is best on
+  sonnet, relationships improve monotonically with tier, elements are highest on the
+  *weakest* model.
+- **That element result is not a paradox, it is the granularity effect again.** Two of the
+  three haiku runs produced no capability layer at all, and gold's `clinic` has none — so
+  restraint scores well and elaboration is punished, whichever model does the elaborating.
+- **Repairs are where a weaker model spends its budget**: haiku used 2.5× the input tokens
+  of sonnet for less than two-thirds of the output, because every repair resends the
+  conversation. The three-iteration cap is what keeps that bounded, and the gate output is
+  what a weaker model has instead of recall.
+
+Informational, not a gate: `--min-f1` thresholds and `baseline.json` stay defined against
+the default model, and a run under `--model` something-else compares against a baseline it
+was not measured with (the harness will happily print a "regression" that is a tier
+difference — read the model line in the header).
+
+## The governance contracts (2026-08-06, claude-sonnet-5, 2 runs each)
+
+| Contract | Runs holding every check | Notes |
+|---|---|---|
+| `decision` (`ea-adr`) | 2/2 | MADR fields, three options with pros *and* cons, bound to `app-wms` only |
+| `dispensation` (`ea-dispensation`) | 2/2 | bounded expiry, a real standard waived, the board named as grantor |
+| `supersede` (`ea-adr`) | 2/2 | all three moves, including the elements carried over — no `CORR001` |
+
+Cheap (≈25k in / 8k out for six runs) and, so far, uneventful: the governance prose produces
+records that satisfy their own rules, including the supersession paragraph that exists
+because `CORR001` catches what happens when the third move is forgotten. One run needed a
+single repair against `validate-gov`. A contract harness that never fails is only evidence
+if the contracts can fail — which is why `tests/test_contract_harness.py` proves each one
+rejects the mutation it targets.
