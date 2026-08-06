@@ -7,6 +7,33 @@ project's build phases (design log with per-decision rationale:
 
 ## [Unreleased]
 
+### Changed — the first skill fixes the harness paid for
+
+Three prose defects, found by measurement rather than by reading, and re-measured after
+the fix. Elements **doubled** on both golden cases; relationships came off the floor.
+
+- **`ea-intake` named the kinds of thing that get an entity.** The step said "one entry
+  per real-world thing" and every example around it was an application — so the runs
+  produced entities for applications and nothing else, missing the actor, the
+  integration and the server the same source named. Entity F1 44% → 71% on `clinic`.
+- **`ea-model` gained a *Granularity* rule.** "Build the capability map first" plus a
+  layer-by-layer list reads as a set of boxes to fill, and the runs filled them: 19–23
+  elements from a seven-fact source, including a Current/Target state pair from a source
+  describing no plan. The rule states the measured failure and forbids the specific
+  move — inserting intermediate behaviour between two things a source connects directly.
+  Elements 25% → 50% (`clinic`), 39% → 50% (`contested`); relationships 0% → 25%.
+- **`ea-capability-map`'s "six to twelve capabilities" is now a shape, not a target.** A
+  single interview supports the capabilities it names; reaching six by inventing four is
+  what the skill's own rules of evidence exist to prevent.
+
+The gate flagged two falls, and both were investigated rather than accepted or explained
+away. `contested/entities` 83% → 80% is noise against a 67–86 spread. `clinic/facts`
+83% → 74% is systematic: the candidate now writes ten facts where gold has seven,
+splitting gold's *compound* statements — and `ea-intake` says a fact is one atomic
+statement, so the run is arguably following the skill more closely than the golden case
+does. Recorded as an open question about **gold**, not patched away in the scorer, and
+the baseline was moved deliberately with that trade-off written down.
+
 ### Added — the golden-set harness: skill prose, measured
 
 The core has 399 tests. The skills — which are the product — had none, because they are

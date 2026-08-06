@@ -97,12 +97,32 @@ you toward.
 Maintain `facts/entities.yaml`: one entry per real-world thing, with every alias the
 sources use for it.
 
+**Every named thing, not just the systems.** People and teams, roles, processes,
+integrations, data, locations and hardware all get entries — a measured run of this
+skill produced entities for three applications and nothing else, missing the actor, the
+integration and the server the same source named, because every example here used to be
+an application. If a source names it and later text refers back to it, it is an entity:
+
 ```yaml
 entities:
   - id: erp-core
     name: ERP Core
     kind: application        # informal hint; ArchiMate typing happens later
     aliases: [the ERP, ERP]
+
+  - id: front-desk
+    name: Front Desk
+    kind: actor              # people and teams count
+    aliases: [reception, the front desk staff]
+
+  - id: order-api
+    name: Order API
+    kind: integration        # so does the thing between two systems
+
+  - id: erp-server
+    name: ERP Server
+    kind: technology
+    aliases: [the server in the back office]
 ```
 
 "The portal", "online order portal" and "Order Portal" are one entity or the model

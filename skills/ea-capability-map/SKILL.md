@@ -34,6 +34,12 @@ you are looking at a process.
    page and survives argument is worth more than a three-level taxonomy nobody
    confirmed. Decompose (via `Composition` from parent to child) only where the
    sources actually differentiate.
+
+   That range is for an enterprise-wide map built on enterprise-wide evidence. **It is
+   a shape, not a target**: a single interview supports the capabilities it names and
+   no more. Reaching six by inventing four is the failure this skill's rules of
+   evidence exist to prevent, and a measured run did exactly that on a source with
+   seven facts in it.
 3. **Type them `Capability`** (Strategy layer), ids `cap-<slug>`, write to
    `model/staging/strategy.yaml` (or the file the repository already uses).
 4. **Attach the rest of the model.** The load-bearing relationship is

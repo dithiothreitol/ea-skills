@@ -80,14 +80,37 @@ governance records and documentation.
 
 ## Modelling order
 
-Build the **capability map first** and treat it as the spine. It is the most durable and
-most used artifact in practice, and once applications, processes and data attach to
-capabilities, portfolio views (redundancy, investment, heat maps) become derivable
-instead of needing separate modelling.
+Build the **capability map first** and treat it as the spine — *from the capabilities
+the sources actually describe*. It is the most durable and most used artifact in
+practice, and once applications, processes and data attach to capabilities, portfolio
+views (redundancy, investment, heat maps) become derivable instead of needing separate
+modelling. A capability nobody mentioned is not a spine, it is scaffolding.
 
 Then work outward: business actors and processes, application components and services,
 data objects, technology nodes. Add a relationship only when a source supports it; an
 unevidenced dependency is a guess, and guesses are what make a model untrustworthy.
+
+## Granularity: model what the evidence names, at the grain it names it
+
+This is the measured failure mode of this skill, so it is stated as a rule. A run
+against a **seven-fact** source produced **nineteen to twenty-three elements**, among
+them a "Current State" and "Target State" pair from a source that describes no plan.
+Every one of them passed the gate, because inventing a *plausible* element breaks no
+rule — which is exactly why the discipline has to be yours.
+
+* **One element per thing the sources name.** Not one per ArchiMate concept you could
+  justify. The layer list above is where to look, not a set of boxes to fill.
+* **Do not insert intermediate behaviour to make the picture look complete.** If a
+  source says the scheduling system serves dispatch, model
+  `SchedPro --Serving--> Dispatch`. Adding a "Weekend Run Planning" process between them
+  because ArchiMate has processes replaces a stated fact with a plausible one — and the
+  relationship a reader was looking for is now absent from a model that appears richer.
+* **An element whose only justification is completeness does not belong in the model.**
+  If you genuinely need it to express something, it is `assumed: true` with a rationale
+  saying what would confirm it; `PROV006` then lists it for a human to accept or drop.
+* **Elaboration is not thoroughness.** A model twice the size of its evidence is not a
+  better model, it is a less falsifiable one: the reader cannot tell which parts came
+  from the interview and which from a modelling habit.
 
 ## Element metadata
 

@@ -403,9 +403,42 @@ def main(argv: list[str] | None = None) -> int:
         "--baseline", action="store_true", help="rewrite eval/harness/baseline.json from this run"
     )
     parser.add_argument(
+        "--from-records",
+        type=Path,
+        help="rebuild the baseline from a saved --out file instead of running again "
+        "(the decision to accept a number is separate from the run that produced it)",
+    )
+    parser.add_argument(
         "--workdir", type=Path, help="scratch directory (default: a temp dir, kept for inspection)"
     )
     args = parser.parse_args(argv)
+
+    if args.from_records:
+        records = json.loads(args.from_records.read_text(encoding="utf-8"))
+        replayed = [
+            RunResult(
+                case=record["case"],
+                model=record["model"],
+                ok=record["ok"],
+                scores=record["scores"],
+                repairs=record["repairs"],
+                usage=record["usage"],
+                error=record["error"],
+            )
+            for record in records
+        ]
+        summary = summarise(replayed)
+        print(render(summary, replayed[0].model if replayed else args.model))
+        BASELINE_PATH.write_text(
+            json.dumps(
+                {"model": replayed[0].model if replayed else args.model, "runs": args.runs, "cases": summary},
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        print(f"baseline written from {args.from_records}")
+        return 0
 
     cases = [args.case] if args.case else sorted(CASES)
     try:

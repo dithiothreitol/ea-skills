@@ -34,6 +34,12 @@ skill text — not an absolute grade. A candidate that models at finer granulari
 gold scores low on precision while being defensible architecture; read the categories,
 not the headline.
 
+It measures **two skills**: `ea-intake` and `ea-model`, whose prose is what the harness
+puts in front of the model. Everything else in `skills/` is unmeasured — including
+`ea-capability-map`, even though the modelling phase produces capabilities, because
+`ea-model` is the file the run actually reads. Widening the harness means widening that
+list deliberately, not assuming coverage it does not have.
+
 It does **not** measure a host like Claude Code executing the same skills with its own
 tools, planning and multi-turn behaviour. This harness scripts the loop; a real agent
 decides it. Treat the two as different instruments: this one is repeatable and cheap,
@@ -101,3 +107,33 @@ same way and cannot separate them either.
 The first two are actionable against skill prose. The third is a measurement limit,
 recorded rather than papered over — and rewriting the scorer a third time to make a
 number look better would be exactly the wrong response to it.
+
+## What the prose fixes did (same day, same harness)
+
+`ea-intake`'s entity step now names the kinds of thing that get entries instead of
+illustrating only applications; `ea-model` gained a *Granularity* rule against inserting
+intermediate behaviour to make a picture look complete.
+
+| Case | facts | entities | elements | relationships |
+|---|---|---|---|---|
+| `clinic` | 83% → **74%** | 44% → **71%** | 25% → **50%** | 0% → **25%** |
+| `contested` | 67% → 67% | 83% → 80% | 39% → **50%** | 0% → 0% (max 12%) |
+
+Elements doubled on both cases and relationships came off the floor on `clinic`. Two
+numbers fell, and the gate flagged both — which is the point of having one:
+
+- **`contested/entities` 83% → 80%** is noise. The baseline spread was 77–83, the new
+  one 67–86; with three runs a 3-point median move says nothing.
+- **`clinic/facts` 83% → 74%** is systematic (all three runs identical, both times) and
+  worth understanding. The candidate now writes **ten** facts where gold has seven,
+  because it splits gold's compound statements: gold has *"Patients book appointments
+  through the online booking portal **or by calling the front desk**"* as one fact, the
+  candidate as two. The scorer treats a split as a match on covered source ground but
+  gives **half credit** on the statement, so nine partial credits drag F1 down.
+
+That leaves an honest question pointing at gold rather than at the run: `ea-intake` says
+a fact is **one atomic statement**, and gold's clinic register carries two compound ones.
+The candidate is arguably following the skill more closely than gold does. Changing a
+golden case is a separate decision from changing a skill, so it is recorded here and not
+taken quietly — but it is the reason this baseline was accepted with a category lower
+than before, which is exactly the kind of trade-off a baseline exists to make visible.
