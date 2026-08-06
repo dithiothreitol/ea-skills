@@ -1,0 +1,3 @@
+# Evaluation harness only -- never imported by the deterministic core, never in
+# requirements.txt, never run by the default CI gate. See eval/harness/README.md.
+anthropic>=0.40

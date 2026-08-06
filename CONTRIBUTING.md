@@ -25,6 +25,23 @@ from the network at runtime are rejected on principle (see
 The tooling is used from a clone (`python -m easkills …`): the oracle and the generated
 schemas are repository data, so there is no wheel to install and no PyPI release.
 
+## Measuring a change to a skill
+
+The gate below proves the *core*. It cannot prove the skills, which are prose an agent
+follows -- so a change to `skills/*/SKILL.md` is measured instead:
+
+```bash
+pip install -r requirements-eval.txt
+export ANTHROPIC_API_KEY=...          # or .env, which is gitignored
+python eval/harness/run.py --all --runs 3
+```
+
+The harness runs the skills blind against the golden cases and scores the result
+against `eval/harness/baseline.json`, failing if any category's median falls. It calls
+an API, so it is deliberately **not** in the gate: see
+[`eval/harness/README.md`](eval/harness/README.md) for what the number means and what
+it does not.
+
 ## Run the full gate before pushing
 
 Every `easkills` invocation CI runs is in this block, and a test

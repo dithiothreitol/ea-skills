@@ -5,6 +5,37 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
+## [Unreleased]
+
+### Added — the golden-set harness: skill prose, measured
+
+The core has 399 tests. The skills — which are the product — had none, because they are
+prose an agent follows and pytest cannot execute them. `eval/harness/run.py` closes
+that: it builds a scratch repository holding **only** a golden case's sources and
+config, runs the skills blind through the pipeline they describe (chunk → intake →
+evidence gate → model → model gate → promote), with the three-repair cap the skills
+prescribe, and scores the result against gold.
+
+- **`--runs 3` by default, reporting min/median/max per category.** Runs use the API
+  default temperature; a single run says little about the skills and a lot about that
+  sample. The spread is the honest part.
+- **`baseline.json` makes it a gate.** A plain run compares medians against the
+  committed baseline and exits 1 on a regression. Rewriting the baseline is a decision,
+  taken with `--baseline`, never a side effect.
+- **The core stays offline.** This is the first code in the repository that calls a
+  network API, so the separation is structural rather than conventional:
+  `tests/test_harness_quarantine.py` fails if any `easkills/` module imports an HTTP
+  client or the SDK, if the core imports the harness, or if the SDK reaches
+  `requirements.txt` — the same shape as the rule keeping `ui` out of artifact
+  generators. `.env` is gitignored and a test asserts no secrets file is tracked.
+- **Blindness is asserted on the harness's own source**: it may copy `facts/sources/`
+  and `ea.config.yaml` out of a golden case and nothing else. A harness that leaked
+  gold's register would report a perfect number forever, and the failure would look
+  exactly like success.
+- Not in the push gate, by design: it costs tokens and is non-deterministic. A separate
+  `workflow_dispatch` workflow runs it on demand and uploads the records rather than
+  committing them.
+
 ## [0.10.0] — 2026-08-05
 
 ### Changed — what an end-to-end adoption run found

@@ -1,0 +1,54 @@
+# The golden-set harness calls a language-model API, so it is **never** part of the
+# push gate: it costs tokens and it is not deterministic, and a gate that is both is
+# neither trustworthy nor affordable. Run it deliberately, from the Actions tab or
+# locally, when skill prose changes.
+
+name: Evaluate skills against the golden set
+
+on:
+  workflow_dispatch:
+    inputs:
+      case:
+        description: "Golden case (blank = all)"
+        required: false
+        default: ""
+      runs:
+        description: "Runs per case (the spread is the point)"
+        required: false
+        default: "3"
+      model:
+        description: "Model id"
+        required: false
+        default: "claude-sonnet-5"
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-eval.txt
+
+      - name: Run the harness
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python eval/harness/run.py \
+            ${{ github.event.inputs.case && format('--case {0}', github.event.inputs.case) || '--all' }} \
+            --runs ${{ github.event.inputs.runs }} \
+            --model ${{ github.event.inputs.model }} \
+            --out run-records.json
+
+      # Uploaded rather than committed: a number produced by a non-deterministic run
+      # becomes the baseline only when a human has read it and decided it should.
+      - name: Keep the records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-records
+          path: run-records.json

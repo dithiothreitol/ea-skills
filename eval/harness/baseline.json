@@ -1,0 +1,108 @@
+{
+  "model": "claude-sonnet-5",
+  "runs": 3,
+  "cases": {
+    "clinic": {
+      "runs": 3,
+      "completed": 3,
+      "failures": [],
+      "repairs": [
+        {
+          "facts": 0,
+          "model": 1
+        },
+        {
+          "facts": 0,
+          "model": 0
+        },
+        {
+          "facts": 0,
+          "model": 2
+        }
+      ],
+      "gatesGreen": 3,
+      "f1": {
+        "elements": {
+          "min": 0.24,
+          "median": 0.25,
+          "max": 0.2609
+        },
+        "entities": {
+          "min": 0.4,
+          "median": 0.4444,
+          "max": 0.4444
+        },
+        "facts": {
+          "min": 0.8342,
+          "median": 0.8342,
+          "max": 0.8342
+        },
+        "relationships": {
+          "min": 0.0,
+          "median": 0.0,
+          "max": 0.0
+        }
+      },
+      "minF1": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tokens": {
+        "input": 51572,
+        "output": 65965
+      }
+    },
+    "contested": {
+      "runs": 3,
+      "completed": 3,
+      "failures": [],
+      "repairs": [
+        {
+          "facts": 0,
+          "model": 0
+        },
+        {
+          "facts": 0,
+          "model": 1
+        },
+        {
+          "facts": 0,
+          "model": 2
+        }
+      ],
+      "gatesGreen": 3,
+      "f1": {
+        "elements": {
+          "min": 0.3793,
+          "median": 0.3929,
+          "max": 0.4348
+        },
+        "entities": {
+          "min": 0.7692,
+          "median": 0.8333,
+          "max": 0.8333
+        },
+        "facts": {
+          "min": 0.6117,
+          "median": 0.6731,
+          "max": 0.6731
+        },
+        "relationships": {
+          "min": 0.0,
+          "median": 0.0,
+          "max": 0.0
+        }
+      },
+      "minF1": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tokens": {
+        "input": 60446,
+        "output": 72140
+      }
+    }
+  }
+}

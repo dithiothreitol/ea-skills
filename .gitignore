@@ -11,3 +11,13 @@ dist/
 **/build/model.xml
 **/build/*.svg
 **/build/report/
+
+# Secrets: never committed. The eval harness reads ANTHROPIC_API_KEY from the
+# environment (or from this file, locally); the deterministic core never reads it.
+.env
+.env.*
+!.env.example
+
+# Raw harness records: evidence for one run, not a repository artifact. The medians
+# that matter live in eval/harness/baseline.json, which is committed.
+eval/harness/last-runs.json
