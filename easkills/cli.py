@@ -760,7 +760,10 @@ def cmd_propose(args: argparse.Namespace) -> int:
             out=args.out,
             dry_run=args.dry_run,
         )
-    except propose_mod.ProposeRefusal as exc:
+    except (propose_mod.ProposeRefusal, alignment.AlignmentError) as exc:
+        # AlignmentError too: `--from align` reaches the same loader `align` does, so a
+        # typo in --reference must produce the same one-line refusal there as here, not
+        # a traceback because this command forgot to catch it.
         print(_error(str(exc)))
         return 1
     print(propose_mod.render(report))

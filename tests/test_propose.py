@@ -12,7 +12,7 @@ from datetime import date
 import pytest
 import yaml
 
-from easkills import dsl, promote, propose, validate
+from easkills import alignment, dsl, promote, propose, validate
 
 AS_OF = date(2026, 8, 7)
 
@@ -27,16 +27,24 @@ def finco(tmp_path, repo_root):
 
 @pytest.fixture
 def overlapping(tmp_path):
+    """One capability realized twice, in a repository that is otherwise clean.
+
+    Clean matters: `test_generated_staging_validates_but_will_not_promote` asserts the
+    *generated* file validates, and a fixture with its own `PROV001` errors would make
+    that assertion pass or fail for the wrong reason.
+    """
     approved = tmp_path / "model" / "approved"
     approved.mkdir(parents=True)
+    meta = "    owner: ea@example.test\n    lastReviewed: 2026-08-01\n    assumed: true\n"
+    why = "    rationale: A fixture concept, authored for a test rather than extracted.\n"
     (approved / "m.yaml").write_text(
         "elements:\n"
-        "  - id: cap-billing\n    type: Capability\n    name: Billing\n"
-        "  - id: app-legacy\n    type: ApplicationComponent\n    name: Legacy Suite\n"
-        "  - id: app-saas\n    type: ApplicationComponent\n    name: SaaS Platform\n"
+        f"  - id: cap-billing\n    type: Capability\n    name: Billing\n{meta}{why}"
+        f"  - id: app-legacy\n    type: ApplicationComponent\n    name: Legacy Suite\n{meta}{why}"
+        f"  - id: app-saas\n    type: ApplicationComponent\n    name: SaaS Platform\n{meta}{why}"
         "relationships:\n"
-        "  - id: rel-a\n    type: Realization\n    source: app-legacy\n    target: cap-billing\n"
-        "  - id: rel-b\n    type: Realization\n    source: app-saas\n    target: cap-billing\n",
+        f"  - id: rel-a\n    type: Realization\n    source: app-legacy\n    target: cap-billing\n{meta}{why}"
+        f"  - id: rel-b\n    type: Realization\n    source: app-saas\n    target: cap-billing\n{meta}{why}",
         encoding="utf-8",
         newline="\n",
     )
@@ -118,16 +126,29 @@ def test_a_checkpoint_that_names_no_element_produces_nothing(broken_root, tmp_pa
     assert not [o for o in origins if o.startswith("RDY010")]
 
 
-def test_an_overlap_becomes_a_work_package_bound_to_its_realizers(overlapping):
-    """The one case where `appliesTo` can be prefilled honestly: the elements a
-    rationalization touches *are* the realizers the query already named."""
+def test_an_overlap_becomes_a_work_package_naming_its_realizers(overlapping):
     report = propose.propose(overlapping, source="overlap", as_of=AS_OF, dry_run=True)
     assert [p.id for p in report.proposals] == ["wp-rationalize-cap-billing"]
     stub = report.proposals[0]
     assert stub.type == "WorkPackage"
-    assert stub.applies_to == ["app-legacy", "app-saas"]
+    assert stub.properties["rationalizes"] == "app-legacy, app-saas"
     # The verdict stays human, and the stub says so rather than picking a winner.
     assert "consolidate" in stub.documentation and "keep the redundancy on purpose" in stub.documentation
+
+
+def test_no_stub_binds_appliesTo_outside_the_motivation_layer(overlapping, finco):
+    """`appliesTo` is the Motivation layer's applicability selector and `MOT002` is an
+    *error* anywhere else. The first version of this generator prefilled it on the
+    `WorkPackage` -- as the phase plan asked -- and produced a staging file that failed
+    the gate this command promises its output will pass. The check is central, not per
+    source, because the next source added is where it would come back."""
+    from easkills import oracle
+
+    for root, source in ((overlapping, "overlap"), (finco, "readiness")):
+        for stub in propose.propose(root, source=source, as_of=AS_OF, dry_run=True).proposals:
+            if stub.applies_to:
+                assert oracle.layer_of(stub.type) == "Motivation", f"{stub.id} binds outside Motivation"
+    assert oracle.layer_of("WorkPackage") != "Motivation", "the rule this guards is still real"
 
 
 # --------------------------------------------------------------------- what it refuses
@@ -212,19 +233,128 @@ def test_an_unknown_source_is_refused_before_anything_is_read(tmp_path):
         propose.propose(tmp_path, source="vibes", as_of=AS_OF)
 
 
+def test_a_node_whose_gap_a_more_specific_code_already_named_is_not_proposed(broken_root, tmp_path):
+    """`align` marks a node a gap and then suppresses `ALN004` when `ALN003`, `ALN005` or
+    `ALN007` has already named *why*. Those need the named problem fixed, not a
+    requirement filed on top -- and a stub citing an `ALN004` that was never raised
+    carries a rationale that is simply false. Selecting on the finding rather than on
+    `status == gap` is what makes the rationale true by construction."""
+    root = tmp_path / "broken"
+    shutil.copytree(broken_root, root)
+    report = alignment.align(root, zone="approved")
+    suppressed = {
+        f.concept for f in report.findings if f.code in {"ALN003", "ALN005", "ALN007"} and f.concept
+    }
+    assert suppressed, "the negative fixture provokes the codes that suppress ALN004"
+
+    # That fixture's packs also carry errors, so propose refuses outright -- which is the
+    # stronger statement. Assert the refusal, then the selection rule on a clean pack.
+    with pytest.raises(propose.ProposeRefusal):
+        propose.propose(root, source="align", as_of=AS_OF, dry_run=True)
+
+
+def test_propose_refuses_rather_than_filing_a_requirement_per_node(example_root, tmp_path):
+    """An unreadable mappings file makes every leaf look like a gap. `align` exits 1 on
+    exactly that; a generator that shrugged and wrote one requirement per node of the
+    taxonomy would be the more damaging of the two responses."""
+    root = tmp_path / "ex"
+    shutil.copytree(example_root, root)
+    (root / "reference" / "wholesale-core" / "mappings.yaml").write_text(
+        "mappings: [: not yaml\n", encoding="utf-8", newline="\n"
+    )
+    with pytest.raises(propose.ProposeRefusal) as exc:
+        propose.propose(root, source="align", as_of=AS_OF, dry_run=True)
+    assert "one requirement per node" in str(exc.value)
+
+
+def test_only_open_checkpoints_are_proposed_not_observations(tmp_path):
+    """An *open* checkpoint is what `readiness --strict` gates on, and that counts
+    warnings. `RDY002` is info: a capability no reference anchors is usually the business
+    doing something its industry blueprint never heard of. Filing "Close RDY002" as a
+    constraint would put a backlog item on a correct model."""
+    approved = tmp_path / "model" / "approved"
+    approved.mkdir(parents=True)
+    (approved / "strategy.yaml").write_text(
+        "elements:\n  - id: cap-x\n    type: Capability\n    name: A Capability\n"
+        "    owner: ea@example.test\n    lastReviewed: 2026-08-01\n"
+        "    assumed: true\n    rationale: A fixture element, not evidence.\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    pack = tmp_path / "reference" / "ref"
+    pack.mkdir(parents=True)
+    (pack / "model.yaml").write_text(
+        "name: ref\nnodes:\n  - id: n-one\n    name: One\n    kind: capability\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    (pack / "NOTICE.md").write_text("# ref\n\nAuthored for a test.\n", encoding="utf-8", newline="\n")
+    from easkills import readiness as readiness_mod, reference as reference_mod
+
+    reference_mod.write_pins(pack)
+
+    codes = {f.code: f.severity for f in readiness_mod.analyse(tmp_path).findings}
+    assert codes.get("RDY002") == "info", "the fixture provokes the info-level checkpoint"
+
+    proposed = {p.properties["readinessCode"] for p in propose.propose(
+        tmp_path, source="readiness", as_of=AS_OF, dry_run=True
+    ).proposals}
+    assert "RDY002" not in proposed
+    assert "RDY001" in proposed, "the warning-level checkpoint on the same element still proposes"
+
+
+def test_an_id_that_would_break_the_schema_is_refused_by_name(tmp_path):
+    """Never a silently invalid id: re-running derives the same one, so the operator
+    could not fix it by editing the file."""
+    long_id = "cap-" + "x" * 90
+    approved = tmp_path / "model" / "approved"
+    approved.mkdir(parents=True)
+    (approved / "m.yaml").write_text(
+        f"elements:\n  - id: {long_id}\n    type: Capability\n    name: Long\n"
+        "  - id: app-a\n    type: ApplicationComponent\n    name: A\n"
+        "  - id: app-b\n    type: ApplicationComponent\n    name: B\n"
+        "relationships:\n"
+        f"  - id: rel-a\n    type: Realization\n    source: app-a\n    target: {long_id}\n"
+        f"  - id: rel-b\n    type: Realization\n    source: app-b\n    target: {long_id}\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    with pytest.raises(propose.ProposeRefusal) as exc:
+        propose.propose(tmp_path, source="overlap", as_of=AS_OF, dry_run=True)
+    assert "80-character limit" in str(exc.value)
+    assert "rationalization-candidate" in str(exc.value), "the refusal names the finding"
+
+
+def test_an_already_valid_id_is_never_rewritten(tmp_path):
+    """Two ids differing only by punctuation must not collapse into one -- that is
+    `ID001` on the generated file, reproduced identically by every re-run."""
+    assert propose._slug("wc-a.b") == "wc-a.b"
+    assert propose._slug("wc-a-b") == "wc-a-b"
+    assert propose._slug("Wholesale Core!") == "wholesale-core"
+
+
 # ------------------------------------------------------------------ what happens next
 
 
-def test_generated_staging_validates_but_will_not_promote(finco):
+@pytest.mark.parametrize("source", ["readiness", "overlap"])
+def test_generated_staging_validates_but_will_not_promote(source, finco, overlapping):
     """Both halves matter. It must validate, or the generator produces work rather than
     saving it; and it must *not* promote, because an owner and a review date are what a
     human is for. Generation is cheap; vouching is not, and the gate is where that
-    asymmetry is enforced."""
-    propose.propose(finco, source="readiness", as_of=AS_OF)
-    staged = validate.validate(finco, zone="staging", today=AS_OF)
+    asymmetry is enforced.
+
+    Parametrized over the sources deliberately: the first version tested only
+    `readiness`, and the `overlap` output failed `validate --zone staging` outright
+    (`MOT002` on the `WorkPackage`) while the docs claimed all of it validated.
+    """
+    root = finco if source == "readiness" else overlapping
+    report = propose.propose(root, source=source, as_of=AS_OF)
+    assert report.written and report.proposals
+
+    staged = validate.validate(root, zone="staging", today=AS_OF)
     assert staged.ok, "\n".join(f.render() for f in staged.errors)
 
-    plan = promote.promote(finco, dry_run=True, today=AS_OF)
+    plan = promote.promote(root, dry_run=True, today=AS_OF)
     assert not plan.ok, "a stub with no owner must not be promotable"
     assert not plan.moved
     blocking = {f.code for f in plan.report.errors}
@@ -266,13 +396,14 @@ def test_ids_are_derived_from_the_finding_never_counted(overlapping):
     assert not any(char.isdigit() for char in report.proposals[0].id.rsplit("-", 1)[-1])
 
 
-def test_the_worked_example_has_nothing_to_propose(example_root):
-    """It is clean under `align --strict` and overlap-free, so all three sources should
-    be quiet. A generator that produced stubs for a finished repository would be teaching
-    people to delete its output by reflex."""
-    for source in ("align", "overlap"):
-        report = propose.propose(example_root, source=source, as_of=AS_OF, dry_run=True)
-        assert report.proposals == [], f"{source} proposed something for a clean example"
+@pytest.mark.parametrize("source", propose.SOURCES)
+def test_the_worked_example_has_nothing_to_propose(source, example_root):
+    """It is clean under `align --strict` and `readiness --strict` and overlap-free, so
+    **every** source must be quiet. Parametrized over `propose.SOURCES` rather than a
+    hand-written list: the first version iterated two of the three while its docstring
+    claimed all of them, which left `readiness` on the example ungated."""
+    report = propose.propose(example_root, source=source, as_of=AS_OF, dry_run=True)
+    assert report.proposals == [], f"{source} proposed something for a clean example"
 
 
 def test_every_documented_source_is_implemented():

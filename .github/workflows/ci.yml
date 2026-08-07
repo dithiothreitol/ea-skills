@@ -89,14 +89,12 @@ jobs:
       - name: DORA register of the regulated fixture (strict)
         run: python -m easkills dora-register --root eval/fixtures/finco --as-of 2026-07-30 --strict
 
-      # The example is clean under align, readiness and the overlap queries, so all three
-      # sources must propose nothing. A generator that produced stubs for a finished
-      # repository would teach people to delete its output by reflex.
-      - name: Nothing to propose for the worked example
-        run: |
-          python -m easkills propose --root eval/example --from align --as-of 2026-07-30 --dry-run
-          python -m easkills propose --root eval/example --from readiness --as-of 2026-07-30 --dry-run
-          python -m easkills propose --root eval/example --from overlap --as-of 2026-07-30 --dry-run
+      # No `propose` step here on purpose. It exits 0 whether or not it proposes
+      # anything -- a generator that failed on "there is work to do" would be unusable --
+      # so a CI step running it could not fail, and a gate that cannot fail is worse than
+      # no gate: it reads as coverage. The claim "the example has nothing to propose" is
+      # already gated by `align --strict`, `readiness --strict` and the overlap-free
+      # assertion in tests/test_reports.py, and asserted per source in tests/test_propose.py.
 
       - name: Compile worked example
         run: python -m easkills compile --root eval/example

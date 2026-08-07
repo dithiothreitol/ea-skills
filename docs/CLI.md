@@ -161,7 +161,7 @@ repository looks fresh.
 
 | Command | Does |
 |---|---|
-| `propose --from align\|readiness\|overlap --as-of <date> [--reference NAME] [--out] [--json] [--dry-run]` | Turns one report's findings into **staging skeletons**: a reference gap becomes a `Requirement` (a `Constraint` for a `kind: control` node), an open readiness checkpoint becomes a `Constraint` bound to its element, a rationalization candidate becomes a `WorkPackage` bound to its realizers. Writes `model/staging/proposed-*.yaml`. |
+| `propose --from align\|readiness\|overlap --as-of <date> [--reference NAME] [--out] [--json] [--dry-run]` | Turns one report's findings into **staging skeletons**: a reference gap becomes a `Requirement` (a `Constraint` for a `kind: control` node), an open readiness checkpoint (warning severity — what `readiness --strict` gates on) becomes a `Constraint` bound to its element via `appliesTo`, a rationalization candidate becomes a `WorkPackage` *naming* its realizers. Writes `model/staging/proposed-*.yaml`. |
 
 Everything it writes is `assumed: true` with a rationale naming the finding and the date
 it came from, and **every documentation field opens with `PROPOSED --`** — a loud,
@@ -183,6 +183,17 @@ The importer's discipline, borrowed whole:
 - **Promotion still blocks.** A stub validates in `staging` and cannot leave it: an owner
   and a review date are a human's to supply. Generation is cheap, vouching is not, and
   the gate is where that asymmetry is enforced.
+- **It refuses rather than guessing.** A source report with errors (an unreadable
+  `mappings.yaml` makes every leaf look like a gap), an id that would break the schema,
+  or two findings deriving one id — each is a refusal naming the finding, never a staging
+  file the gate would reject and a re-run would reproduce.
+
+Only the `WorkPackage` differs on binding, and the reason is worth knowing: `appliesTo`
+is the **Motivation layer's** applicability selector, so `MOT002` makes it an error on an
+Implementation & Migration element. The realizers go in `properties.rationalizes` and in
+the placeholder instead. The rule is also right on the substance — *which* relationship a
+work package has to a component is the decision the package exists to take, and a
+generator picking one would be answering the question it was asked to raise.
 
 `--as-of` is **required here and nowhere else**. Every other command *reports* a date;
 this one writes it into a file that gets committed, and a wall-clock stamp would make the

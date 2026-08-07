@@ -309,7 +309,7 @@ python -m easkills propose --root . --from overlap   --as-of 2026-08-07
 ```
 
 A reference gap becomes a `Requirement`, an open checkpoint a `Constraint` bound to its
-element, a rationalization candidate a `WorkPackage` bound to its realizers. Everything
+element, a rationalization candidate a `WorkPackage` naming its realizers. Everything
 lands `assumed: true` in `model/staging/proposed-*.yaml`, and **every documentation field
 starts with `PROPOSED --`**: the tool writes ids, types and bindings, never prose. Text
 that reads as authored and is not is the same defect as a fabricated quote.

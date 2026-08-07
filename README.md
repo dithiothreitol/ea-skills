@@ -145,7 +145,7 @@ and keeps the stage order honest.
 | Govern | `ea-standards-base`, `ea-dispensation`, `ea-adr`, `ea-compliance`, `ea-service` | `validate-gov` — expiry and SLA are enforced, not filed |
 | Maintain | `ea-health`, `ea-change-triage`, `ea-board`, `ea-context` | `kpi`, `debt`, `staleness`, `conformance`, `correspondences`, `roadmap`, `delta`, `context`, `impact` |
 | Assess | `ea-model`, `ea-capability-map`, `ea-align` | `readiness` — the per-layer definition of done, every checkpoint naming its elements; `align --strict` — the model against a hash-pinned reference architecture, every unmapped node a named gap and every exclusion a recorded decision |
-| Propose | `ea-align`, `ea-adr` | `propose --from align\|readiness\|overlap` — findings become staging skeletons with derived ids; the prose, the owner and the review date stay human, and the gate enforces it |
+| Propose | `ea-align`, `ea-adr` | `propose --from align\|readiness\|overlap` — findings become staging skeletons with derived ids; the prose, the owner and the review date stay human, and the gate enforces it. Refuses rather than emitting anything the gate would reject |
 | Comply | `ea-regulatory` | `dora-register` — the Register of Information from the approved model, with the fields it could not fill named; control gaps ride `align` as `ALN004` |
 | Consume | `ea-check` | `check --scope` inside a product repo — standards lifecycle vs declared dependencies |
 | Evaluate | `ea-eval` | `score --min-f1` against the [golden set](eval/golden/); the score names every unmatched item, and relationships the model only *implies* count as half a match via ArchiMate's derivation rules |

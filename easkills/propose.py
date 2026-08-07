@@ -29,6 +29,7 @@ is not, which is the same failure as a fabricated quote one layer up.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -36,7 +37,8 @@ from typing import Any
 
 import yaml
 
-from . import alignment, dsl, readiness as readiness_mod, reports
+from . import alignment, dsl, genschema, oracle, readiness as readiness_mod, reports
+from .validate import SEVERITY_WARNING
 
 SOURCES = ("align", "readiness", "overlap")
 
@@ -51,6 +53,11 @@ STAGING_FILENAME = {
 PLACEHOLDER = "PROPOSED --"
 
 SLUG_CHARS = set("abcdefghijklmnopqrstuvwxyz0123456789-")
+SLUG_RE = re.compile(genschema.SLUG_PATTERN)
+# The authoring schema's own limit. A generated id that violates it produces a file the
+# gate rejects, and re-running regenerates the same broken id -- so the operator cannot
+# fix it by editing. Refuse instead, naming the finding that would not fit.
+MAX_ID_LENGTH = 80
 
 
 class ProposeRefusal(RuntimeError):
@@ -114,8 +121,19 @@ class ProposeReport:
 
 
 def _slug(text: str) -> str:
+    """Make an id fragment. An input that is *already* a valid slug passes through.
+
+    That pass-through is what keeps derived ids collision-free: element and node ids are
+    slugs by schema, so rewriting them would map `wc-a.b` and `wc-a-b` onto one id and
+    produce `ID001` on the generated file -- which a re-run would then reproduce exactly,
+    leaving the operator unable to fix it by editing. Only free-form text (a pack's
+    directory name) is actually transformed.
+    """
+    text = text.strip()
+    if SLUG_RE.fullmatch(text):
+        return text
     out: list[str] = []
-    for char in text.strip().lower():
+    for char in text.lower():
         if char in SLUG_CHARS:
             out.append(char)
         elif char in " _./":
@@ -126,23 +144,82 @@ def _slug(text: str) -> str:
     return slug.strip("-")
 
 
+def _check_ids(proposals: list[Proposal]) -> None:
+    """Every derived id must be a valid, unique slug -- or the run refuses, by name.
+
+    Silently emitting an id the schema rejects would hand the operator a staging file
+    that fails the gate and cannot be repaired by editing, because the next run derives
+    the same id again. A refusal names the finding whose id would not work, which is
+    something a human can act on.
+    """
+    seen: dict[str, str] = {}
+    for proposal in proposals:
+        if not SLUG_RE.fullmatch(proposal.id):
+            raise ProposeRefusal(
+                f"the id derived for {proposal.origin} is not a valid identifier: "
+                f"'{proposal.id}'. Rename the source concept, or propose with --reference "
+                "restricted to packs whose names are slugs."
+            )
+        if len(proposal.id) > MAX_ID_LENGTH:
+            raise ProposeRefusal(
+                f"the id derived for {proposal.origin} is {len(proposal.id)} characters, over the "
+                f"{MAX_ID_LENGTH}-character limit the model schema sets: '{proposal.id}'."
+            )
+        if proposal.id in seen:
+            raise ProposeRefusal(
+                f"{proposal.origin} and {seen[proposal.id]} both derive the id '{proposal.id}'. "
+                "Two proposals sharing one id is ID001 on the generated file; rename one of the "
+                "source concepts."
+            )
+        seen[proposal.id] = proposal.origin
+
+
 # ------------------------------------------------------------------------ derivation
 
 
 def _from_align(root: Path, references: list[str] | None) -> list[Proposal]:
-    """One `Requirement` per reference node that came back a gap.
+    """One `Requirement` per `ALN004`.
 
-    A gap is a node the model does not answer and nobody excluded, so the honest
-    proposal is "we intend to answer it" -- a requirement, bound to nothing yet, because
-    what will satisfy it is precisely the decision nobody has made.
+    Driven off the *finding*, not off `status == gap`, and the difference is not
+    cosmetic. `align` marks a node a gap and then suppresses `ALN004` when a more
+    specific code already named the reason -- a staging-only element claiming it
+    (`ALN007`), an exclusion missing its rationale (`ALN005`), a mapping pointing at an
+    element that does not exist (`ALN003`). Those nodes need the *named* problem fixed,
+    not a requirement filed on top of them; and a stub citing an `ALN004` that was never
+    raised would be a rationale that is simply false.
+
+    A real gap is a node the model does not answer and nobody excluded, so the honest
+    proposal is "we intend to answer it" -- bound to nothing yet, because what will
+    satisfy it is precisely the decision nobody has made.
     """
     report = alignment.align(root, zone="approved", references=references)
+    if not report.ok:
+        # An unparseable mappings file leaves every leaf reading as a gap, and proposing
+        # from that writes one requirement per node of the taxonomy. `align` exits 1 on
+        # exactly this; a generator that shrugged and produced fifty stubs would be the
+        # more damaging of the two responses.
+        codes = sorted({f.code for f in report.errors})
+        raise ProposeRefusal(
+            f"the alignment report has {len(report.errors)} error(s) ({', '.join(codes)}) -- "
+            "fix them before proposing. Until the mappings read cleanly, every node looks "
+            "like a gap, and the proposal would be one requirement per node of the taxonomy."
+        )
+
     proposals: list[Proposal] = []
     for pack in report.packs:
         if pack.refused:
             continue
+        # Per pack, not across all of them: two packs may legitimately share node ids
+        # (two versions of one taxonomy is the obvious case), and a gap in one is not a
+        # gap in the other. Every ALN004 carries the file it came from, which is inside
+        # the pack directory.
+        gaps = {
+            f.concept
+            for f in report.findings
+            if f.code == "ALN004" and f.file.startswith(pack.directory)
+        }
         for node in pack.nodes:
-            if node.status != alignment.STATUS_GAP:
+            if node.id not in gaps:
                 continue
             external = f" ({node.external_id})" if node.external_id else ""
             proposals.append(
@@ -176,11 +253,17 @@ def _from_readiness(root: Path) -> list[Proposal]:
     A checkpoint is about *this* element, so the proposal binds to it via `appliesTo`
     and the MOT rules keep that binding honest. `RDY010` is skipped: it names a layer,
     not an element, and a constraint bound to nothing is what `MOT001` exists to stop.
+
+    **Warnings only.** An *open* checkpoint is precisely what `readiness --strict` gates
+    on, and that counts warnings. The info-level ones are observations that may be
+    perfectly fine -- `RDY002` says a capability no reference anchors, which is often the
+    business doing something its industry blueprint never heard of. Filing "Close RDY002
+    on cap-x" as a constraint would put a backlog item on a correct model.
     """
     report = readiness_mod.analyse(root, zone="approved")
     proposals: list[Proposal] = []
     for finding in report.findings:
-        if not finding.concept:
+        if not finding.concept or finding.severity != SEVERITY_WARNING:
             continue
         proposals.append(
             Proposal(
@@ -205,11 +288,20 @@ def _from_readiness(root: Path) -> list[Proposal]:
 
 
 def _from_overlap(root: Path, today: date) -> list[Proposal]:
-    """One `WorkPackage` per rationalization candidate, bound to its realizers.
+    """One `WorkPackage` per rationalization candidate, naming its realizers.
 
-    `appliesTo` is prefilled here and nowhere else in this module, because it is the one
-    case where the finding already knows the answer: the elements a rationalization
-    touches *are* the realizers the query named.
+    **Not via `appliesTo`, against the phase plan.** `appliesTo` is the Motivation
+    layer's applicability selector, and `MOT002` is an *error* on any other layer --
+    `WorkPackage` is Implementation & Migration. The plan said to prefill it here; doing
+    so produced a staging file that failed the gate the same generator promises its
+    output will pass, which is the worse of the two ways to be wrong.
+
+    The rule is also right on the substance. What a work package's relation to a
+    component *is* -- it realizes a deliverable that replaces it, it is associated with
+    it, it triggers its retirement -- is the design decision the package exists to take.
+    A generator picking one would be answering the question it was asked to raise. So
+    the realizers are recorded as a property and named in the placeholder, and the author
+    draws the relationship they meant once they know which it is.
     """
     data = reports.debt(root, today=today)
     proposals: list[Proposal] = []
@@ -226,13 +318,18 @@ def _from_overlap(root: Path, today: date) -> list[Proposal]:
                     f"{PLACEHOLDER} decide the outcome before scoping the work: consolidate onto one "
                     f"realizer ({', '.join(realizers)}), keep the redundancy on purpose -- which needs "
                     "an ADR naming the reason -- or split the capability because it is drawn too "
-                    "coarse. The tool cannot tell drift from design; see ea-change-triage."
+                    "coarse. The tool cannot tell drift from design; see ea-change-triage. Then draw "
+                    f"the relationship this package has to {', '.join(realizers)}, which the decision "
+                    "above determines and this stub deliberately does not guess."
                 ),
                 rationale=(
                     f"Derived from the debt register's rationalization-candidate on '{item['concept']}' "
                     f"as of {today.isoformat()}: {item['detail']}. Complete or delete before promotion."
                 ),
-                applies_to=realizers,
+                # A property, not `appliesTo`: see the docstring. Comma-joined because the
+                # property map takes scalars, and the ids are also in the documentation
+                # where a human reads them.
+                properties={"rationalizes": ", ".join(realizers)},
                 origin=f"rationalization-candidate:{item['concept']}",
             )
         )
@@ -318,6 +415,19 @@ def propose(
         candidates = _from_readiness(root)
     else:
         candidates = _from_overlap(root, as_of)
+
+    # Belt and braces on the rule that produced the worst defect in this module: a stub
+    # carrying `appliesTo` on a non-Motivation type is MOT002, an *error*, so the file
+    # would fail the gate this generator promises its output passes. Checked centrally
+    # rather than per source, because the next source added is where it would recur.
+    for candidate in candidates:
+        if candidate.applies_to and oracle.layer_of(candidate.type) != "Motivation":
+            raise ProposeRefusal(
+                f"internal: {candidate.origin} would bind appliesTo on a {candidate.type}, which "
+                "is not a Motivation-layer element (MOT002). Model that dependency as a "
+                "relationship instead."
+            )
+    _check_ids(candidates)
 
     known = _existing_ids(root)
     for candidate in sorted(candidates, key=lambda p: p.id):

@@ -66,9 +66,6 @@ python -m easkills coverage       --root eval/example --min-coverage 100
 python -m easkills readiness      --root eval/example --strict
 python -m easkills align          --root eval/example --strict
 python -m easkills dora-register  --root eval/fixtures/finco --as-of 2026-07-30 --strict
-python -m easkills propose --root eval/example --from align --as-of 2026-07-30 --dry-run
-python -m easkills propose --root eval/example --from readiness --as-of 2026-07-30 --dry-run
-python -m easkills propose --root eval/example --from overlap --as-of 2026-07-30 --dry-run
 python -m easkills compile        --root eval/example
 python -m easkills docs           --root eval/example && git diff --exit-code eval/example/docs
 python -m easkills conformance    --root eval/example --strict --as-of 2026-07-30

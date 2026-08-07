@@ -178,7 +178,9 @@ node:**
 3. **The binding scope** — which elements it will constrain, via `appliesTo`. The stub
    leaves this empty on purpose, because what will satisfy a gap is exactly the decision
    nobody has made yet. Filling it is the first real design act, and `MOT001`/`MOT002`
-   check it once you do.
+   check it once you do. (`appliesTo` is the Motivation layer's selector only — that is
+   why a proposed `WorkPackage` names its realizers in a property instead, and why the
+   relationship it should have to them is left for you to draw.)
 
 Then: an owner and a review date, or the promotion gate keeps it in staging — which is
 correct. A requirement nobody owns is a wish.

@@ -12,8 +12,21 @@ project's build phases (design log with per-decision rationale:
 `python -m easkills propose --from align|readiness|overlap --as-of <date>` turns one
 report's findings into the *shape* of the work and stops there. A reference gap becomes a
 `Requirement` (a `Constraint` for a `kind: control` node), an open readiness checkpoint a
-`Constraint` bound to its element, a rationalization candidate a `WorkPackage` bound to
-its realizers. Output goes to `model/staging/proposed-*.yaml`.
+`Constraint` bound to its element via `appliesTo`, a rationalization candidate a
+`WorkPackage` *naming* its realizers in `properties.rationalizes`. Output goes to
+`model/staging/proposed-*.yaml`.
+
+Only `appliesTo` differs between the three, and the reason is a rule doing its job:
+`appliesTo` is the **Motivation layer's** applicability selector, so `MOT002` makes it an
+error on an Implementation & Migration element. The phase plan asked for it on the
+`WorkPackage`; that produced a staging file failing the very gate this command promises
+its output passes. The rule is right on substance too — *which* relationship a work
+package has to a component is the decision the package exists to take.
+
+Only **warning-severity** readiness checkpoints propose. An open checkpoint is what
+`readiness --strict` gates on, and that counts warnings; `RDY002` is info, because a
+capability no reference anchors is usually the business doing something its industry
+blueprint never heard of.
 
 **The generator supplies ids, types and bindings. It supplies no prose.** Every
 documentation field opens with a loud, greppable `PROPOSED --` naming what the author has
@@ -33,7 +46,17 @@ The importer's discipline, borrowed whole:
 - **Byte-stable** for identical inputs.
 - **Promotion still blocks.** Stubs validate in `staging` and cannot leave it without an
   owner and a review date — generation is cheap, vouching is not, and the gate is where
-  that asymmetry lives. A test asserts both halves.
+  that asymmetry lives. A test asserts both halves, per source.
+- **It refuses rather than guessing.** A source report carrying errors (an unreadable
+  `mappings.yaml` makes every leaf look like a gap, and `align` exits 1 on exactly that),
+  an id that would break the schema's pattern or 80-character limit, or two findings
+  deriving one id — each is a refusal naming the finding. Emitting any of them would
+  hand over a staging file the gate rejects and a re-run reproduces byte for byte, which
+  the operator cannot fix by editing.
+- **`--from align` selects on `ALN004`, not on `status == gap`.** `align` marks a node a
+  gap and then suppresses `ALN004` when `ALN003`/`ALN005`/`ALN007` already named *why*.
+  Those need the named problem fixed, not a requirement filed on top — and a stub citing
+  an `ALN004` that was never raised carries a rationale that is simply false.
 
 Two smaller decisions worth reading: `--as-of` is **required here and nowhere else**,
 because this is the one command that writes a date into a file you commit — a wall-clock
