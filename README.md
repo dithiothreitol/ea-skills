@@ -323,6 +323,12 @@ test can check a competitor's changelog. Each capability exists somewhere; the
 integration is the contribution, and the governance end is where it is thinnest
 elsewhere.
 
+**If a row is wrong about your project, please open an issue and it will be corrected.**
+Every `—` here means *not found in that project on the survey date*, which is a statement
+about one afternoon's reading and not about the project's intent or roadmap. The dates
+above are in the table so that a stale claim can be recognised as stale rather than
+argued with.
+
 ## Status and roadmap
 
 **Phases 0–7 are complete** — see
