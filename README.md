@@ -410,6 +410,9 @@ python -m venv .venv && .venv/Scripts/python -m pip install -r requirements.txt
 
 ## License
 
-MIT for the code in this repository — see [LICENSE](LICENSE). The vendored oracle
-files are third-party material with their own terms — see
-[`oracle/NOTICE.md`](oracle/NOTICE.md).
+MIT for the code and documentation authored here — see [LICENSE](LICENSE). Third-party
+material distributed alongside it keeps its own terms, and [`NOTICE.md`](NOTICE.md) names
+every case: the oracle vendored under `oracle/` (detail in
+[`oracle/NOTICE.md`](oracle/NOTICE.md)), the openly licensed packs under
+[`references/`](references/), and the standards this repository implements without
+reproducing.
