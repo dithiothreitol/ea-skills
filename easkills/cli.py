@@ -28,6 +28,7 @@ from . import (
     intake,
     oracle,
     promote as promote_mod,
+    propose as propose_mod,
     readiness as readiness_mod,
     reference as reference_mod,
     render as render_mod,
@@ -304,6 +305,38 @@ def build_parser() -> argparse.ArgumentParser:
     p_dora.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
     p_dora.add_argument("--as-of", dest="as_of", metavar="YYYY-MM-DD", help="evaluate waiver expiry against this date")
     p_dora.add_argument("--strict", action="store_true", help="treat warnings as failures too")
+
+    p_propose = sub.add_parser(
+        "propose", help="turn findings into staged requirement / work-package skeletons"
+    )
+    p_propose.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_propose.add_argument(
+        "--from",
+        dest="source",
+        choices=propose_mod.SOURCES,
+        required=True,
+        help="which report's findings to propose from",
+    )
+    # Required, unlike everywhere else. Every other command *reports* a date; this one
+    # writes it into a file that gets committed, and a wall-clock stamp there would make
+    # the output differ between two runs of an unchanged repository.
+    p_propose.add_argument(
+        "--as-of",
+        dest="as_of",
+        metavar="YYYY-MM-DD",
+        required=True,
+        help="the date recorded in every generated rationale (required: the output is a committed file)",
+    )
+    p_propose.add_argument(
+        "--reference",
+        dest="reference",
+        action="append",
+        metavar="NAME",
+        help="restrict `--from align` to these packs (repeatable; default: every pack present)",
+    )
+    p_propose.add_argument("--out", type=Path, help="write here instead of the default staging file")
+    p_propose.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+    p_propose.add_argument("--dry-run", action="store_true", help="show what would be proposed, write nothing")
 
     p_pin_ref = sub.add_parser(
         "pin-reference", help="rewrite a reference pack's SHA256SUMS after a deliberate upgrade"
@@ -717,6 +750,33 @@ def cmd_dora_register(args: argparse.Namespace) -> int:
     return 1 if args.strict and register.warnings else 0
 
 
+def cmd_propose(args: argparse.Namespace) -> int:
+    try:
+        report = propose_mod.propose(
+            args.root.resolve(),
+            source=args.source,
+            as_of=_parse_as_of(args.as_of),
+            references=args.reference,
+            out=args.out,
+            dry_run=args.dry_run,
+        )
+    except propose_mod.ProposeRefusal as exc:
+        print(_error(str(exc)))
+        return 1
+    print(propose_mod.render(report))
+    if args.json_out:
+        args.json_out.parent.mkdir(parents=True, exist_ok=True)
+        args.json_out.write_text(
+            json.dumps(report.as_dict(), indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        print(f"\nJSON report written to {args.json_out}")
+    # Always 0: proposing nothing is a clean repository, not a failure, and a generator
+    # that exited 1 on "no findings" would be unusable in a pipeline.
+    return 0
+
+
 def cmd_align(args: argparse.Namespace) -> int:
     try:
         report = alignment.align(args.root.resolve(), zone=args.zone, references=args.reference)
@@ -833,6 +893,7 @@ HANDLERS = {
     "readiness": cmd_readiness,
     "align": cmd_align,
     "dora-register": cmd_dora_register,
+    "propose": cmd_propose,
     "pin-reference": cmd_pin_reference,
     "gen-schema": cmd_gen_schema,
     "pin-oracle": cmd_pin_oracle,

@@ -145,6 +145,7 @@ and keeps the stage order honest.
 | Govern | `ea-standards-base`, `ea-dispensation`, `ea-adr`, `ea-compliance`, `ea-service` | `validate-gov` — expiry and SLA are enforced, not filed |
 | Maintain | `ea-health`, `ea-change-triage`, `ea-board`, `ea-context` | `kpi`, `debt`, `staleness`, `conformance`, `correspondences`, `roadmap`, `delta`, `context`, `impact` |
 | Assess | `ea-model`, `ea-capability-map`, `ea-align` | `readiness` — the per-layer definition of done, every checkpoint naming its elements; `align --strict` — the model against a hash-pinned reference architecture, every unmapped node a named gap and every exclusion a recorded decision |
+| Propose | `ea-align`, `ea-adr` | `propose --from align\|readiness\|overlap` — findings become staging skeletons with derived ids; the prose, the owner and the review date stay human, and the gate enforces it |
 | Comply | `ea-regulatory` | `dora-register` — the Register of Information from the approved model, with the fields it could not fill named; control gaps ride `align` as `ALN004` |
 | Consume | `ea-check` | `check --scope` inside a product repo — standards lifecycle vs declared dependencies |
 | Evaluate | `ea-eval` | `score --min-f1` against the [golden set](eval/golden/); the score names every unmatched item, and relationships the model only *implies* count as half a match via ArchiMate's derivation rules |
@@ -337,7 +338,7 @@ elsewhere.
 | 4 | Governance & maintenance: SIB, dispensations, ADRs, compliance, health reports, agent context packs | **done** |
 | 5 | Evaluation: golden-set regression harness, capability comparison | **done** |
 | 6 | Service layer: offering catalog with SLAs, demand ledger, demand-weighted maintenance | **done** |
-| 7 | Reference, regulation, proposal: alignment to reference architectures, per-layer readiness, rationalization, cost, regulatory reporting, generated proposals | **in progress** — `align`, `readiness`, the rationalization queries, the debt cost model and `dora-register` landed |
+| 7 | Reference, regulation, proposal: alignment to reference architectures, per-layer readiness, rationalization, cost, regulatory reporting, generated proposals | **in progress** — everything but `maturity` and the roadmap skeleton (7.7) has landed |
 
 Deliberately open (decisions, not backlog): the **network facade** (MCP/HTTP) over the
 read-only commands stays deferred until the demand ledger shows someone asking for it —

@@ -7,6 +7,43 @@ project's build phases (design log with per-decision rationale:
 
 ## [Unreleased]
 
+### Added — `propose`: findings become staged skeletons (Phase 7.6)
+
+`python -m easkills propose --from align|readiness|overlap --as-of <date>` turns one
+report's findings into the *shape* of the work and stops there. A reference gap becomes a
+`Requirement` (a `Constraint` for a `kind: control` node), an open readiness checkpoint a
+`Constraint` bound to its element, a rationalization candidate a `WorkPackage` bound to
+its realizers. Output goes to `model/staging/proposed-*.yaml`.
+
+**The generator supplies ids, types and bindings. It supplies no prose.** Every
+documentation field opens with a loud, greppable `PROPOSED --` naming what the author has
+to write, and the templates for writing it live in skill prose (`ea-align` gained "Turning
+a gap into a requirement": business outcome, acceptance signal, binding scope) rather than
+in the generator. Text that reads as authored and is not is the same failure as a
+fabricated quote one layer up.
+
+The importer's discipline, borrowed whole:
+
+- **Never overwrites** — an existing target file is a refusal, not a merge.
+- **Ids are derived, never counted** (`req-<pack>-<node>`, `con-<element>-<code>`,
+  `wp-rationalize-<capability>`), so a re-run after fixing three of ten findings proposes
+  the same seven ids and the diff is the news. An id already in either zone is skipped
+  **by name**: somebody acted on that finding, which beats both silence and failing the
+  whole run over it.
+- **Byte-stable** for identical inputs.
+- **Promotion still blocks.** Stubs validate in `staging` and cannot leave it without an
+  owner and a review date — generation is cheap, vouching is not, and the gate is where
+  that asymmetry lives. A test asserts both halves.
+
+Two smaller decisions worth reading: `--as-of` is **required here and nowhere else**,
+because this is the one command that writes a date into a file you commit — a wall-clock
+stamp would make an unchanged repository produce a different file tomorrow. And `RDY010`
+generates nothing: it names a layer, not an element, and a constraint bound to nothing is
+what `MOT001` exists to stop.
+
+`ea-adr` gained the two cases that arrive from generated proposals — a "keep both" answer
+to a rationalization work package, and a requirement that overturns an accepted decision.
+
 ## [0.13.0] — 2026-08-07 — the alignment and regulatory release
 
 Phase 7.1–7.5: the second yardstick, the per-layer definition of done, overlap detection,

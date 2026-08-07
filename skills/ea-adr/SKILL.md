@@ -60,5 +60,17 @@ routine modelling ("we added an element"). If the "decision" is really a waiver 
 a standard, that is `ea-dispensation`; if it is a new norm going forward, it likely
 needs both an ADR (why) and a SIB entry (what).
 
+Two cases arrive from generated proposals (`propose`) and both are ADRs before they are
+anything else:
+
+* **A `wp-rationalize-*` work package whose answer is "keep both".** Deliberate
+  redundancy — resilience, data residency, a strangler beside what it replaces — is a
+  decision, and without a record the next reader cannot tell it from drift. The same
+  finding then gets re-litigated every quarter. Name both systems and the reason the
+  duplication is bought on purpose.
+* **A `req-*` requirement that overturns or leans on an accepted decision.** Write the
+  ADR, then have the requirement reference it. A requirement filed alone leaves its
+  reasoning nowhere.
+
 Validate with `python -m easkills validate-gov`, report the decision in one sentence
 plus who should confirm `status: accepted` if you filed it as `proposed`.

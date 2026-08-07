@@ -297,6 +297,33 @@ tagged its estate yet. Control-framework gaps ride the reference mechanism from 
 instead: a pack of `kind: control` nodes, an unmapped control is `ALN004`. Both are
 [`ea-regulatory`](../skills/ea-regulatory/SKILL.md)'s subject.
 
+## 5e. Turn the findings into work
+
+Every report above ends in a list somebody has to act on. `propose` writes the *shape* of
+the action into staging — and nothing else:
+
+```bash
+python -m easkills propose --root . --from align     --as-of 2026-08-07 --dry-run
+python -m easkills propose --root . --from readiness --as-of 2026-08-07
+python -m easkills propose --root . --from overlap   --as-of 2026-08-07
+```
+
+A reference gap becomes a `Requirement`, an open checkpoint a `Constraint` bound to its
+element, a rationalization candidate a `WorkPackage` bound to its realizers. Everything
+lands `assumed: true` in `model/staging/proposed-*.yaml`, and **every documentation field
+starts with `PROPOSED --`**: the tool writes ids, types and bindings, never prose. Text
+that reads as authored and is not is the same defect as a fabricated quote.
+
+Then do the human half — write the words ([`ea-align`](../skills/ea-align/SKILL.md) says
+what a good requirement contains), add an owner and a review date, and promote. Until you
+do, the gate keeps the stubs in staging, which is the point: generating is cheap,
+vouching is not. The honest dispositions are **complete it or delete it**; leaving a stub
+untouched is neither, and the next reader cannot tell that from work in progress.
+
+Re-running is safe — ids are derived from the finding, so a second run after fixing some
+of them shows the remainder and skips the rest by name. `--as-of` is required here, alone
+among the commands, because this one writes a date into a file you will commit.
+
 ## 6. Operate — the loops that keep it alive
 
 ```bash

@@ -26,12 +26,12 @@ third is in every CI run. The fourth is a human sitting down and doing it.
 | `ea-capability-map` | scored | element F1 (the capability layer is part of the modelling phase) |
 | `ea-stakeholders` | contract | ISO 42010 clauses 6.3/6.4 — stakeholders identified, every concern held |
 | `ea-views` | contract | ISO 42010 clauses 6.5/6.6 — every view governed by a viewpoint, every concern framed |
-| `ea-adr` | contract | MADR fields, rejected options with pros *and* cons, binding to real elements; and the three-move supersession contract (`CORR001`) |
+| `ea-adr` | contract | MADR fields, rejected options with pros *and* cons, binding to real elements; and the three-move supersession contract (`CORR001`). The two ADR cases arriving from `propose` are prose only — nothing mechanical checks that a "keep both" decision got recorded |
 | `ea-dispensation` | contract | mandatory bounded expiry, a real standard waived, tight scope, a named grantor |
 | `ea-import` | path test | the adoption path: sliceable output, reference-closed element files, everything `assumed`, the gate refusing what the previous tool allowed |
 | `ea-approve` | path test | promotion of one vouched-for slice while the rest stays a proposal |
 | `ea-validate` | path test | the three-layer validator's own tests (141 rule codes in the catalogue) plus the gate steps of every harness run |
-| `ea-align` | path test | `align` on the worked example's reference pack (clean under `--strict`) and on `eval/fixtures/broken/reference/`, where every `ALN` rule has a provoking pack |
+| `ea-align` | path test | `align` on the worked example's reference pack (clean under `--strict`) and on `eval/fixtures/broken/reference/`, where every `ALN` rule has a provoking pack; plus `propose --from align`, including that it binds nothing and writes no prose |
 | `ea-docs` | path test | the architecture description generated from the approved zone only |
 | `ea-change-triage` | path test | `impact` in both zones, including the staging-versus-approved blast radius; the `debt` overlap queries it reads before classifying, including the three exclusions that keep them out of noise |
 | `ea-context` | path test | context-pack tests (scope expansion, freshness label, binding closure) |

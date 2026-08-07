@@ -154,6 +154,45 @@ a YAML comment does not.
 * **Two references disagreeing is normal.** They partition the world differently. Do not
   reconcile them; report both.
 
+## Turning a gap into a requirement
+
+`propose` writes the skeleton; you write the requirement. It supplies the id, the type and
+the binding, and puts `PROPOSED --` at the front of every documentation field precisely so
+that what it *cannot* supply is impossible to miss.
+
+```bash
+python -m easkills propose --root <repo> --from align --as-of <date> --dry-run
+```
+
+**Three things a requirement has to say, and none of them can be derived from a taxonomy
+node:**
+
+1. **The business outcome** — what becomes possible, or stops being at risk, when this is
+   satisfied. Not "we will have a customer-master-data capability"; that restates the gap.
+   "One customer record the order desk and finance both trust, so credit limits stop being
+   re-keyed" is an outcome. If you cannot write this sentence, the gap may not be worth
+   closing, and saying *that* is a legitimate outcome of the exercise.
+2. **The acceptance signal** — how anyone will know it is met. A signal is observable by
+   someone other than its author: a system of record named, a report produced, a control
+   evidenced. "Implemented" is not a signal.
+3. **The binding scope** — which elements it will constrain, via `appliesTo`. The stub
+   leaves this empty on purpose, because what will satisfy a gap is exactly the decision
+   nobody has made yet. Filling it is the first real design act, and `MOT001`/`MOT002`
+   check it once you do.
+
+Then: an owner and a review date, or the promotion gate keeps it in staging — which is
+correct. A requirement nobody owns is a wish.
+
+**A requirement that would overturn or depend on a recorded decision is an ADR first**
+(`ea-adr`), and the requirement then references it. Writing the requirement alone leaves
+the reasoning nowhere, and the next person to read the model finds an obligation with no
+argument behind it.
+
+**Do not run `propose` on `propose`'s own output.** A generated requirement binds nothing,
+so `readiness` will report `RDY009` against it, and proposing from *that* produces a
+constraint about a stub. The loop terminates but the output is noise. Complete the first
+round, then re-measure.
+
 ## Reporting back
 
 Say, in this order: which references were aligned and why those; the coverage per pack and

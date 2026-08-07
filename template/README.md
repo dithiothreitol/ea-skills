@@ -60,6 +60,17 @@ python -m easkills pin-reference --root . --reference <name>   # after dropping 
 python -m easkills align --root .                              # covered / partial / gap / out-of-scope
 ```
 
+**Turn findings into staged work** — skeletons only; the words are yours to write.
+
+```bash
+python -m easkills propose --root . --from align     --as-of <date> --dry-run
+python -m easkills propose --root . --from readiness --as-of <date>
+python -m easkills propose --root . --from overlap   --as-of <date>
+```
+
+Each stub is `assumed: true` and opens with `PROPOSED --`. Complete it or delete it;
+promotion will not take it without an owner and a review date.
+
 **If you are regulated** — tag in-scope ICT elements with `regulatoryScope: dora` plus
 `doraCriticality`, `provider` and `contractRef`, then:
 

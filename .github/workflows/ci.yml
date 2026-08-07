@@ -89,6 +89,15 @@ jobs:
       - name: DORA register of the regulated fixture (strict)
         run: python -m easkills dora-register --root eval/fixtures/finco --as-of 2026-07-30 --strict
 
+      # The example is clean under align, readiness and the overlap queries, so all three
+      # sources must propose nothing. A generator that produced stubs for a finished
+      # repository would teach people to delete its output by reflex.
+      - name: Nothing to propose for the worked example
+        run: |
+          python -m easkills propose --root eval/example --from align --as-of 2026-07-30 --dry-run
+          python -m easkills propose --root eval/example --from readiness --as-of 2026-07-30 --dry-run
+          python -m easkills propose --root eval/example --from overlap --as-of 2026-07-30 --dry-run
+
       - name: Compile worked example
         run: python -m easkills compile --root eval/example
 

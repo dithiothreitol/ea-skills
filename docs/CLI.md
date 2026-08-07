@@ -29,13 +29,13 @@ parser; `python -m easkills <command> --help` is the same information, per comma
 | `--root <path>` | Repository root (default: cwd) | all except `gen-schema`, `pin-oracle`, `oracle-info` |
 | `--zone approved\|staging` | Which zone to read; governance metadata is mandatory in `approved` | `validate`, `compile`, `render`, `impact`, `align`, `readiness` |
 | `--strict` | Warnings fail too (on `conformance`: any failed clause fails; on `align`: gaps fail; on `readiness`: any open checkpoint fails) | `validate`, `validate-facts`, `validate-gov`, `conformance`, `check`, `align`, `readiness`, `dora-register` |
-| `--as-of YYYY-MM-DD` | Evaluate date-dependent checks against a fixed date, for reproducibility | `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `roadmap`, `context`, `check`, `impact`, `dora-register` |
-| `--json <file>` | Write the machine-readable report alongside the rendered one. On `chunk` it takes **no argument** and prints JSON to stdout instead | `validate`, `validate-facts`, `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `delta`, `roadmap`, `coverage`, `score`, `chunk`, `check`, `import`, `impact`, `intake-csv`, `align`, `readiness`, `dora-register` |
-| `--out <path>` | Output file (or directory, for `render`) instead of the default location | `compile`, `render`, `docs`, `context`, `import`, `intake-csv`, `dora-register` |
+| `--as-of YYYY-MM-DD` | Evaluate date-dependent checks against a fixed date, for reproducibility | `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `roadmap`, `context`, `check`, `impact`, `dora-register`, `propose` (**required** there) |
+| `--json <file>` | Write the machine-readable report alongside the rendered one. On `chunk` it takes **no argument** and prints JSON to stdout instead | `validate`, `validate-facts`, `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `delta`, `roadmap`, `coverage`, `score`, `chunk`, `check`, `import`, `impact`, `intake-csv`, `align`, `readiness`, `dora-register`, `propose` |
+| `--out <path>` | Output file (or directory, for `render`) instead of the default location | `compile`, `render`, `docs`, `context`, `import`, `intake-csv`, `dora-register`, `propose` |
 | `--skip-validation` | Build from a model with validation errors (not recommended) | `compile`, `docs` |
 | `--scope <element-id>` | The element the command is about | `context`, `check`, `impact` |
 | `--repo <path>` | The *consuming* repository being checked (`--root` stays the EA repository) | `check` |
-| `--reference <name>` | The reference pack under `reference/` (repeatable on `align`, where the default is every pack present; required on `pin-reference`) | `align`, `pin-reference` |
+| `--reference <name>` | The reference pack under `reference/` (repeatable on `align` and `propose --from align`, where the default is every pack present; required on `pin-reference`) | `align`, `pin-reference`, `propose` |
 
 `align` and `readiness` have **no `--as-of`**: nothing in either depends on a date, and a
 flag that only decorated the report header would be exactly the decorative conformance the
@@ -156,6 +156,37 @@ Rate keys are a closed vocabulary in `ea-config.schema.json`; a misspelled one i
 an element's deliberately open `properties` map, a tooling key this tooling does not read
 is always a typo, and `stalenessDay` leaves the 365-day default in place while the
 repository looks fresh.
+
+## Findings into proposals
+
+| Command | Does |
+|---|---|
+| `propose --from align\|readiness\|overlap --as-of <date> [--reference NAME] [--out] [--json] [--dry-run]` | Turns one report's findings into **staging skeletons**: a reference gap becomes a `Requirement` (a `Constraint` for a `kind: control` node), an open readiness checkpoint becomes a `Constraint` bound to its element, a rationalization candidate becomes a `WorkPackage` bound to its realizers. Writes `model/staging/proposed-*.yaml`. |
+
+Everything it writes is `assumed: true` with a rationale naming the finding and the date
+it came from, and **every documentation field opens with `PROPOSED --`** — a loud,
+greppable marker so a half-finished stub cannot pass for something an architect wrote.
+The generator supplies ids, types and bindings; it supplies **no prose**, because text
+that reads as authored and is not is the same failure as a fabricated quote one layer up.
+What a good requirement says lives in [`ea-align`](../skills/ea-align/SKILL.md).
+
+The importer's discipline, borrowed whole:
+
+- **Never overwrites.** An existing target file is a refusal, not a merge.
+- **Ids are derived, never counted** — `req-<pack>-<node>`, `con-<element>-<code>`,
+  `wp-rationalize-<capability>`. Re-running after fixing three of ten findings proposes
+  the same seven ids, so the diff is the news. An id already in either zone is skipped
+  **by name**: somebody already acted on that finding, and saying so beats both silence
+  and failing the whole run.
+- **Output is byte-stable** for identical inputs, which is what makes re-run-and-diff a
+  safe habit.
+- **Promotion still blocks.** A stub validates in `staging` and cannot leave it: an owner
+  and a review date are a human's to supply. Generation is cheap, vouching is not, and
+  the gate is where that asymmetry is enforced.
+
+`--as-of` is **required here and nowhere else**. Every other command *reports* a date;
+this one writes it into a file that gets committed, and a wall-clock stamp would make the
+same repository produce a different file tomorrow.
 
 ## Regulatory reporting
 

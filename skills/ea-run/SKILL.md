@@ -41,6 +41,7 @@ Everything else routes by situation:
 | Standards, waivers, decisions, assessments | `ea-standards-base` / `ea-dispensation` / `ea-adr` / `ea-compliance` |
 | "Is this done / complete?" · gap analysis against a reference model or industry blueprint | `ea-align` (there is no answer without a yardstick) |
 | Regulation, control frameworks, ICT third-party risk, "the DORA register" | `ea-regulatory` — control gaps are `align` against a `kind: control` pack; the register is `dora-register`, and it generates rather than attests |
+| "Make a backlog out of these findings" · gaps into requirements or work packages | `propose --from align\|readiness\|overlap` writes the skeletons; the words, owner and review date are the human half (`ea-align`, `ea-adr`) |
 | Downstream repo needs its constraints | `ea-context` |
 | Periodic health / board preparation | `ea-health` / `ea-board` |
 | "Do two systems do the same thing?" · application rationalization | `ea-health` reads the `debt` overlap items; the verdict goes to `ea-change-triage` (undecided overlap classifies **up**) or `ea-board`, and deliberate redundancy ends in `ea-adr` |
