@@ -7,6 +7,25 @@ project's build phases (design log with per-decision rationale:
 
 ## [Unreleased]
 
+## [0.13.0] — 2026-08-07 — the alignment and regulatory release
+
+Phase 7.1–7.5: the second yardstick, the per-layer definition of done, overlap detection,
+a cost model over debt, and the first regulatory output.
+
+> **There is no 0.12.0 tag, and that is deliberate.** The plan grouped 7.1–7.3 as 0.12.0
+> and 7.4–7.5 as 0.13.0, but all five increments landed in one commit — the doc-count tests
+> make the intermediate states red, because rules go 137 → 141 and skills 23 → 24 only at
+> the end. No repository state ever held 7.1–7.3 without 7.4–7.5, so a `v0.12.0` tag would
+> point at a commit containing `dora-register` and claim otherwise. The plan's grouping is
+> preserved in the sections below; the version numbers are not stretched to match it.
+
+**Harness rerun and baseline decision** (owed since 7.2, recorded in
+[`eval/harness/README.md`](eval/harness/README.md)): 6/6 runs green, no category regressed,
+baseline moved to the third one. `clinic`'s element (+13) and relationship (+12) rises are
+**the instrument, not the skill** — gold's denominators changed when the capability layer
+was added, and this was predicted in writing before the numbers existed. The comparable
+categories are flat to within noise, which is the trustworthy half of the result.
+
 ### Added — `dora-register` and the controls overlay (Phase 7.5)
 
 `python -m easkills dora-register` generates the DORA **Register of Information** from

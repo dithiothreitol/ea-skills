@@ -8,18 +8,18 @@
       "failures": [],
       "repairs": [
         {
-          "facts": 1,
-          "model": 1,
+          "intake": 1,
+          "modelling": 2,
           "apparatus": 0
         },
         {
-          "facts": 0,
-          "model": 1,
+          "intake": 0,
+          "modelling": 0,
           "apparatus": 0
         },
         {
-          "facts": 0,
-          "model": 0,
+          "intake": 0,
+          "modelling": 0,
           "apparatus": 0
         }
       ],
@@ -28,96 +28,30 @@
       "gaveUp": [],
       "f1": {
         "elements": {
-          "min": 0.4091,
-          "median": 0.4286,
-          "max": 0.4783
+          "min": 0.4583,
+          "median": 0.5556,
+          "max": 0.6
         },
         "entities": {
-          "min": 0.5882,
-          "median": 0.6667,
+          "min": 0.7143,
+          "median": 0.7143,
           "max": 0.8
         },
         "facts": {
-          "min": 0.8333,
-          "median": 0.869,
+          "min": 0.7778,
+          "median": 0.9217,
           "max": 0.9217
         },
         "relationships": {
-          "min": 0.1905,
-          "median": 0.2,
-          "max": 0.2609
+          "min": 0.2609,
+          "median": 0.3164,
+          "max": 0.3419
         }
       },
       "minF1": [
-        0.2609,
-        0.2,
-        0.1905
-      ],
-      "apparatus": {
-        "clausesFailed": 1,
-        "clausesPassed": 7,
-        "concerns": 3,
-        "stakeholders": 3,
-        "views": 3
-      },
-      "apparatusClauseFailures": [
-        "6.10"
-      ],
-      "tokens": {
-        "input": 78877,
-        "output": 61068
-      }
-    },
-    "contested": {
-      "runs": 3,
-      "completed": 3,
-      "failures": [],
-      "repairs": [
-        {
-          "facts": 0,
-          "model": 0,
-          "apparatus": 0
-        },
-        {
-          "facts": 0,
-          "model": 0,
-          "apparatus": 0
-        },
-        {
-          "facts": 0,
-          "model": 1,
-          "apparatus": 0
-        }
-      ],
-      "gatesGreen": 3,
-      "phasesGreen": 3,
-      "gaveUp": [],
-      "f1": {
-        "elements": {
-          "min": 0.5263,
-          "median": 0.5556,
-          "max": 0.5789
-        },
-        "entities": {
-          "min": 0.6316,
-          "median": 0.7059,
-          "max": 0.75
-        },
-        "facts": {
-          "min": 0.6117,
-          "median": 0.6731,
-          "max": 0.6731
-        },
-        "relationships": {
-          "min": 0.0952,
-          "median": 0.1053,
-          "max": 0.125
-        }
-      },
-      "minF1": [
-        0.125,
-        0.0952,
-        0.1053
+        0.3419,
+        0.3164,
+        0.2609
       ],
       "apparatus": {
         "clausesFailed": 1,
@@ -127,11 +61,79 @@
         "views": 2
       },
       "apparatusClauseFailures": [
-        "6.10"
+        "6.10",
+        "6.8"
       ],
       "tokens": {
-        "input": 64548,
-        "output": 64975
+        "input": 90001,
+        "output": 65667
+      }
+    },
+    "contested": {
+      "runs": 3,
+      "completed": 3,
+      "failures": [],
+      "repairs": [
+        {
+          "intake": 0,
+          "modelling": 0,
+          "apparatus": 0
+        },
+        {
+          "intake": 0,
+          "modelling": 0,
+          "apparatus": 0
+        },
+        {
+          "intake": 0,
+          "modelling": 0,
+          "apparatus": 0
+        }
+      ],
+      "gatesGreen": 3,
+      "phasesGreen": 3,
+      "gaveUp": [],
+      "f1": {
+        "elements": {
+          "min": 0.5,
+          "median": 0.5556,
+          "max": 0.5882
+        },
+        "entities": {
+          "min": 0.75,
+          "median": 0.75,
+          "max": 0.8
+        },
+        "facts": {
+          "min": 0.6117,
+          "median": 0.6731,
+          "max": 0.6731
+        },
+        "relationships": {
+          "min": 0.0952,
+          "median": 0.1111,
+          "max": 0.1429
+        }
+      },
+      "minF1": [
+        0.1429,
+        0.1111,
+        0.0952
+      ],
+      "apparatus": {
+        "clausesFailed": 1,
+        "clausesPassed": 7,
+        "concerns": 3,
+        "stakeholders": 3,
+        "views": 2
+      },
+      "apparatusClauseFailures": [
+        "6.10",
+        "6.8"
+      ],
+      "tokens": {
+        "input": 57342,
+        "output": 64352
       }
     }
   }

@@ -79,24 +79,13 @@ Rewrite the baseline with `--baseline` only when the new numbers are understood 
 deliberate — the point of a baseline is that moving it is a decision. `--from-records`
 rebuilds it from a saved `--out` file, so accepting a number never costs another run.
 
-### ⚠ The committed baseline is stale for two categories (since 2026-08-06, Phase 7.2)
+### The staleness warning that stood here has been resolved (2026-08-07)
 
-`clinic` gained its **capability layer** — three capabilities and three realizations, a
-correction against `ea-capability-map`'s own "the capability map is the spine" rule, argued
-and recorded in [`eval/golden/README.md`](../golden/README.md). Gold's element and
-relationship denominators therefore changed, so:
-
-| Category | Comparable across the change? |
-|---|---|
-| `clinic` facts, entities | **yes** — the register was not touched |
-| `clinic` elements, relationships | **no** — the denominator moved |
-| `contested` (all) | **yes** — that case was not touched |
-
-Do not read the `clinic` element and relationship numbers below as current, and do not
-treat a rise in them as a skill improvement: a run that produced capabilities used to be
-charged precision for them and is now credited recall. The same rule as the 0.11.0
-`ea-capability-map` move — *the instrument changed*, which is legitimate in a way that
-moving a baseline over a disappointing result is not.
+Between 2026-08-06 and 2026-08-07 the committed baseline was knowingly stale for `clinic`'s
+element and relationship categories, because gold gained its capability layer before the
+harness could be rerun. The warning is gone because the rerun happened; **the third
+baseline below is current**, and what it may and may not be compared against is stated
+there rather than here.
 
 The measured-skill prose also moved in 7.2 (`ea-model` and `ea-capability-map` gained a
 "When is this layer done" section), which is the other reason a rerun is owed. Until it
@@ -231,6 +220,48 @@ runs are inventing a layer the source does not support, or the golden case contr
 method the skills teach. It is recorded here and **not** acted on in the same release that
 measured it: the last time a question pointed at gold, answering it in the next release,
 with the rule stated, is what kept the correction from looking like a number being tuned.
+
+## The third baseline (2026-08-07, claude-sonnet-5, 3 runs/case, Phase 7.1–7.5)
+
+Owed twice over, and that is the point of reading it carefully: the measured prose changed
+(`ea-model` and `ea-capability-map` each gained a "When is this layer done" section) **and**
+gold moved (`clinic`'s capability layer). Two reasons for a rerun arriving together means
+two reasons a number could have moved, and they cannot be told apart from the numbers.
+
+| Case | facts | entities | elements | relationships |
+|---|---|---|---|---|
+| `clinic` | 87% → **92%** | 67% → 71% | 43% → 56% ⚠ | 20% → 32% ⚠ |
+| `contested` | 67% → 67% | 71% → **75%** | 56% → 56% | 11% → 11% |
+
+Six of six runs green on their own gates, every phase gate passed, one run needing repairs
+(one intake, two modelling) and five needing none. `No category regressed against the
+baseline.`
+
+**⚠ marks the two categories that are not comparable, and they are the two that rose most.**
+`clinic`'s element and relationship denominators changed when gold gained three capabilities
+and three realizations, so a run that produced a capability layer used to be charged
+precision for it and is now credited recall. **+13 and +12 points are the instrument, not
+the skill.** This was predicted in writing before the numbers existed — the warning this
+section replaces said "do not treat a rise in them as a skill improvement", and then they
+rose. Reading them as progress would be the exact error the protocol was written to prevent.
+
+**What is comparable says something quieter and more trustworthy.** `clinic/facts` 87 → 92
+and `clinic/entities` 67 → 71 sit inside the previous spreads (83–92 and 59–80), so they are
+noise, not improvement — and `ea-intake`, which produces both, had no prose change to credit
+anyway. All four `contested` categories are flat to within a point on a case nothing
+touched, which is the useful result: **the instrument is stable where nothing changed.**
+
+**Why it was accepted.** Nothing regressed, the two incomparable categories moved in the
+predicted direction for the predicted reason, and the comparable ones did not move. There
+is no disappointing number here being re-baselined away — the risk this protocol guards
+against does not arise this time, which is worth saying explicitly, because a baseline
+accepted without argument looks the same in the file as one accepted despite an argument.
+
+**What this rerun does *not* establish.** Whether the two "When is this layer done" sections
+helped. They were added to `ea-model` and `ea-capability-map`, whose output is scored by the
+element and relationship categories — the two that stopped being comparable in the same
+change. The next rerun on an unmoved gold is the first one that can answer it, and until
+then the honest position is that their effect is unmeasured, not zero.
 
 ## Across model tiers (2026-08-06, `clinic`, 3 runs each, informational)
 
