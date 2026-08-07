@@ -42,6 +42,14 @@ redistributed here — so the split is mechanism here, content at the adopter, u
 adopter's licence. Transcribing a licensed taxonomy into a fixture "for the example" would
 be a licence breach dressed as convenience.
 
+## Bundled under `docs/karuzela/fonts/`
+
+Three typefaces bundled so that the Polish LinkedIn carousel renders identically offline:
+**Fraunces**, **Inter** and **IBM Plex Mono**, each under the SIL Open Font License 1.1.
+Copyright holders, upstream repositories and one outstanding licence obligation are named
+in [`docs/karuzela/fonts/NOTICE.md`](docs/karuzela/fonts/NOTICE.md). Nothing in `easkills/`
+reads them.
+
 ## Standards implemented, not reproduced
 
 No specification text is copied into this repository. ArchiMate rules are derived from the

@@ -1,0 +1,5 @@
+# Artefakty renderu: odtwarzalne z slides.html w kilkanaście sekund, 25 MB w gicie
+out/
+# Playwright
+node_modules/
+package-lock.json

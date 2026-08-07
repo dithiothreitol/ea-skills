@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<title>ea-skills — karuzela LinkedIn</title>
+<link rel="stylesheet" href="./fonts/fonts.css" />
+<style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   ea-skills — karuzela LinkedIn, 10 × 1080×1350.
+   Wygląd: system "Engineering Blueprint" z archxs-website (globals.css).
+   Mechanizm: slides.html + render.mjs, jak w tic-bot-toe/docs/szkolenie/tools.
+   Kolory i tokeny przepisane, nie wymyślone — patrz BRAND.md.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --paper: #f7f5f0;
+  --paper-raised: #fffdf8;
+  --ink: #1a1c1e;
+  --ink-soft: #55595d;
+  --redline: #c8431f;
+  --steel: #46647f;
+  --border: rgba(26, 28, 30, 0.14);
+  --grid: rgba(26, 28, 30, 0.055);
+  --grid-strong: rgba(26, 28, 30, 0.1);
+  --radius: 4px;
+}
+
+.night {
+  --paper: #0e1b2c;
+  --paper-raised: #13253a;
+  --ink: #e6edf4;
+  --ink-soft: #a6bacb;
+  --redline: #ff7f52;
+  --steel: #7ea9c9;
+  --border: rgba(230, 237, 244, 0.16);
+  --grid: rgba(126, 169, 201, 0.09);
+  --grid-strong: rgba(126, 169, 201, 0.16);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #3a3d40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  padding: 40px 0;
+}
+
+.slide {
+  position: relative;
+  width: 1080px;
+  height: 1350px;
+  padding: 88px;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-feature-settings: "kern" 1, "liga" 1;
+  text-rendering: optimizeLegibility;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Papier kreślarski: siatka 12 px z linią główną co 96 px ──────────────── */
+.slide::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px),
+    linear-gradient(to right, var(--grid-strong) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-strong) 1px, transparent 1px);
+  background-size: 12px 12px, 12px 12px, 96px 96px, 96px 96px;
+  -webkit-mask-image: radial-gradient(ellipse 82% 62% at 50% 34%, black 28%, transparent 80%);
+  mask-image: radial-gradient(ellipse 82% 62% at 50% 34%, black 28%, transparent 80%);
+}
+
+/* ── Ziarno papieru: zabija płaski gradient ───────────────────────────────── */
+.slide::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+}
+
+/* ── Znaczniki pasowania w rogach ─────────────────────────────────────────── */
+.reg { position: absolute; width: 26px; height: 26px; border-color: var(--redline); opacity: 0.55; z-index: 2; }
+.reg.tl { top: 44px; left: 44px; border-top: 2px solid; border-left: 2px solid; }
+.reg.tr { top: 44px; right: 44px; border-top: 2px solid; border-right: 2px solid; }
+.reg.bl { bottom: 44px; left: 44px; border-bottom: 2px solid; border-left: 2px solid; }
+.reg.br { bottom: 44px; right: 44px; border-bottom: 2px solid; border-right: 2px solid; }
+
+.content { position: relative; z-index: 3; display: flex; flex-direction: column; height: 100%; }
+.spacer { flex: 1 1 auto; min-height: 32px; }
+
+/* ── Etykieta arkusza ─────────────────────────────────────────────────────── */
+.sheet {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 500;
+  font-size: 24px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.sheet::before { content: ''; width: 44px; height: 2px; background: var(--redline); flex: none; }
+
+/* ── Nagłówki ─────────────────────────────────────────────────────────────── */
+h1 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-variation-settings: "SOFT" 0, "WONK" 0, "opsz" 96;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  line-height: 1.03;
+  margin-top: 42px;
+  text-wrap: balance;
+}
+.xl { font-size: 116px; }
+.lg { font-size: 92px; }
+.md { font-size: 84px; }
+.sm { font-size: 72px; }
+h1 .em { color: var(--redline); }
+
+.lead {
+  font-size: 38px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  margin-top: 40px;
+  max-width: 860px;
+  text-wrap: pretty;
+}
+.lead .em { color: var(--ink); font-weight: 500; }
+
+/* ── Stopka z linią wymiarową ─────────────────────────────────────────────── */
+.foot {
+  position: relative;
+  margin-top: 34px;
+  padding-top: 26px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+.foot::before, .foot::after {
+  content: ''; position: absolute; top: -5px; width: 1px; height: 11px; background: var(--border);
+}
+.foot::before { left: 0; }
+.foot::after { right: 0; }
+.foot b { color: var(--ink); font-weight: 500; }
+
+/* ── Karty ────────────────────────────────────────────────────────────────── */
+.cols { display: flex; gap: 28px; margin-top: 52px; }
+.card {
+  flex: 1;
+  background: var(--paper-raised);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--steel);
+  border-radius: var(--radius);
+  padding: 36px 34px;
+}
+.card.accent { border-top-color: var(--redline); }
+.card .tag {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 22px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--steel);
+}
+.card.accent .tag { color: var(--redline); }
+.card .ct { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: 42px; margin-top: 16px; line-height: 1.12; }
+.card .cd { font-size: 28px; line-height: 1.38; color: var(--ink-soft); margin-top: 16px; }
+
+/* ── Blok mono (kod, terminal, YAML) ──────────────────────────────────────── */
+.mono-block {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 27px;
+  line-height: 1.6;
+  background: var(--paper-raised);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--redline);
+  border-radius: var(--radius);
+  padding: 34px 36px;
+  margin-top: 46px;
+  color: var(--ink);
+  white-space: pre;
+}
+.mono-block .dim { color: var(--ink-soft); }
+.mono-block .red { color: var(--redline); }
+.mono-block .steel { color: var(--steel); }
+
+/* ── Lista kroków ─────────────────────────────────────────────────────────── */
+.steps { margin-top: 48px; display: flex; flex-direction: column; gap: 22px; }
+.step { display: flex; align-items: baseline; gap: 26px; font-size: 36px; line-height: 1.2; }
+.step .n {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 500; font-size: 26px; color: var(--redline); flex: none; width: 48px;
+}
+.step .sub { color: var(--ink-soft); font-size: 27px; margin-left: 12px; }
+
+/* ── Strefy ───────────────────────────────────────────────────────────────── */
+.zones { display: flex; align-items: stretch; gap: 24px; margin-top: 52px; }
+.zone {
+  flex: 1; background: var(--paper-raised); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 32px 30px;
+}
+.zone.approved { border-color: var(--redline); }
+.zone .zt { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 24px; letter-spacing: 0.08em; color: var(--steel); }
+.zone.approved .zt { color: var(--redline); }
+.zone .zd { font-size: 27px; line-height: 1.35; color: var(--ink-soft); margin-top: 14px; }
+.arrow {
+  flex: none; width: 132px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px;
+}
+.arrow .line { width: 100%; height: 2px; background: var(--redline); position: relative; }
+.arrow .line::after {
+  content: ''; position: absolute; right: -1px; top: -7px;
+  border-left: 16px solid var(--redline); border-top: 8px solid transparent; border-bottom: 8px solid transparent;
+}
+.arrow .lbl { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 22px; color: var(--redline); letter-spacing: 0.06em; }
+
+/* ── Liczby ───────────────────────────────────────────────────────────────── */
+.stats { display: flex; gap: 20px; margin-top: 52px; }
+.stat { flex: 1; border-top: 2px solid var(--border); padding-top: 20px; }
+.stat .n {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 500; font-size: 62px; line-height: 1; color: var(--redline);
+}
+.stat .l { font-size: 25px; color: var(--ink-soft); margin-top: 12px; line-height: 1.25; }
+
+/* ── Rysunek (SVG z eval/example) ─────────────────────────────────────────── */
+.figure { margin-top: 40px; background: #ffffff; border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+.figure img { display: block; width: 100%; height: auto; }
+.figure.compact img { max-height: 460px; width: auto; margin: 0 auto; }
+.caption {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 22px; color: var(--ink-soft); margin-top: 18px; line-height: 1.4;
+}
+
+/* ── Adres repozytorium ───────────────────────────────────────────────────── */
+.url {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 500; font-size: 40px; color: var(--redline);
+  border: 1px solid var(--border); border-left: 3px solid var(--redline);
+  border-radius: var(--radius); background: var(--paper-raised);
+  padding: 28px 32px; margin-top: 44px; letter-spacing: -0.01em;
+}
+
+/* ── Druk: jeden slajd = jedna strona PDF ─────────────────────────────────── */
+@page { size: 1080px 1350px; margin: 0; }
+@media print {
+  body { background: none; gap: 0; padding: 0; }
+  .slide { break-after: page; }
+}
+</style>
+</head>
+<body>
+
+<!-- 01 · HAK -->
+<section class="slide night" id="s01">
+  <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
+  <div class="content">
+    <div class="sheet">Po co to powstało</div>
+    <div class="spacer"></div>
+    <h1 class="lg">Model architektury<br>żyje <span class="em">jeden kwartał</span></h1>
+    <p class="lead">Potem nikt już do niego nie zagląda. Nie dlatego, że był zły, tylko dlatego, że nic nie pilnowało, żeby nadążał.</p>
+    <div class="spacer"></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>01 / 10</span></div>
+  </div>
+</section>
+
+<!-- 02 · CO TO JEST -->
+<section class="slide night" id="s02">
+  <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
+  <div class="content">
+    <div class="sheet">Co to jest</div>
+    <h1 class="xl">ea-skills</h1>
+    <p class="lead">Notatki z wywiadów, dokumentacja i arkusze na wejściu. Model ArchiMate 3.2 w gicie, widoki i opis architektury na wyjściu.</p>
+    <div class="cols">
+      <div class="card">
+        <div class="tag">Wejście</div>
+        <div class="ct">To, co już masz</div>
+        <div class="cd">Wywiady, dokumentacja, arkusze, rejestry. Bez wcześniejszego porządkowania.</div>
+      </div>
+      <div class="card accent">
+        <div class="tag">Wyjście</div>
+        <div class="ct">Model, który się broni</div>
+        <div class="cd">ArchiMate 3.2, widoki, opis w kształcie ISO 42010, rekordy zarządcze.</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>02 / 10</span></div>
+  </div>
+</section>
+
+<!-- 03 · PODZIAŁ RÓL -->
+<section class="slide night" id="s03">
+  <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
+  <div class="content">
+    <div class="sheet">Podział ról</div>
+    <h1 class="md">Agent proponuje,<br><span class="em">bramka rozstrzyga</span></h1>
+    <p class="lead">O tym, czy relacja jest w ArchiMate dopuszczalna, nie decyduje model językowy. Decyduje macierz 11 569 par ze źródeł Archi, przypięta hashem.</p>
+    <div class="cols">
+      <div class="card">
+        <div class="tag">Umiejętność agenta</div>
+        <div class="ct">Proponuje</div>
+        <div class="cd">Czyta źródła, składa elementy i relacje, pisze do strefy roboczej.</div>
+      </div>
+      <div class="card accent">
+        <div class="tag">Rdzeń deterministyczny</div>
+        <div class="ct">Rozstrzyga</div>
+        <div class="cd">141 reguł, macierz ArchiMate, kod wyjścia. Ten sam wynik przy każdym uruchomieniu.</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>03 / 10</span></div>
+  </div>
+</section>
+
+<!-- 04 · PROWENIENCJA -->
+<section class="slide night" id="s04">
+  <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
+  <div class="content">
+    <div class="sheet">Skąd to wiesz</div>
+    <h1 class="md">Każdy element wskazuje<br><span class="em">plik i linię</span></h1>
+    <p class="lead">Cytat, którego w źródle nie ma, kończy się błędem walidacji. Założyłem, że model kiedyś coś zmyśli, i wolałem łapać to automatem.</p>
+    <div class="mono-block"><span class="steel">- id:</span> app-erp-core
+  <span class="steel">type:</span> ApplicationComponent
+  <span class="steel">provenance:</span>
+    <span class="steel">file:</span>  docs/wywiad-it.md
+    <span class="steel">lines:</span> 42-47
+    <span class="steel">quote:</span> "Zamówienia obsługuje ERP"
+
+<span class="red">PROV003</span> <span class="dim">cytat nie występuje w podanym pliku</span>
+<span class="dim">        citation that cannot be located</span>
+<span class="dim">        is a fabricated citation</span></div>
+    <div class="spacer"></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>04 / 10</span></div>
+  </div>
+</section>
+
+<!-- 05 · POTOK -->
+<section class="slide night" id="s05">
+  <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
+  <div class="content">
+    <div class="sheet">Jak się z tego korzysta</div>
+    <h1 class="md">Kolejność, której<br>nie da się <span class="em">skrócić</span></h1>
+    <p class="lead">Modelowanie bez rejestru faktów daje pojęcia bez pokrycia. Widoki przed rozmową ze stakeholderami dają diagramy, o które nikt nie prosił.</p>
+    <div class="steps">
+      <div class="step"><span class="n">01</span><span>Fakty ze źródeł<span class="sub">cytat zweryfikowany maszynowo</span></span></div>
+      <div class="step"><span class="n">02</span><span>Mapa zdolności<span class="sub">kręgosłup, nie ozdoba</span></span></div>
+      <div class="step"><span class="n">03</span><span>Model warstwa po warstwie<span class="sub">do strefy roboczej</span></span></div>
+      <div class="step"><span class="n">04</span><span>Walidacja<span class="sub">141 reguł, kod wyjścia</span></span></div>
+      <div class="step"><span class="n">05</span><span>Przegląd człowieka<span class="sub">jedyna droga do zatwierdzenia</span></span></div>
+      <div class="step"><span class="n">06</span><span>Widoki i dokumentacja<span class="sub">na końcu, nie na początku</span></span></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>05 / 10</span></div>
+  </div>
+</section>
+
+<!-- 06 · BRAMKA -->
+<section class="slide night" id="s06">
+  <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
+  <div class="content">
+    <div class="sheet">Bramka</div>
+    <h1 class="lg"><span class="em">141 reguł</span><br>i kod wyjścia</h1>
+    <p class="lead">Walidacja nie negocjuje. Każde znalezisko wskazuje konkretny element, a przy tej samej dacie raport wychodzi bajt w bajt taki sam.</p>
+    <div class="mono-block"><span class="dim">$</span> python -m easkills validate --strict
+
+<span class="red">REL001</span>  Realization: BusinessActor → ApplicationService
+        <span class="dim">niedozwolona w ArchiMate 3.2</span>
+<span class="red">DISP003</span> disp-onprem-legacy: odstępstwo wygasło
+        <span class="dim">2026-06-30, brak decyzji o przedłużeniu</span>
+
+<span class="dim">2 błędy · kod wyjścia 1</span></div>
+    <div class="spacer"></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>06 / 10</span></div>
+  </div>
+</section>
+
+<!-- 07 · DWIE STREFY -->
+<section class="slide night" id="s07">
+  <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
+  <div class="content">
+    <div class="sheet">Kto zatwierdza</div>
+    <h1 class="sm">Do zatwierdzonego modelu<br>wchodzi <span class="em">tylko człowiek</span></h1>
+    <p class="lead">Agent pisze do strefy roboczej. Przeniesienie dalej to osobna komenda, uruchamiana świadomie, nigdy przy okazji czegoś innego.</p>
+    <div class="zones">
+      <div class="zone">
+        <div class="zt">model/staging/</div>
+        <div class="zd">Propozycje. Agent pisze tu i tylko tu.</div>
+      </div>
+      <div class="arrow">
+        <div class="lbl">promote</div>
+        <div class="line"></div>
+        <div class="lbl">człowiek</div>
+      </div>
+      <div class="zone approved">
+        <div class="zt">model/approved/</div>
+        <div class="zd">Stan uzgodniony. Źródło dla wszystkich raportów.</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>07 / 10</span></div>
+  </div>
+</section>
+
+<!-- 08 · UTRZYMANIE -->
+<section class="slide night" id="s08">
+  <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
+  <div class="content">
+    <div class="sheet">Utrzymanie</div>
+    <h1 class="lg">Odstępstwa mają<br><span class="em">daty ważności</span></h1>
+    <p class="lead">Wygasające zgody, kolejka przeglądów według właściciela, dług policzony i wyceniony stawkami organizacji.</p>
+    <div class="cols">
+      <div class="card">
+        <div class="tag">Zgodność</div>
+        <div class="ct">Zgoda z terminem</div>
+        <div class="cd">Odstępstwo bez daty wygaśnięcia jest błędem, nie wyjątkiem.</div>
+      </div>
+      <div class="card">
+        <div class="tag">Przeglądy</div>
+        <div class="ct">Kolejka z właścicielem</div>
+        <div class="cd">Ułożona wg tego, o co odbiorcy faktycznie pytają.</div>
+      </div>
+      <div class="card accent">
+        <div class="tag">Dług</div>
+        <div class="ct">Wycena Twoimi stawkami</div>
+        <div class="cd">Narzędzie liczy ekspozycję. Ceny są organizacji, nie narzędzia.</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>08 / 10</span></div>
+  </div>
+</section>
+
+<!-- 09 · ZASTOSOWANIA -->
+<section class="slide night" id="s09">
+  <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
+  <div class="content">
+    <div class="sheet">Gdzie to robi różnicę</div>
+    <h1 class="sm">DORA, NIST,<br>portfel <span class="em">aplikacji</span></h1>
+    <p class="lead">Rejestr Informacji generowany z modelu. Luki wobec NIST CSF 2.0 wypisane co do węzła. Nakładające się aplikacje z dyspozycją TIME.</p>
+    <div class="figure compact"><img src="../../eval/example/docs/views/layered-overview.svg" alt="" /></div>
+    <div class="caption">widok wygenerowany komendą <b>easkills render</b> z modelu przykładowego, bez rysowania ręką</div>
+    <div class="spacer"></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>09 / 10</span></div>
+  </div>
+</section>
+
+<!-- 10 · CTA -->
+<section class="slide night" id="s10">
+  <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
+  <div class="content">
+    <div class="sheet">Do sprawdzenia</div>
+    <h1 class="lg">Kod jest <span class="em">publiczny</span></h1>
+    <div class="url">github.com/dithiothreitol/ea-skills</div>
+    <p class="lead">Uruchamiasz na swoim repozytorium, nie na moim demo. Przykładowy model z pełnym opisem architektury leży w środku.</p>
+    <div class="stats">
+      <div class="stat"><div class="n">141</div><div class="l">reguł walidacji</div></div>
+      <div class="stat"><div class="n">31</div><div class="l">komend CLI</div></div>
+      <div class="stat"><div class="n">684</div><div class="l">testy</div></div>
+      <div class="stat"><div class="n">MIT</div><div class="l">licencja</div></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>10 / 10</span></div>
+  </div>
+</section>
+
+</body>
+</html>

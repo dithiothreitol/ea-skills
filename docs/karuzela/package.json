@@ -1,0 +1,12 @@
+{
+  "name": "ea-skills-karuzela",
+  "private": true,
+  "type": "module",
+  "description": "Render of the Polish LinkedIn carousel. Not part of the Python package or the CI gate.",
+  "scripts": {
+    "render": "node render.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.61.1"
+  }
+}
