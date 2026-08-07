@@ -43,7 +43,9 @@ identical, so the first one teaches you the second.
 
 Check each shipped pack's NOTICE for its **verification status** before leaning on it. One
 that says *structure not yet verified* is a draft yardstick: useful for producing a gap
-list, not for citing as evidence of what the source requires.
+list, not for citing as evidence of what the source requires. A verified one names the date
+and the edition it was read against — confirm that edition is still the one you mean, since
+nothing re-checks a taxonomy when its source is superseded.
 
 **If your licence does not let you commit the taxonomy**, gitignore it and keep the rest:
 

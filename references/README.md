@@ -7,7 +7,7 @@ here** — everything in this directory is either public domain or public law, w
 
 | Pack | Nodes | Source | Licence | Verification |
 |---|---|---|---|---|
-| [`nist-csf-2.0/`](nist-csf-2.0/) | functions + categories | NIST CSWP 29 (2024) | public domain (17 U.S.C. §105) | **structure not yet verified** — draft yardstick, see its [NOTICE](nist-csf-2.0/NOTICE.md) |
+| [`nist-csf-2.0/`](nist-csf-2.0/) | functions + categories | NIST CSWP 29 (2024) | public domain (17 U.S.C. §105) | **verified 2026-08-07** against the cited edition, see its [NOTICE](nist-csf-2.0/NOTICE.md) |
 
 ## Using one
 
@@ -45,10 +45,14 @@ exactly how a draft yardstick becomes an authority. Until a pack says verified:
 * do not let one of its gaps alone drive a decision;
 * do gate on it if you like — a gap list is still useful while its provenance is provisional.
 
-When the reading is done: correct or confirm `model.yaml`, drop the verification-status
-section from the NOTICE, update the table above, re-pin
+When the reading is done: correct or confirm `model.yaml`, turn the NOTICE's
+verification-status section into a dated statement of what was read and against which
+edition, carry that date into the table above, re-pin
 (`python -m easkills pin-reference --dir references/<pack>`), and say in the commit message
-that the reading happened.
+that the reading happened. **The date is not decoration, and a test requires it** —
+verification is against one edition of one document, so an undated claim cannot be known to
+have gone stale, and a pack that outlives its source edition is the draft yardstick again
+wearing a better label.
 
 `ALN001` protects a pack after that check. It cannot perform it, and it does not pretend to.
 

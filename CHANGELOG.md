@@ -7,6 +7,23 @@ project's build phases (design log with per-decision rationale:
 
 ## [Unreleased]
 
+### Changed — the NIST CSF 2.0 pack is verified
+
+The pack shipped in 0.13.0 labelled **structure not yet verified** — written from working
+knowledge rather than read off the source, and stated as such because nothing mechanical
+can tell the two apart. The maintainer has now walked the six Functions and twenty-two
+Categories against the Function and Category tables of NIST CSWP 29 (February 2024) and
+confirmed them as transcribed; **no correction was needed**. What was checked is named
+narrowly — identifiers, names and parentage, the whole of what the pack carries. What each
+Category *requires* is still the Framework's own text to say.
+
+The NOTICE's caveat became a **dated** statement rather than being deleted, and
+[`references/README.md`](references/README.md) carries the same date. A verification with
+no date says nothing about which edition it was against, so a later CSF edition would turn
+a true claim false with no edit anywhere; a new test therefore requires the date in both
+places, alongside the existing test that keeps the two files agreeing. The pack is
+re-pinned.
+
 ## [0.14.0] — 2026-08-07 — the proposal release
 
 Phase 7.6 + 7.7, and the last of Phase 7: findings become staged work, and the practice

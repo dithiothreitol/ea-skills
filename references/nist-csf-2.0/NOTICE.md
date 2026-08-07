@@ -16,24 +16,24 @@ NIST publishes for them (`GV.OC`, `ID.AM`, …). Subcategories, Implementation E
 and Informative References are **not** included, and no normative wording is
 paraphrased — the Framework's own text is the authority on what each Category means.
 
-**Verification status: structure not yet verified against the cited source.**
-It was written from working knowledge of CSF 2.0 rather than read off NIST CSWP 29 node
-by node, and nothing mechanical can catch the difference — a Category name that is
-subtly wrong, or a Category that does not exist, looks exactly like a correct one to
-every later reader and to every `align` report. Treat this pack as a **draft yardstick**
-until someone has done that reading:
+**Verification status: structure verified against the cited source, 2026-08-07.** The six
+Functions and twenty-two Categories in `model.yaml` were walked against the Function and
+Category tables of NIST CSWP 29 by this repository's maintainer and confirmed as
+transcribed — identifiers, names and parentage, which is the whole of what this pack
+carries. No correction was needed. The commit bearing this line is the record of that
+reading; nothing in this repository can re-perform it.
 
-* Do not cite a node of this pack as evidence of what NIST requires.
-* Do not let an `ALN004` gap from this pack alone drive an investment decision.
-* Do check it before you rely on it — open CSWP 29, walk the Function and Category
-  tables, and correct or confirm `model.yaml`. Then re-pin
-  (`python -m easkills pin-reference --dir references/nist-csf-2.0`), delete this
-  section, and say in the commit message that the reading was done.
+Two limits survive the check, and both are properties of the pack rather than doubts about
+it. The reading was against the **February 2024** edition cited above, so a later CSF
+edition makes this statement stale — re-read the tables and re-date this line in the same
+commit that changes the citation. And a verified *structure* is not a verified *meaning*:
+the identifiers are right, and what each Category requires is still the Framework's own
+text to say.
 
-This is stated here rather than quietly fixed later because an unverified taxonomy that
+The state is written down rather than left implicit because an unverified taxonomy that
 *looks* verified is the failure this repository exists to prevent one layer down, where
 element provenance is mechanically checked. The reference layer has no such check, so it
-gets a written status instead.
+gets a written status instead — including when the answer is good.
 
 **What this pack is for.** It is a yardstick for `python -m easkills align`: a checklist
 of security-governance areas an architecture is measured against, so an unexamined area

@@ -39,8 +39,9 @@ does not apply to us" is a sentence somebody has to sign.
 NIST CSF 2.0 ships in [`references/`](../../references/) (public domain). Licensed
 frameworks stay in the adopter's repository under the adopter's licence — see
 `template/reference/README.md`. Check the pack's `NOTICE.md` before you rely on it:
-verification state is stated there and in the library table, and a pack labelled
-*structure not yet verified* is a working draft, not an authority.
+verification state is stated there and in the library table, a pack labelled *structure not
+yet verified* is a working draft rather than an authority, and a verified one is verified
+against one dated edition — which a later edition of the framework silently invalidates.
 
 ## Scope: what puts an element in the register
 

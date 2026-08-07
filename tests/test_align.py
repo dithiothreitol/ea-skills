@@ -13,6 +13,7 @@ behaviour that makes the report trustworthy rather than merely present:
 from __future__ import annotations
 
 import json
+import re
 import shutil
 
 import pytest
@@ -191,6 +192,34 @@ def test_the_verification_state_of_every_shipped_pack_is_stated_in_both_places(r
                 f"{directory.name}: the table calls the structure unverified but the NOTICE "
                 "no longer does -- one of them was updated and the other was not"
             )
+
+
+ISO_DATE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
+
+
+def test_a_pack_that_claims_verification_says_when(repo_root):
+    """A verification is against one edition of one document on one day.
+
+    Undated, "verified" is unfalsifiable: nobody downstream can tell a reading done
+    against the cited edition from one done against an edition since superseded, and the
+    caveat this pack shed cannot be re-earned by a reader who suspects it should be. So a
+    pack that no longer carries the unverified marker must carry a date instead -- in the
+    NOTICE that argues it and in the table adopters read first.
+    """
+    table = (repo_root / "references" / "README.md").read_text(encoding="utf-8")
+    for directory in sorted(p for p in (repo_root / "references").iterdir() if p.is_dir()):
+        notice = (directory / "NOTICE.md").read_text(encoding="utf-8")
+        if UNVERIFIED_MARKER in notice.lower():
+            continue
+        row = next(line for line in table.splitlines() if f"`{directory.name}/`" in line)
+        assert ISO_DATE.search(notice), (
+            f"{directory.name}: the NOTICE claims a verified structure without saying when "
+            "it was read -- an undated verification cannot be found stale"
+        )
+        assert ISO_DATE.search(row), (
+            f"{directory.name}: the library table calls the pack verified without a date, so "
+            "an adopter cannot see which edition the reading was against"
+        )
 
 
 def test_a_repository_with_no_reference_pack_passes(tmp_path):
