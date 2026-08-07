@@ -49,6 +49,7 @@ python -m easkills context --root . --scope <id>      # agent context pack (AD-0
 **Is it done?**
 
 ```bash
+python -m easkills maturity  --root .                    # level 1-5 per dimension, no composite
 python -m easkills readiness --root .                    # per-layer checkpoints, advisory
 python -m easkills readiness --root . --zone staging     # including proposals
 ```
@@ -66,6 +67,7 @@ python -m easkills align --root .                              # covered / parti
 python -m easkills propose --root . --from align     --as-of <date> --dry-run
 python -m easkills propose --root . --from readiness --as-of <date>
 python -m easkills propose --root . --from overlap   --as-of <date>
+python -m easkills propose --root . --from time      --as-of <date>
 ```
 
 Each stub is `assumed: true` and opens with `PROPOSED --`. Complete it or delete it;

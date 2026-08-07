@@ -47,6 +47,18 @@ For each item, prepare the *decision to be made*, not just the topic: "renew
 disp-onprem-legacy for 6 months or fund the migration" is an agenda item;
 "discuss on-premise hosting" is not.
 
+## The maturity table as a board artifact
+
+`python -m easkills maturity --as-of <date>` produces the one slide a board actually
+acts on — provided you bring it whole. **Never reduce it to a single figure**, and
+never present a level without the items blocking the next one: a level is a
+description, the blockers are the agenda. Two dimensions moving in opposite directions
+is the interesting case and an average would erase it.
+
+Bring it quarterly, against your own previous run. A `not measurable` row is a
+resourcing question ("we own no reference model"), not a bad score — and it is the one
+row where the fix is a decision the board can take in the room.
+
 ## Minutes
 
 Minutes are the records they change, plus a summary. Every board outcome lands as a

@@ -29,8 +29,8 @@ parser; `python -m easkills <command> --help` is the same information, per comma
 | `--root <path>` | Repository root (default: cwd) | all except `gen-schema`, `pin-oracle`, `oracle-info` |
 | `--zone approved\|staging` | Which zone to read; governance metadata is mandatory in `approved` | `validate`, `compile`, `render`, `impact`, `align`, `readiness` |
 | `--strict` | Warnings fail too (on `conformance`: any failed clause fails; on `align`: gaps fail; on `readiness`: any open checkpoint fails) | `validate`, `validate-facts`, `validate-gov`, `conformance`, `check`, `align`, `readiness`, `dora-register` |
-| `--as-of YYYY-MM-DD` | Evaluate date-dependent checks against a fixed date, for reproducibility | `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `roadmap`, `context`, `check`, `impact`, `dora-register`, `propose` (**required** there) |
-| `--json <file>` | Write the machine-readable report alongside the rendered one. On `chunk` it takes **no argument** and prints JSON to stdout instead | `validate`, `validate-facts`, `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `delta`, `roadmap`, `coverage`, `score`, `chunk`, `check`, `import`, `impact`, `intake-csv`, `align`, `readiness`, `dora-register`, `propose` |
+| `--as-of YYYY-MM-DD` | Evaluate date-dependent checks against a fixed date, for reproducibility | `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `roadmap`, `context`, `check`, `impact`, `dora-register`, `maturity`, `propose` (**required** there) |
+| `--json <file>` | Write the machine-readable report alongside the rendered one. On `chunk` it takes **no argument** and prints JSON to stdout instead | `validate`, `validate-facts`, `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `delta`, `roadmap`, `coverage`, `score`, `chunk`, `check`, `import`, `impact`, `intake-csv`, `align`, `readiness`, `dora-register`, `maturity`, `propose` |
 | `--out <path>` | Output file (or directory, for `render`) instead of the default location | `compile`, `render`, `docs`, `context`, `import`, `intake-csv`, `dora-register`, `propose` |
 | `--skip-validation` | Build from a model with validation errors (not recommended) | `compile`, `docs` |
 | `--scope <element-id>` | The element the command is about | `context`, `check`, `impact` |
@@ -157,11 +157,65 @@ an element's deliberately open `properties` map, a tooling key this tooling does
 is always a typo, and `stalenessDay` leaves the 365-day default in place while the
 repository looks fresh.
 
+## Maturity
+
+| Command | Does |
+|---|---|
+| `maturity [--as-of] [--json]` | Level **1–5 per dimension** across Evidence, Governance, Documentation, Coverage and Operations, each from signals the rest of the tooling already computes — plus the **named items** blocking the next level. |
+
+**No composite number.** A single "we are a 3.4" is how maturity becomes theatre: it can
+be moved by the cheapest dimension and it hides which one moved. There is no aggregate in
+the rendered output and none in the `--json`, and a test asserts the absence.
+
+Two more properties worth knowing before quoting a level:
+
+- **Level 1 is "measured", not "bad".** The gates start at level 2, so a young repository
+  scores 1 and is failing nothing. Nothing in this report is an error and it never gates.
+- **Unmeasurable is not satisfied.** Reference coverage with no reference pack is `None`,
+  and the gate it guards stays shut with *"no reference pack, so there is no second
+  yardstick"* as the blocker. Handing out level 5 for owning no yardstick is the
+  vacuous-100% trap `--min-coverage` refuses — and it matters more here, because a
+  maturity level is the number that travels into a slide.
+
+The thresholds, which are the whole argument — they live in `maturity.DIMENSIONS` and a
+test compares the two tables, so a threshold cannot move in code without this one moving:
+
+<!-- maturity-thresholds -->
+
+| Dimension | Level | Metric | Threshold |
+|---|---|---|---|
+| evidence | 2 | `evidencedShare` | >= 0.5 |
+| evidence | 3 | `evidencedShare` | >= 0.75 |
+| evidence | 4 | `evidencedShare` | >= 0.9 |
+| evidence | 5 | `evidencedShare` | >= 0.98 |
+| governance | 2 | `expiredDispensations` | <= 0 |
+| governance | 3 | `uncoveredDeadStandardRefs` | <= 0 |
+| governance | 4 | `decisionsRecorded` | >= 1 |
+| governance | 5 | `assessmentsWithoutFollowUp` | <= 0 |
+| documentation | 2 | `isoClausesPassed` | >= 4 |
+| documentation | 3 | `isoClausesFailed` | <= 0 |
+| documentation | 4 | `openIsoLoopItems` | <= 0 |
+| documentation | 5 | `isoClauseGaps` | <= 0 |
+| coverage | 2 | `sourceCoverage` | >= 0.5 |
+| coverage | 3 | `sourceCoverage` | >= 0.8 |
+| coverage | 4 | `sourceCoverage` | >= 1 |
+| coverage | 5 | `referenceCoverage` | >= 0.8 |
+| operations | 2 | `ownedShare` | >= 0.5 |
+| operations | 3 | `ownedShare` | >= 1 |
+| operations | 4 | `staleShare` | <= 0.2 |
+| operations | 5 | `staleShare` | <= 0 |
+
+<!-- /maturity-thresholds -->
+
+Every metric is read from the report that already owns it — `kpi`, `conformance`,
+`staleness`, `coverage`, `align`, the governance log — so a level cannot rise without
+something the rest of the tooling also agrees improved.
+
 ## Findings into proposals
 
 | Command | Does |
 |---|---|
-| `propose --from align\|readiness\|overlap --as-of <date> [--reference NAME] [--out] [--json] [--dry-run]` | Turns one report's findings into **staging skeletons**: a reference gap becomes a `Requirement` (a `Constraint` for a `kind: control` node), an open readiness checkpoint (warning severity — what `readiness --strict` gates on) becomes a `Constraint` bound to its element via `appliesTo`, a rationalization candidate becomes a `WorkPackage` *naming* its realizers. Writes `model/staging/proposed-*.yaml`. |
+| `propose --from align\|readiness\|overlap\|time --as-of <date> [--reference NAME] [--out] [--json] [--dry-run]` | Turns one report's findings into **staging skeletons**: a reference gap becomes a `Requirement` (a `Constraint` for a `kind: control` node), an open readiness checkpoint (warning severity — what `readiness --strict` gates on) becomes a `Constraint` bound to its element via `appliesTo`, a rationalization candidate becomes a `WorkPackage` *naming* its realizers, and a TIME disposition no plateau carries (`PLAT005`) becomes a `WorkPackage` for scheduling it — ordered by blast radius, then id. Writes `model/staging/proposed-*.yaml`. |
 
 Everything it writes is `assumed: true` with a rationale naming the finding and the date
 it came from, and **every documentation field opens with `PROPOSED --`** — a loud,
@@ -194,6 +248,11 @@ Implementation & Migration element. The realizers go in `properties.rationalizes
 the placeholder instead. The rule is also right on the substance — *which* relationship a
 work package has to a component is the decision the package exists to take, and a
 generator picking one would be answering the question it was asked to raise.
+
+`--from time` proposes a `WorkPackage`, **not a `Plateau`**, for the same family of
+reason: `PLAT001` makes a plateau without a `plateauDate` an error, and supplying the
+date would put a schedule nobody agreed into the model. The generator produces the work
+of scheduling; the human creates the plateau once the date is decided.
 
 `--as-of` is **required here and nowhere else**. Every other command *reports* a date;
 this one writes it into a file that gets committed, and a wall-clock stamp would make the

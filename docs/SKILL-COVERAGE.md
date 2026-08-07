@@ -41,7 +41,7 @@ third is in every CI run. The fourth is a human sitting down and doing it.
 | `ea-service` | path test | service-layer validation and the worked example's service records |
 | `ea-regulatory` | path test | `dora-register` on `eval/fixtures/finco` (clean, and carrying `REG003` on purpose) and on `eval/fixtures/finco-broken`, where every `REG` code has a provoking element; plus the register's own gap section, asserted field by field |
 | `ea-board` | path test | the reports it assembles (`kpi`, `staleness`, `conformance`, `debt`) |
-| `ea-health` | path test | the same reports, plus every debt kind — a test pins that each one this skill can print is explained here |
+| `ea-health` | path test | the same reports, plus every debt kind — a test pins that each one this skill can print is explained here — and `maturity`, whose thresholds are pinned against the table in `docs/CLI.md` |
 | `ea-delta-ingest` | path test | `delta` — unmodelled entities and unused facts |
 | `ea-run` | **manual only** | nothing mechanical. It routes between skills; its failure mode is choosing the wrong order, which only a real host exercises |
 | `ea-eval` | **manual only** | nothing mechanical. It describes how to use the harnesses; a defect here shows up as somebody drawing the wrong conclusion from a number |

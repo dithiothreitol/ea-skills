@@ -26,6 +26,7 @@ from . import (
     impact as impact_mod,
     importer,
     intake,
+    maturity as maturity_mod,
     oracle,
     promote as promote_mod,
     propose as propose_mod,
@@ -305,6 +306,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_dora.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
     p_dora.add_argument("--as-of", dest="as_of", metavar="YYYY-MM-DD", help="evaluate waiver expiry against this date")
     p_dora.add_argument("--strict", action="store_true", help="treat warnings as failures too")
+
+    p_maturity = sub.add_parser(
+        "maturity", help="level 1-5 per dimension from measured signals, with the items blocking the next"
+    )
+    p_maturity.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_maturity.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+    p_maturity.add_argument("--as-of", dest="as_of", metavar="YYYY-MM-DD", help="evaluate against this date")
 
     p_propose = sub.add_parser(
         "propose", help="turn findings into staged requirement / work-package skeletons"
@@ -750,6 +758,14 @@ def cmd_dora_register(args: argparse.Namespace) -> int:
     return 1 if args.strict and register.warnings else 0
 
 
+def cmd_maturity(args: argparse.Namespace) -> int:
+    report = maturity_mod.assess(args.root.resolve(), today=_parse_as_of(args.as_of))
+    _emit_report(args, report.as_dict(), report.render())
+    # Always 0. A level is a description, not a verdict; a maturity report that failed a
+    # build would be switched off within a week and then measure nothing.
+    return 0
+
+
 def cmd_propose(args: argparse.Namespace) -> int:
     try:
         report = propose_mod.propose(
@@ -897,6 +913,7 @@ HANDLERS = {
     "align": cmd_align,
     "dora-register": cmd_dora_register,
     "propose": cmd_propose,
+    "maturity": cmd_maturity,
     "pin-reference": cmd_pin_reference,
     "gen-schema": cmd_gen_schema,
     "pin-oracle": cmd_pin_oracle,

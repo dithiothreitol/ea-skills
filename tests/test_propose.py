@@ -136,6 +136,76 @@ def test_an_overlap_becomes_a_work_package_naming_its_realizers(overlapping):
     assert "consolidate" in stub.documentation and "keep the redundancy on purpose" in stub.documentation
 
 
+@pytest.fixture
+def unscheduled(tmp_path):
+    """Two Migrate/Eliminate dispositions no plateau carries, with different blast radii."""
+    approved = tmp_path / "model" / "approved"
+    approved.mkdir(parents=True)
+    meta = "    owner: ea@example.test\n    lastReviewed: 2026-08-01\n    assumed: true\n"
+    why = "    rationale: A fixture concept, authored for a test rather than extracted.\n"
+    (approved / "m.yaml").write_text(
+        "elements:\n"
+        f"  - id: app-wide\n    type: ApplicationComponent\n    name: Wide Reach\n{meta}{why}"
+        "    properties:\n      timeDisposition: Eliminate\n"
+        f"  - id: app-narrow\n    type: ApplicationComponent\n    name: Narrow Reach\n{meta}{why}"
+        "    properties:\n      timeDisposition: Migrate\n"
+        f"  - id: svc-a\n    type: ApplicationService\n    name: Service A\n{meta}{why}"
+        f"  - id: svc-b\n    type: ApplicationService\n    name: Service B\n{meta}{why}"
+        "relationships:\n"
+        f"  - id: rel-wide-a\n    type: Realization\n    source: app-wide\n    target: svc-a\n{meta}{why}"
+        f"  - id: rel-wide-b\n    type: Realization\n    source: app-wide\n    target: svc-b\n{meta}{why}",
+        encoding="utf-8",
+        newline="\n",
+    )
+    return tmp_path
+
+
+def test_an_unscheduled_disposition_becomes_a_work_package_not_a_plateau(unscheduled):
+    """**Against the phase plan, and caught before shipping this time.** `PLAT001` makes a
+    `Plateau` without a `plateauDate` an error, so a generated plateau stub would fail the
+    gate this command promises its output passes — and supplying the date is worse, since
+    a plateau date is a claim about when a target state is reached. The generator produces
+    the *work of scheduling*; the human creates the plateau once the date is decided."""
+    report = propose.propose(unscheduled, source="time", as_of=AS_OF, dry_run=True)
+    assert {p.type for p in report.proposals} == {"WorkPackage"}
+    assert "Plateau" not in {p.type for p in report.proposals}
+    assert all("plateauDate" not in (p.properties or {}) for p in report.proposals)
+    assert "PLAT005" in report.proposals[0].rationale
+    assert "plateauDate" in report.proposals[0].documentation, "the stub says what the human must add"
+
+
+def test_scheduling_proposals_are_ordered_by_blast_radius_then_id(unscheduled):
+    """The one piece of judgement a tool can actually supply here: schedule the change
+    that reaches furthest first, or accept in writing that you are not."""
+    report = propose.propose(unscheduled, source="time", as_of=AS_OF, dry_run=True)
+    assert [p.id for p in report.proposals] == ["wp-schedule-app-wide", "wp-schedule-app-narrow"]
+    radii = [int(p.properties["blastRadius"]) for p in report.proposals]
+    assert radii == sorted(radii, reverse=True) and radii[0] > radii[-1]
+
+
+def test_a_scheduled_disposition_proposes_nothing(unscheduled):
+    """A plateau that already carries the element is the whole point; proposing work to
+    schedule what is scheduled would be noise on a repository doing it right."""
+    plateau = (
+        "elements:\n"
+        "  - id: plateau-2027\n    type: Plateau\n    name: 2027 Target\n"
+        "    owner: ea@example.test\n    lastReviewed: 2026-08-01\n    assumed: true\n"
+        "    rationale: A fixture concept, authored for a test rather than extracted.\n"
+        "    properties:\n      plateauDate: 2027-01-01\n"
+        "relationships:\n"
+        "  - id: rel-plateau-wide\n    type: Aggregation\n    source: plateau-2027\n    target: app-wide\n"
+        "    owner: ea@example.test\n    lastReviewed: 2026-08-01\n    assumed: true\n"
+        "    rationale: A fixture concept, authored for a test rather than extracted.\n"
+        "  - id: rel-plateau-narrow\n    type: Aggregation\n    source: plateau-2027\n    target: app-narrow\n"
+        "    owner: ea@example.test\n    lastReviewed: 2026-08-01\n    assumed: true\n"
+        "    rationale: A fixture concept, authored for a test rather than extracted.\n"
+    )
+    (unscheduled / "model" / "approved" / "migration.yaml").write_text(
+        plateau, encoding="utf-8", newline="\n"
+    )
+    assert propose.propose(unscheduled, source="time", as_of=AS_OF, dry_run=True).proposals == []
+
+
 def test_no_stub_binds_appliesTo_outside_the_motivation_layer(overlapping, finco):
     """`appliesTo` is the Motivation layer's applicability selector and `MOT002` is an
     *error* anywhere else. The first version of this generator prefilled it on the

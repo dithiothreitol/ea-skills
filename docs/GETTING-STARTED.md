@@ -306,10 +306,13 @@ the action into staging — and nothing else:
 python -m easkills propose --root . --from align     --as-of 2026-08-07 --dry-run
 python -m easkills propose --root . --from readiness --as-of 2026-08-07
 python -m easkills propose --root . --from overlap   --as-of 2026-08-07
+python -m easkills propose --root . --from time      --as-of 2026-08-07
 ```
 
 A reference gap becomes a `Requirement`, an open checkpoint a `Constraint` bound to its
-element, a rationalization candidate a `WorkPackage` naming its realizers. Everything
+element, a rationalization candidate a `WorkPackage` naming its realizers, and a TIME
+disposition no plateau carries a `WorkPackage` for scheduling it — ordered by blast
+radius, so the change that reaches furthest is proposed first. Everything
 lands `assumed: true` in `model/staging/proposed-*.yaml`, and **every documentation field
 starts with `PROPOSED --`**: the tool writes ids, types and bindings, never prose. Text
 that reads as authored and is not is the same defect as a fabricated quote.
@@ -334,6 +337,7 @@ python -m easkills conformance --root .  # ISO 42010 Clause 6 checklist
 python -m easkills correspondences --root .   # §6.9: what relates to what, and the rule it is held to
 python -m easkills roadmap --root .      # plateaus, gaps, and intent nothing schedules
 python -m easkills delta --root .        # what the facts know that the model doesn't
+python -m easkills maturity --root .     # level 1-5 per dimension, and what blocks the next
 python -m easkills context --root . --scope <element-id>   # pack for a dev team/agent
 ```
 

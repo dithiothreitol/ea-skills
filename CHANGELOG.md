@@ -7,6 +7,58 @@ project's build phases (design log with per-decision rationale:
 
 ## [Unreleased]
 
+## [0.14.0] — 2026-08-07 — the proposal release
+
+Phase 7.6 + 7.7, and the last of Phase 7: findings become staged work, and the practice
+gets a measured level. **Phases 0–7 are complete.**
+
+### Added — `maturity`: five dimensions, no composite (Phase 7.7)
+
+`python -m easkills maturity` scores Evidence, Governance, Documentation, Coverage and
+Operations at **level 1–5 each**, against twenty thresholds written down in
+[`docs/CLI.md`](docs/CLI.md) and pinned by a test against `maturity.DIMENSIONS` — the
+constants-versus-doc pattern `impact` uses for `REARCHITECTING_STAKEHOLDERS`. Output is a
+level per dimension plus **the named items blocking the next one**; the list is the
+deliverable, the level is the headline.
+
+**There is no composite number, and the absence is tested.** A single "we are a 3.4" can
+be moved by the cheapest dimension and hides which one moved — which is how a maturity
+programme ends up optimising the number instead of the practice.
+
+Two properties keep the levels honest:
+
+- **Level 1 is "measured", not "bad".** Gates start at level 2, so a young repository
+  scores 1 and is failing nothing. Nothing here is an error and it never gates.
+- **Unmeasurable is not satisfied — and this was a defect before it was a feature.** The
+  first version told an *empty* repository it was `sustained` on Evidence and Operations,
+  because a share over nothing is 1.0 and a count of problems over nothing is 0. Every
+  metric now carries its population; an empty one is `None`, the gate stays shut, and the
+  blocker names the apparatus that does not exist yet. That is the vacuous-100% trap
+  arriving in the one report whose number leaves the repository.
+
+Every signal is read from the report that already owns it — `kpi`, `conformance`,
+`staleness`, `coverage`, `align`, the governance log — so a level cannot rise without
+something else agreeing it improved. Prose: `ea-health` gains "Reading maturity",
+`ea-board` the maturity table as a board artifact, `ea-run` a routing row.
+
+### Added — `propose --from time` (Phase 7.7)
+
+The fourth source: one `WorkPackage` per Migrate/Eliminate disposition no plateau carries
+(`PLAT005`), **ordered by blast radius then id** — the one piece of judgement a tool can
+supply here is which change reaches furthest.
+
+**A `WorkPackage`, not a `Plateau`, against the phase plan — and caught before shipping
+this time.** `PLAT001` makes a plateau without a `plateauDate` an error, so a generated
+plateau stub would fail the gate this command promises its output passes; supplying the
+date is worse, because a plateau date is a claim about when a target state is reached.
+The generator produces the *work of scheduling*; the human creates the plateau.
+
+### Fixed — the generic id sort discarded a source's ordering
+
+`propose` sorted every candidate by id before writing, which silently threw away
+`--from time`'s blast-radius ordering. Source order is preserved now; every source
+enumerates deterministically, so byte stability is unaffected.
+
 ### Added — `propose`: findings become staged skeletons (Phase 7.6)
 
 `python -m easkills propose --from align|readiness|overlap --as-of <date>` turns one

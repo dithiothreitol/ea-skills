@@ -10,6 +10,7 @@ python -m easkills debt      --root <repo>   # EA-smell queries -> debt register
 python -m easkills staleness --root <repo>   # review-age per element
 python -m easkills kpi       --root <repo>   # one-screen metrics
 python -m easkills roadmap   --root <repo>   # plateaus, gaps, and decided-but-unscheduled
+python -m easkills maturity  --root <repo>   # level 1-5 per dimension, and what blocks the next
 # each takes --json for machine-readable output and --as-of for reproducible runs
 ```
 
@@ -118,6 +119,32 @@ are worth a human every time:
 * **A gap with no funding decision behind it.** The tooling cannot see budgets, but
   it can show you the gap next to the constraint or dispensation that explains why
   it is still open. If nothing explains it, that is the finding.
+
+## Reading maturity
+
+Five dimensions — Evidence, Governance, Documentation, Coverage, Operations — each 1–5
+against thresholds written down in [`docs/CLI.md`](../../docs/CLI.md) and pinned by a
+test. Read it as a description, never as a target:
+
+* **There is no composite, and do not compute one.** Averaging the five hides which
+  dimension moved, and the average is movable by whichever is cheapest — which is how a
+  maturity programme ends up optimising the number instead of the practice. If somebody
+  asks for one number, give them the weakest dimension and its blockers.
+* **The blockers are the deliverable.** "Evidence 4/5, blocked by two assumptions" is
+  work; "Evidence 4/5" is a slide. Report the named items every time.
+* **Level 1 means measured, not broken.** A repository three weeks old scores 1 across
+  the board and is failing nothing. Saying so protects the report from being read as an
+  indictment and switched off.
+* **`not measurable` is not a bad score and not a good one.** Reference coverage with no
+  reference pack, ownership with no elements: the gate stays shut and the blocker says
+  which apparatus is missing. Getting to the next level means *acquiring the yardstick*,
+  not improving a number.
+* **Compare against your own last run, not against another organisation.** The thresholds
+  are this repository's, chosen to be arguable; a level here means nothing about anyone
+  else's practice.
+* **A level that rises without a report agreeing is a bug, not progress.** Every metric
+  is read from `kpi`, `conformance`, `staleness`, `coverage`, `align` or the governance
+  log. If maturity improved and none of them did, look at the maturity code.
 
 ## Reporting back
 

@@ -37,15 +37,24 @@ from typing import Any
 
 import yaml
 
-from . import alignment, dsl, genschema, oracle, readiness as readiness_mod, reports
+from . import (
+    alignment,
+    dsl,
+    genschema,
+    impact as impact_mod,
+    oracle,
+    readiness as readiness_mod,
+    reports,
+)
 from .validate import SEVERITY_WARNING
 
-SOURCES = ("align", "readiness", "overlap")
+SOURCES = ("align", "readiness", "overlap", "time")
 
 STAGING_FILENAME = {
     "align": "proposed-requirements.yaml",
     "readiness": "proposed-constraints.yaml",
     "overlap": "proposed-work-packages.yaml",
+    "time": "proposed-scheduling.yaml",
 }
 
 # The placeholder is loud on purpose. A half-finished stub must not be able to pass for an
@@ -336,6 +345,61 @@ def _from_overlap(root: Path, today: date) -> list[Proposal]:
     return proposals
 
 
+def _from_time(root: Path, today: date) -> list[Proposal]:
+    """One `WorkPackage` per portfolio decision nothing schedules.
+
+    **Not a `Plateau`, against the phase plan** -- and caught before shipping this time,
+    which is the only value of having learned it in 7.6. `PLAT001` makes a plateau
+    without a `plateauDate` an *error*, so a generated plateau stub would fail the gate
+    this command promises its output passes. Supplying the date instead is worse: a
+    plateau date is a claim about when a target state is reached, and inventing one puts
+    a schedule nobody agreed into the model.
+
+    So the generator produces the *work of scheduling*, and the human creates the
+    plateau once they have decided the date. Ordered by blast radius, then id: the
+    element whose change reaches furthest is the one to schedule first, and that
+    ordering is the only piece of judgement here a tool can actually supply.
+    """
+    unscheduled = reports.roadmap(root, today=today)["unscheduledIntent"]
+    if not unscheduled:
+        return []
+
+    radius: dict[str, int] = {}
+    for row in unscheduled:
+        try:
+            radius[row["id"]] = len(impact_mod.analyse(root, scope=row["id"], today=today).affected)
+        except impact_mod.ImpactError:
+            radius[row["id"]] = 0  # unreachable in practice; never a crash in a generator
+
+    ordered = sorted(unscheduled, key=lambda row: (-radius[row["id"]], row["id"]))
+    proposals: list[Proposal] = []
+    for row in ordered:
+        disposition = row["timeDisposition"]
+        proposals.append(
+            Proposal(
+                id=f"wp-schedule-{_slug(row['id'])}",
+                type="WorkPackage",
+                name=f"Schedule the {disposition.lower()} of {row['name']}",
+                documentation=(
+                    f"{PLACEHOLDER} decide when '{row['name']}' is {disposition.lower()}d, then put it "
+                    "in a Plateau with a plateauDate -- that is what turns the disposition into a "
+                    f"plan and closes PLAT005. Its blast radius is {radius[row['id']]} element(s); "
+                    "schedule the wide ones first, or accept in writing that you are not. If the "
+                    "disposition is no longer true, the honest fix is to change it rather than to "
+                    "schedule work nobody intends to do."
+                ),
+                rationale=(
+                    f"Derived from PLAT005 on '{row['id']}' as of {today.isoformat()}: "
+                    f"timeDisposition is '{disposition}' and no Plateau includes it. "
+                    "Complete or delete before promotion."
+                ),
+                properties={"timeDisposition": disposition, "blastRadius": str(radius[row["id"]])},
+                origin=f"PLAT005:{row['id']}",
+            )
+        )
+    return proposals
+
+
 # ---------------------------------------------------------------------------- writing
 
 
@@ -413,8 +477,10 @@ def propose(
         candidates = _from_align(root, references)
     elif source == "readiness":
         candidates = _from_readiness(root)
-    else:
+    elif source == "overlap":
         candidates = _from_overlap(root, as_of)
+    else:
+        candidates = _from_time(root, as_of)
 
     # Belt and braces on the rule that produced the worst defect in this module: a stub
     # carrying `appliesTo` on a non-Motivation type is MOT002, an *error*, so the file
@@ -430,7 +496,12 @@ def propose(
     _check_ids(candidates)
 
     known = _existing_ids(root)
-    for candidate in sorted(candidates, key=lambda p: p.id):
+    # Source order, not id order. Every source enumerates deterministically (taxonomy
+    # order, sorted findings, sorted items), and one of them enumerates *meaningfully*:
+    # `--from time` sorts by blast radius so the widest change is proposed first. Sorting
+    # by id here silently threw that away -- the ordering the plan asked for, defeated by
+    # a line meant only to make the output stable.
+    for candidate in candidates:
         zone = known.get(candidate.id)
         if zone is not None:
             # Not an error and not an overwrite: the id existing means somebody already
@@ -474,6 +545,7 @@ _ROLE = {
     "align": "Requirements proposed for unanswered reference nodes",
     "readiness": "Constraints proposed for open readiness checkpoints",
     "overlap": "Work packages proposed for rationalization candidates",
+    "time": "Work packages proposed for portfolio decisions nothing schedules",
 }
 
 
