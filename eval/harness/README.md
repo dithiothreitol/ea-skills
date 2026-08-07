@@ -37,7 +37,7 @@ gold scores low on precision while being defensible architecture; read the categ
 not the headline. Since 0.11.0 the score also **names** what it did not match, so reading
 the categories no longer means diffing two YAML trees by hand.
 
-It measures the prose of **5 of the 22 skills**, declared in `MEASURED_SKILLS` in
+It measures the prose of **5 of the 24 skills**, declared in `MEASURED_SKILLS` in
 `run.py` and pinned to this file by a test:
 
 | Phase | Skills | Judged by |
@@ -78,6 +78,30 @@ A gate that cries wolf gets ignored, which costs more than the noise it reports.
 Rewrite the baseline with `--baseline` only when the new numbers are understood and
 deliberate — the point of a baseline is that moving it is a decision. `--from-records`
 rebuilds it from a saved `--out` file, so accepting a number never costs another run.
+
+### ⚠ The committed baseline is stale for two categories (since 2026-08-06, Phase 7.2)
+
+`clinic` gained its **capability layer** — three capabilities and three realizations, a
+correction against `ea-capability-map`'s own "the capability map is the spine" rule, argued
+and recorded in [`eval/golden/README.md`](../golden/README.md). Gold's element and
+relationship denominators therefore changed, so:
+
+| Category | Comparable across the change? |
+|---|---|
+| `clinic` facts, entities | **yes** — the register was not touched |
+| `clinic` elements, relationships | **no** — the denominator moved |
+| `contested` (all) | **yes** — that case was not touched |
+
+Do not read the `clinic` element and relationship numbers below as current, and do not
+treat a rise in them as a skill improvement: a run that produced capabilities used to be
+charged precision for them and is now credited recall. The same rule as the 0.11.0
+`ea-capability-map` move — *the instrument changed*, which is legitimate in a way that
+moving a baseline over a disappointing result is not.
+
+The measured-skill prose also moved in 7.2 (`ea-model` and `ea-capability-map` gained a
+"When is this layer done" section), which is the other reason a rerun is owed. Until it
+happens, the numbers above stand as the last honest measurement of a *different*
+instrument.
 
 ## Why it lives here and not in `easkills/`
 

@@ -1,0 +1,13 @@
+# Open on the as-of dates the tests use, so REG003 has something to report.
+id: disp-open-waiver
+title: Two in-scope services may run without a tested exit plan
+waives:
+  standard: std-exit-plan
+appliesTo: [app-critical-without-provider, app-important-under-waiver]
+rationale: >
+  Negative fixture record. Exists so REG003 has a critical and an important element
+  under an open waiver to report.
+grantedBy: nobody@kestrel.example
+granted: 2026-04-01
+expires: 2027-03-31
+status: open

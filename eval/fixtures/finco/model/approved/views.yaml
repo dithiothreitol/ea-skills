@@ -1,0 +1,23 @@
+views:
+  - id: ict-dependency
+    name: ICT Third-Party Dependency
+    viewpoint: Layered
+    concerns:
+      - concern-third-party-concentration
+      - concern-critical-function-continuity
+    documentation: >
+      Which outsourced ICT service supports which business function. The same
+      dependency the DORA register tabulates, drawn once so a human can see the
+      concentration on PaySwitch AG that a table makes easy to miss.
+    include:
+      - cap-payment-services
+      - process-payment-execution
+      - process-customer-onboarding
+      - actor-customer
+      - app-core-ledger
+      - app-card-processing
+      - service-payment-initiation
+      - app-kyc-screening
+      - app-crm
+      - app-internal-reporting
+      - node-cloud-platform

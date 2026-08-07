@@ -14,3 +14,26 @@ factsRoot: .
 
 # Raw source documents that ea-intake ingests (chunking, coverage, SRC001).
 sourcesDir: facts/sources
+
+# Optional. Unit rates that turn the debt register's exposure into money.
+#
+# The tool computes the exposure; the operator prices it. No rate is defaulted,
+# benchmarked or inferred -- with this block absent, `debt` prints exposure only, exactly
+# as it does today. Uncomment what your organisation can actually defend; an exposure
+# with no rate is reported as "not priced" beside the total, which is the honest way to
+# say you have not put a number on it.
+#
+# costModel:
+#   currency: EUR
+#   # Per element, per day past `stalenessDays` above -- the review effort deferred.
+#   staleElementDay: 1.5
+#   # Per open dispensation, per day since it was granted -- what an exception costs
+#   # while it stays open, which is the reason waivers expire.
+#   openDispensationDay: 12
+#   # Per element referencing a deprecated or retired standard -- the migration it owes.
+#   eolElement: 4000
+#   # Per capability nothing realizes -- the cost of a gap in the spine.
+#   unsupportedCapability: 8000
+#   # Per realizer beyond the first on one capability -- the duplication carried, until
+#   # an ADR says the redundancy is deliberate.
+#   duplicateRealization: 15000

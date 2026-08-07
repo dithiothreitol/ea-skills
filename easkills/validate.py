@@ -219,12 +219,14 @@ def check_config(model: dsl.Model) -> list[Finding]:
     """
     findings: list[Finding] = []
     rel_config = dsl.CONFIG_FILENAME
+    hand_checked: set[str] = set()
     for key, default, minimum, maximum in (
         ("stalenessDays", 365, 1, None),
         ("quoteMatchThreshold", 0.90, 0.0, 1.0),
     ):
         _value, problem = dsl.config_number(model.config, key, default, minimum=minimum, maximum=maximum)
         if problem:
+            hand_checked.add(key)
             findings.append(
                 Finding(
                     "SCHEMA002",
@@ -234,6 +236,21 @@ def check_config(model: dsl.Model) -> list[Finding]:
                     locator=key,
                 )
             )
+
+    # The generated schema owns *shape*: which keys exist, their types, and the cost
+    # model's rate vocabulary. Unknown keys are errors here, unlike an element's open
+    # property map -- a model's own property keys are the organisation's business, but a
+    # tooling key this tooling does not read is always a typo, and the failure is silent
+    # (`stalenessDay` leaves the 365-day default in place and the repository looks fresh).
+    # A key the two checks above already reported is skipped: one typo, one finding.
+    for error in sorted(
+        Draft202012Validator(genschema.load_config_schema()).iter_errors(model.config),
+        key=lambda e: list(e.absolute_path),
+    ):
+        locator = "/".join(str(p) for p in error.absolute_path) or "(root)"
+        if locator in hand_checked:
+            continue
+        findings.append(Finding("SCHEMA002", SEVERITY_ERROR, error.message, file=rel_config, locator=locator))
     root = model.root.resolve()
     for key, default in (("factsRoot", "."), ("sourcesDir", "facts/sources")):
         directory = (model.root / str(model.config.get(key, default))).resolve()

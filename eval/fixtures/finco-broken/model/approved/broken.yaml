@@ -1,0 +1,63 @@
+# Negative fixture for the REG family. One element per failure mode, annotated with the
+# code it provokes -- the convention every rule in this repository ships with.
+#
+# Nothing here has a provider, a contract or a relationship to a business function, so
+# three register sections come out empty while six elements sit in scope. That is
+# REG004, and it is the subtlest of the four: an empty section in a regulatory document
+# reads as "nothing to report", which is a different statement from "we did not record
+# it" and the one a supervisor will hold you to.
+
+elements:
+  # --- REG001: in scope, no criticality. The register cannot say how much depends on it.
+  - id: app-scope-without-criticality
+    type: ApplicationComponent
+    name: Unclassified Outsourced Service
+    documentation: In DORA scope with no criticality recorded.
+    owner: nobody@kestrel.example
+    lastReviewed: 2026-07-01
+    properties:
+      regulatoryScope: dora
+    assumed: true
+    rationale: Negative fixture element; wrong on purpose.
+
+  # --- REG002: critical, and the two fields a supervisor asks for first are both absent.
+  - id: app-critical-without-provider
+    type: ApplicationComponent
+    name: Critical Service With No Paperwork
+    documentation: Critical, and the register has neither provider nor contract for it.
+    owner: nobody@kestrel.example
+    lastReviewed: 2026-07-01
+    properties:
+      regulatoryScope: dora
+      doraCriticality: critical
+    standards: [std-exit-plan]
+    assumed: true
+    rationale: Negative fixture element; wrong on purpose.
+
+  # --- REG002 again, half-filled: a provider with no contract behind it is still a gap.
+  - id: app-critical-without-contract
+    type: ApplicationComponent
+    name: Critical Service With No Contract Reference
+    documentation: Provider named, contractual arrangement not.
+    owner: nobody@kestrel.example
+    lastReviewed: 2026-07-01
+    properties:
+      regulatoryScope: dora
+      doraCriticality: critical
+      provider: Unpapered Services Ltd
+    assumed: true
+    rationale: Negative fixture element; wrong on purpose.
+
+  # --- REG003: important, and running under an open waiver. Exposure, not a violation.
+  - id: app-important-under-waiver
+    type: ApplicationComponent
+    name: Important Service Under Waiver
+    documentation: Important function support with an open dispensation against it.
+    owner: nobody@kestrel.example
+    lastReviewed: 2026-07-01
+    properties:
+      regulatoryScope: dora
+      doraCriticality: important
+    standards: [std-exit-plan]
+    assumed: true
+    rationale: Negative fixture element; wrong on purpose.

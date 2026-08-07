@@ -1,0 +1,104 @@
+# The ICT estate. `regulatoryScope: dora` is what puts an element in the register --
+# a property rather than a list in ea.config.yaml, because scope is a fact about the
+# element: it lives next to it, it is greppable, and it moves with the element.
+#
+# `criticality`, `provider` and `contractRef` are the fields the register's template
+# wants. Anything missing is named in the register's own gap section, and REG001/REG002
+# say so at the gate.
+
+elements:
+  - id: app-core-ledger
+    type: ApplicationComponent
+    name: Core Ledger
+    documentation: Account balances and the settlement ledger. Operated by a third party.
+    owner: payments-eng@kestrel.example
+    lastReviewed: 2026-07-01
+    properties:
+      lifecycle: active
+      timeDisposition: Invest
+      regulatoryScope: dora
+      doraCriticality: critical
+      provider: Ledgerworks BV
+      contractRef: ctr-2024-ledgerworks
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  - id: app-card-processing
+    type: ApplicationComponent
+    name: Card Processing
+    documentation: Card authorisation and clearing, provided as a managed service.
+    owner: payments-eng@kestrel.example
+    lastReviewed: 2026-07-01
+    properties:
+      lifecycle: active
+      timeDisposition: Tolerate
+      regulatoryScope: dora
+      doraCriticality: critical
+      provider: PaySwitch AG
+      contractRef: ctr-2023-payswitch
+    # Waived against the exit-plan standard until 2027-03-31; a waiver on a critical
+    # element is a register event (REG003), which is why it belongs in this fixture.
+    standards: [std-exit-plan]
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  - id: service-payment-initiation
+    type: ApplicationService
+    name: Payment Initiation API
+    documentation: The interface through which payment instructions reach the processor.
+    owner: payments-eng@kestrel.example
+    lastReviewed: 2026-07-01
+    properties:
+      lifecycle: active
+      regulatoryScope: dora
+      doraCriticality: important
+      provider: PaySwitch AG
+      contractRef: ctr-2023-payswitch
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  - id: app-kyc-screening
+    type: ApplicationComponent
+    name: KYC Screening
+    documentation: Sanctions and identity screening during onboarding.
+    owner: compliance-eng@kestrel.example
+    lastReviewed: 2026-07-01
+    properties:
+      lifecycle: active
+      regulatoryScope: dora
+      doraCriticality: important
+      provider: Sentinel Screening Ltd
+      contractRef: ctr-2025-sentinel
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  # Deliberately in scope and only `standard`: the register has to carry the ordinary
+  # services too, or its provider list understates the estate.
+  - id: app-crm
+    type: ApplicationComponent
+    name: Customer CRM
+    documentation: Customer contact history and service cases.
+    owner: service@kestrel.example
+    lastReviewed: 2026-07-01
+    properties:
+      lifecycle: active
+      regulatoryScope: dora
+      doraCriticality: standard
+      provider: Helios CRM Ltd
+      contractRef: ctr-2022-helios
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  # Deliberately *not* in scope: an internally built tool with no third-party
+  # dependency. Its absence from the register is the point -- scope is declared, never
+  # inferred from a type.
+  - id: app-internal-reporting
+    type: ApplicationComponent
+    name: Internal Reporting
+    documentation: Management reporting built and run in house.
+    owner: finance@kestrel.example
+    lastReviewed: 2026-07-01
+    properties:
+      lifecycle: active
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.

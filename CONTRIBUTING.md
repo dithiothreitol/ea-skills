@@ -63,6 +63,9 @@ python -m easkills validate       --root eval/example --strict
 python -m easkills validate-facts --root eval/example --strict
 python -m easkills validate-gov   --root eval/example --strict
 python -m easkills coverage       --root eval/example --min-coverage 100
+python -m easkills readiness      --root eval/example --strict
+python -m easkills align          --root eval/example --strict
+python -m easkills dora-register  --root eval/fixtures/finco --as-of 2026-07-30 --strict
 python -m easkills compile        --root eval/example
 python -m easkills docs           --root eval/example && git diff --exit-code eval/example/docs
 python -m easkills conformance    --root eval/example --strict --as-of 2026-07-30
@@ -79,6 +82,8 @@ python -m easkills check --root eval/example --repo eval/fixtures/consumer --sco
 python -m easkills validate       --root eval/fixtures/broken   # must FAIL (exit 1)
 python -m easkills validate-facts --root eval/fixtures/broken   # must FAIL (exit 1)
 python -m easkills validate-gov   --root eval/fixtures/broken   # must FAIL (exit 1)
+python -m easkills align          --root eval/fixtures/broken   # must FAIL (exit 1)
+python -m easkills dora-register  --root eval/fixtures/finco-broken --as-of 2026-07-30   # must FAIL (exit 1)
 ```
 
 ## The conventions that are actually load-bearing
@@ -87,12 +92,15 @@ python -m easkills validate-gov   --root eval/fixtures/broken   # must FAIL (exi
 decoration, so the test suite enforces the pattern:
 
 - the check itself (in `easkills/validate.py`, `facts.py` or `govern.py`);
-- a case in `eval/fixtures/broken/` that violates it (annotated with the rule code);
+- a case in `eval/fixtures/broken/` that violates it (annotated with the rule code) —
+  including the reference packs under `eval/fixtures/broken/reference/`, one per `ALN`
+  failure mode, each with its own valid `SHA256SUMS` so the pack under test is the one
+  the rule is about;
 - a row in [`docs/RULES.md`](docs/RULES.md) and an entry in the parametrized
   expected-codes list in the matching test module.
 
 **2. Generated artifacts regenerate in the same commit.** Every schema under `schema/`
-(`python -m easkills gen-schema` — all nine are freshness-tested) and the example's
+(`python -m easkills gen-schema` — all twelve are freshness-tested) and the example's
 generated documentation (`python -m easkills docs --root eval/example`, i.e.
 `eval/example/docs/`) are committed *and* freshness-checked — a stale artifact fails
 CI, so regenerate alongside the change that invalidated it.

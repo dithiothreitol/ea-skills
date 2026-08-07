@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ea-skills:schema:ea-config",
+  "title": "EA Skills repository configuration",
+  "description": "Repository-level settings. Every key is optional; the documented default applies.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Model name, used in generated documents."
+    },
+    "documentation": {
+      "type": "string",
+      "description": "What this model covers and what it is for."
+    },
+    "stalenessDays": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Elements not reviewed within this many days are stale (GOV004, `staleness`)."
+    },
+    "quoteMatchThreshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Minimum similarity for a provenance quote to count as approximate (PROV004)."
+    },
+    "factsRoot": {
+      "type": "string",
+      "description": "Directory provenance file references resolve against."
+    },
+    "sourcesDir": {
+      "type": "string",
+      "description": "Directory holding the raw source documents."
+    },
+    "costModel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "currency"
+      ],
+      "description": "Optional. Unit rates that turn the debt register's exposure into money. The tool computes the exposure; the operator prices it. Absent, `debt` output is unchanged.",
+      "properties": {
+        "currency": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8,
+          "description": "Printed beside every amount. Required, because an unlabelled number in a board pack is read in whatever currency the reader assumes."
+        },
+        "staleElementDay": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Per element, per day past `stalenessDays`."
+        },
+        "openDispensationDay": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Per open dispensation, per day since it was granted."
+        },
+        "eolElement": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Per element referencing a deprecated or retired standard."
+        },
+        "unsupportedCapability": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Per capability nothing realizes."
+        },
+        "duplicateRealization": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Per realizer beyond the first on one capability."
+        }
+      }
+    }
+  }
+}

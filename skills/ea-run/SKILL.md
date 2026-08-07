@@ -16,6 +16,7 @@ python -m easkills validate --root . --zone approved
 python -m easkills validate --root . --zone staging
 python -m easkills validate-gov --root .     # governance records healthy?
 python -m easkills delta --root .            # unmodelled entities / unused facts
+python -m easkills align --root .            # is there a reference yardstick, and where does it stand?
 ```
 
 ## Routing table
@@ -38,8 +39,11 @@ Everything else routes by situation:
 | New info against an existing model | `ea-delta-ingest` |
 | A change request arrives | `ea-change-triage` first, then its route |
 | Standards, waivers, decisions, assessments | `ea-standards-base` / `ea-dispensation` / `ea-adr` / `ea-compliance` |
+| "Is this done / complete?" · gap analysis against a reference model or industry blueprint | `ea-align` (there is no answer without a yardstick) |
+| Regulation, control frameworks, ICT third-party risk, "the DORA register" | `ea-regulatory` — control gaps are `align` against a `kind: control` pack; the register is `dora-register`, and it generates rather than attests |
 | Downstream repo needs its constraints | `ea-context` |
 | Periodic health / board preparation | `ea-health` / `ea-board` |
+| "Do two systems do the same thing?" · application rationalization | `ea-health` reads the `debt` overlap items; the verdict goes to `ea-change-triage` (undecided overlap classifies **up**) or `ea-board`, and deliberate redundancy ends in `ea-adr` |
 | Skill behaviour changed | `ea-eval` |
 
 ## Order for a from-scratch engagement

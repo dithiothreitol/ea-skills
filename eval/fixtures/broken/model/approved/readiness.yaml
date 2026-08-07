@@ -1,0 +1,30 @@
+# Readiness checkpoints (RDY) that need approved-zone content. Each element below is
+# annotated with the code it provokes; owner/lastReviewed are present so the case stays
+# about readiness rather than about governance metadata.
+#
+# RDY001 and RDY002 need a Capability, and RDY010 needs the Strategy layer to be *empty*
+# -- so the proposed capability layer lives in model/staging/ instead, and the two sides
+# are read by `readiness --zone staging` and `readiness` respectively.
+
+elements:
+  # --- RDY007: a published service with no recorded consumer -------------------------
+  - id: service-unconsumed
+    type: ApplicationService
+    name: Service Nobody Consumes
+    documentation: Published by nothing and served to nobody; impact analysis cannot see it.
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    assumed: true
+    rationale: A fixture element for RDY007, not a claim about any real service.
+
+  # --- RDY009: an obligation that binds nothing (appliesTo absent) -------------------
+  - id: requirement-binds-nothing
+    type: Requirement
+    name: Requirement Binding Nothing
+    documentation: >
+      No appliesTo, so no context pack will ever serve it to the team it was written for.
+      Distinct from MOT001, where appliesTo exists and points at something absent.
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    assumed: true
+    rationale: A fixture element for RDY009, not a claim about any real requirement.

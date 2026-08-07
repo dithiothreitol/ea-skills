@@ -14,7 +14,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from . import correspond, dsl, facts as facts_mod, genschema, govern, ui
+from . import correspond, cost, dsl, facts as facts_mod, genschema, govern, ui
 from .validate import _normalize
 
 # ------------------------------------------------------------------------- staleness
@@ -270,13 +270,219 @@ def render_kpi(data: dict[str, Any]) -> str:
 
 HUB_DEGREE = 10
 
+# Every kind the register can emit, in one place. A debt item is only useful if the
+# reader knows what it means, so a doc test reads this tuple and fails when a kind is
+# missing from the CLI reference or from `ea-health`, which is where the honest response
+# to each one is written down.
+DEBT_KINDS = (
+    "dead-standard-reference",
+    "duplicate-name",
+    "duplicate-service",
+    "hub-element",
+    "isolated-element",
+    "overlapping-applications",
+    "rationalization-candidate",
+    "stale-content",
+    "unsupported-capability",
+)
+
+# The three overlap queries: the kinds that carry structured extras beyond
+# kind/concept/detail. That is why docs/CLI.md documents *their* JSON shape -- a
+# machine-readable contract is a CLI-reference concern -- while what to do about any
+# kind belongs where the response is written down, in `ea-health`.
+OVERLAP_KINDS = ("duplicate-service", "overlapping-applications", "rationalization-candidate")
+
+# --- overlap and rationalization -------------------------------------------------
+#
+# Three queries that answer "does this portfolio do the same job twice?". They report;
+# they never conclude. Duplication is sometimes *deliberate* -- a second claims system
+# for resilience, a regional instance kept for data residency -- and a tool that cannot
+# tell drift from design must therefore print the data a human needs to tell them apart,
+# which is what the realizers' portfolio properties are doing below.
+
+# Only application components count as realizers here. A capability realized by a
+# component *and* by a business role is division of labour, not duplicate functionality
+# -- the golden set's Appointment Booking (booking portal + front desk) is exactly that
+# shape, and flagging it would be the RDY008 mistake again: for an advisory report the
+# only real failure mode is noise.
+RATIONALIZATION_REALIZER_TYPES = ("ApplicationComponent",)
+
+# Two shared capabilities, not one. One capability realized by two components is already
+# reported as a rationalization candidate; a *pair* only becomes a merge conversation
+# when the overlap is repeated, which is the signal one shared capability cannot carry.
+OVERLAP_MIN_SHARED = 2
+
+SERVICE_TYPES = ("ApplicationService", "BusinessService", "TechnologyService")
+
+# The provider of a service is whatever realizes it (component -> application service) or
+# is assigned to it (role -> business service). Serving is the wrong direction: it points
+# at the consumer.
+PROVIDING_RELATIONSHIPS = ("Realization", "Assignment")
+
+# Printed first for every realizer, present or not, because "not recorded" is itself the
+# finding half the time: a rationalization decision taken without knowing either system's
+# disposition is a coin toss with a meeting attached.
+PORTFOLIO_KEYS = ("timeDisposition", "lifecycle")
+
+
+def _portfolio_note(properties: dict[str, Any]) -> str:
+    """The properties a rationalization decision is actually taken on.
+
+    *Every* property is printed, not a fixed vocabulary: organisations score fit under
+    their own key names (``functionalFit``, ``fit-score``, ``tech_health``), and a
+    report that read only keys this repository invented would print ``not recorded``
+    over data the operator had carefully filled in.
+    """
+    parts = [f"{key}: {properties.get(key) or 'not recorded'}" for key in PORTFOLIO_KEYS]
+    parts += [f"{key}: {value}" for key, value in sorted(properties.items()) if key not in PORTFOLIO_KEYS]
+    return ", ".join(parts)
+
+
+def _capability_realizers(model: dsl.Model) -> dict[str, list[dsl.Element]]:
+    """Capability id -> the application components that realize it, id-ordered."""
+    realizers: dict[str, dict[str, dsl.Element]] = {}
+    for relationship in model.relationships.values():
+        if relationship.type != "Realization":
+            continue
+        source = model.elements.get(relationship.source)
+        target = model.elements.get(relationship.target)
+        if source is None or target is None:
+            continue
+        if target.type != "Capability" or source.type not in RATIONALIZATION_REALIZER_TYPES:
+            continue
+        # Keyed by id: two Realization edges between the same pair are one realizer, not
+        # two, and counting them twice would invent an overlap out of a modelling slip.
+        realizers.setdefault(target.id, {})[source.id] = source
+    return {cap: [by_id[i] for i in sorted(by_id)] for cap, by_id in realizers.items()}
+
+
+def _rationalization_items(model: dsl.Model) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for capability_id, apps in sorted(_capability_realizers(model).items()):
+        if len(apps) < 2:
+            continue
+        capability = model.elements[capability_id]
+        items.append(
+            {
+                "kind": "rationalization-candidate",
+                "concept": capability_id,
+                "detail": (
+                    f"'{capability.name}' is realized by {len(apps)} application components: "
+                    + ", ".join(app.id for app in apps)
+                ),
+                "realizers": [
+                    {"id": app.id, "name": app.name, "properties": dict(sorted(app.properties.items()))}
+                    for app in apps
+                ],
+            }
+        )
+    return items
+
+
+def _overlap_items(model: dsl.Model) -> list[dict[str, Any]]:
+    """Application pairs realizing the same capabilities more than once."""
+    capabilities_of: dict[str, set[str]] = {}
+    for capability_id, apps in _capability_realizers(model).items():
+        for app in apps:
+            capabilities_of.setdefault(app.id, set()).add(capability_id)
+
+    items: list[dict[str, Any]] = []
+    application_ids = sorted(capabilities_of)
+    for index, left in enumerate(application_ids):
+        for right in application_ids[index + 1 :]:
+            shared = sorted(capabilities_of[left] & capabilities_of[right])
+            if len(shared) < OVERLAP_MIN_SHARED:
+                continue
+            items.append(
+                {
+                    "kind": "overlapping-applications",
+                    "concept": left,
+                    "detail": (
+                        f"shares {len(shared)} realized capabilities with '{right}': " + ", ".join(shared)
+                    ),
+                    "pair": [left, right],
+                    "shared": shared,
+                }
+            )
+    return items
+
+
+def _service_providers(model: dsl.Model) -> dict[str, list[str]]:
+    providers: dict[str, set[str]] = {}
+    for relationship in model.relationships.values():
+        if relationship.type not in PROVIDING_RELATIONSHIPS:
+            continue
+        target = model.elements.get(relationship.target)
+        if target is None or target.type not in SERVICE_TYPES:
+            continue
+        if relationship.source in model.elements:
+            providers.setdefault(target.id, set()).add(relationship.source)
+    return {service: sorted(ids) for service, ids in providers.items()}
+
+
+def _duplicate_service_items(model: dsl.Model) -> list[dict[str, Any]]:
+    """Services with one name offered by different providers.
+
+    The plain ``duplicate-name`` query compares type *and* name, so it cannot see an
+    application service and a business service called the same thing -- and it says
+    nothing about who offers them, which is the only fact that separates "two teams
+    built the same thing" from "someone typed the same name twice".
+
+    Two exclusions keep this out of noise: providers must be *disjoint* (one component
+    publishing two same-named services is a modelling slip, not portfolio duplication),
+    and a pair already joined by a relationship is skipped -- an application service
+    realizing an identically named business service is idiomatic layering, and flagging
+    it would punish correct ArchiMate.
+    """
+    related: set[frozenset[str]] = {
+        frozenset((r.source, r.target)) for r in model.relationships.values() if r.source != r.target
+    }
+    providers = _service_providers(model)
+    groups: dict[str, list[dsl.Element]] = {}
+    for element in model.elements.values():
+        if element.type in SERVICE_TYPES and element.name.strip():
+            groups.setdefault(_normalize(element.name), []).append(element)
+
+    items: list[dict[str, Any]] = []
+    for _name, group in sorted(groups.items()):
+        ordered = sorted(group, key=lambda e: e.id)
+        for position, service in enumerate(ordered):
+            mine = set(providers.get(service.id, ()))
+            if not mine:
+                continue
+            for other in ordered[:position]:
+                theirs = set(providers.get(other.id, ()))
+                if not theirs or mine & theirs:
+                    continue
+                if frozenset((service.id, other.id)) in related:
+                    continue
+                items.append(
+                    {
+                        "kind": "duplicate-service",
+                        "concept": service.id,
+                        "detail": (
+                            f"{service.type} '{service.name}' shares its name with {other.type} "
+                            f"'{other.id}'; provided by {', '.join(sorted(mine))} rather than "
+                            f"{', '.join(sorted(theirs))}"
+                        ),
+                        "duplicateOf": other.id,
+                        "providers": sorted(mine),
+                        "otherProviders": sorted(theirs),
+                    }
+                )
+                # One partner per service: the first (id-ordered) match is enough to start
+                # the conversation, and a group of four would otherwise print six lines
+                # saying the same thing.
+                break
+    return items
+
 
 def debt(root: Path, today: date | None = None) -> dict[str, Any]:
     """The EA-debt register: deterministic graph queries from the smells catalogue."""
     today = today or date.today()
     model, _documents, config = dsl.load(root, "approved")
     governance = govern.load(root)
-    items: list[dict[str, str]] = []
+    items: list[dict[str, Any]] = []
 
     def add(kind: str, concept: str, detail: str) -> None:
         items.append({"kind": kind, "concept": concept, "detail": detail})
@@ -317,25 +523,53 @@ def debt(root: Path, today: date | None = None) -> dict[str, Any]:
         else:
             seen_names[key] = element.id
 
+    # Overlap: the portfolio doing one job twice. These carry structured extras beyond
+    # kind/concept/detail, so they are appended whole rather than through add().
+    items.extend(_rationalization_items(model))
+    items.extend(_overlap_items(model))
+    items.extend(_duplicate_service_items(model))
+
     stale_data = staleness(root, today)
     for row in stale_data["rows"]:
         if row["state"] in {"stale", "unreviewed"}:
             add("stale-content", row["id"], f"state: {row['state']}, last reviewed {row['reviewed'] or 'never'}")
 
     dead = {s.id: s.lifecycle for s in governance.standards.values() if s.lifecycle in {"deprecated", "retired"}}
+    dead_standard_refs: list[tuple[str, str]] = []
     for element in sorted(model.elements.values(), key=lambda e: e.id):
         for ref in element.standards:
             if ref in dead:
                 covered = governance.covering(element.id, ref, today)
                 note = f" (dispensation '{covered.id}' until {covered.expires})" if covered else ""
                 add("dead-standard-reference", element.id, f"references {dead[ref]} standard '{ref}'{note}")
+                dead_standard_refs.append((element.id, ref))
 
-    return {"asOf": today.isoformat(), "items": items, "total": len(items)}
+    report: dict[str, Any] = {"asOf": today.isoformat(), "items": items, "total": len(items)}
+
+    # Cost is *only* present when the operator configured rates. Not an empty section,
+    # not zeroes: an unpriced repository must see byte-identical output to the release
+    # before this one, or every existing report diff becomes unreadable for a feature
+    # nobody switched on.
+    costed = cost.price(
+        cost.measure(
+            model,
+            governance,
+            stale_data["rows"],
+            stale_data["thresholdDays"],
+            {capability: len(apps) for capability, apps in _capability_realizers(model).items()},
+            dead_standard_refs,
+            today,
+        ),
+        config,
+    )
+    if costed is not None:
+        report["cost"] = costed
+    return report
 
 
 def render_debt(data: dict[str, Any]) -> str:
     lines = [ui.bold(f"EA debt register as of {data['asOf']} -- {data['total']} item(s)"), ""]
-    by_kind: dict[str, list[dict[str, str]]] = {}
+    by_kind: dict[str, list[dict[str, Any]]] = {}
     for item in data["items"]:
         by_kind.setdefault(item["kind"], []).append(item)
     for kind in sorted(by_kind):
@@ -343,9 +577,19 @@ def render_debt(data: dict[str, Any]) -> str:
         for item in by_kind[kind]:
             concept = "{:<40}".format(item["concept"])
             lines.append(f"  {ui.bold(concept)} {ui.dim(item['detail'])}")
+            # A rationalization candidate is unreadable without the realizers' portfolio
+            # properties next to it -- "two systems do this" is a question, "two systems
+            # do this, both Tolerate, neither with a lifecycle" is a decision.
+            for realizer in item.get("realizers", ()):
+                label = "{:<38}".format(realizer["id"])
+                lines.append(f"    {label} {ui.dim(_portfolio_note(realizer['properties']))}")
         lines.append("")
     if not data["items"]:
         lines.append(ui.green(f"{ui.check()} No debt items found."))
+    if data.get("cost"):
+        if lines and lines[-1] != "":
+            lines.append("")
+        lines.extend(cost.render(data["cost"]))
     return "\n".join(lines).rstrip() + "\n"
 
 

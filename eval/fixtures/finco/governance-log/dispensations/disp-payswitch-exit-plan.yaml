@@ -1,0 +1,17 @@
+# An open waiver on a *critical* element. In an internal governance log this is an
+# exception with an expiry; in a DORA register it is exposure that exists on the date
+# the register is read, which is what REG003 says and why the register prints it in a
+# section of its own.
+id: disp-payswitch-exit-plan
+title: Card processing may run without a tested exit plan until the second provider is live
+waives:
+  standard: std-exit-plan
+appliesTo: [app-card-processing]
+rationale: >
+  The secondary card processor is contracted but not yet in production, so an exit
+  test would have nowhere to exit to. Testing is scheduled for Q1 2027 against the
+  second provider.
+grantedBy: ciso@kestrel.example
+granted: 2026-04-01
+expires: 2027-03-31
+status: open

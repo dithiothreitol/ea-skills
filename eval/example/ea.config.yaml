@@ -16,3 +16,23 @@ factsRoot: .
 
 # Raw source documents that ea-intake ingests (chunking, coverage, SRC001).
 sourcesDir: facts/sources
+
+# Optional. Unit rates that turn the debt register's exposure into money.
+#
+# The tool computes the exposure; the operator prices it. Nothing here is derived,
+# benchmarked or defaulted -- these are Aurora Foods' own numbers, and the ones below are
+# illustrative because Aurora Foods is fictional. Delete this block and `debt` prints
+# exposure only, exactly as it did before the cost model existed.
+#
+# Set only the rates you can defend. An exposure with no rate is reported as *not
+# priced*, next to the total, every time -- which is the honest way to say "we did not
+# put a number on this" and is far better than a plausible guess nobody can source.
+costModel:
+  currency: EUR
+  # Carrying cost of content nobody has re-read: the review effort deferred, per element
+  # per day past the 365-day threshold above.
+  staleElementDay: 1.5
+  # What an open exception costs while it stays open -- the reason waivers expire.
+  openDispensationDay: 12
+  # Per element still built on a deprecated or retired standard: the migration it owes.
+  eolElement: 4000

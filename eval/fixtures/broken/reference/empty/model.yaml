@@ -1,0 +1,7 @@
+# ALN008: a pack that declares no nodes. The schema permits it on purpose, so the rule
+# can say *why* it is wrong -- an empty yardstick reports full coverage of nothing, and
+# a 100% that means "we measured against an empty list" is the most dangerous number a
+# report can carry.
+
+name: Empty reference
+nodes: []

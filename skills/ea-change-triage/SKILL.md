@@ -38,6 +38,40 @@ with the relationship that was meant.
 Use `--scope` on the element the change actually touches, and `--depth 1` first if the
 radius is large; the unbounded run is the honest one for a re-architecting call.
 
+## Rationalization candidates
+
+A change request that adds a system, or that lands on one of two systems doing the same
+job, needs one more read before it is classified:
+
+```bash
+python -m easkills debt --root <repo>   # rationalization-candidate, overlapping-applications, duplicate-service
+```
+
+* **`rationalization-candidate`** -- a capability realized by two or more application
+  components, printed with each realizer's `timeDisposition`, `lifecycle` and whatever
+  fit properties the portfolio records.
+* **`overlapping-applications`** -- a pair realizing the same capabilities more than
+  once. This is the merge conversation; the single candidate above is only its symptom.
+* **`duplicate-service`** -- one service name offered by different providers.
+
+**The report never says "duplicate".** Redundancy is sometimes exactly what was decided
+-- a second claims engine for resilience, a regional instance kept for data residency,
+a strangler running beside the system it replaces. The tool cannot tell that apart from
+drift, and neither can anyone reading the model six months later. So:
+
+* **Deliberate redundancy gets an ADR** (`ea-adr`), naming both systems and the reason
+  the duplication is bought on purpose. Without one, the next reader has no way to tell
+  design from decay, and the same finding gets re-litigated every quarter.
+* **Undecided duplication is a re-architecting trigger, not an incremental change.**
+  Extending the one that happens to be in front of you deepens the overlap; that is
+  class inflation working in the right direction.
+* **Check the dispositions before proposing a winner.** Two realizers both marked
+  `Eliminate` mean the capability has no funded home -- a different conversation from
+  one `Invest` and one `Tolerate`, which is a migration already half-decided.
+* **A candidate can be a modelling artefact.** Two components realizing one capability
+  may mean the capability is drawn too coarse. Splitting it is a legitimate answer, but
+  only when the sources support the split -- see `ea-capability-map`.
+
 ## Discipline
 
 * **Triage against the approved model**, not against memory of it. If the affected

@@ -1,0 +1,9 @@
+name: Kestrel Payments (negative REG fixture)
+documentation: >
+  Every element here is in DORA scope and wrong about it on purpose. The test suite
+  asserts that each REG code actually fires; CI asserts that `dora-register` exits 1
+  here, because a register generator that never refuses is a rubber stamp.
+stalenessDays: 365
+quoteMatchThreshold: 0.90
+factsRoot: .
+sourcesDir: facts/sources

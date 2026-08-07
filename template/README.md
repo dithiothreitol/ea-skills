@@ -46,6 +46,32 @@ python -m easkills impact  --root . --scope <id>      # blast radius + Phase H c
 python -m easkills context --root . --scope <id>      # agent context pack (AD-09)
 ```
 
+**Is it done?**
+
+```bash
+python -m easkills readiness --root .                    # per-layer checkpoints, advisory
+python -m easkills readiness --root . --zone staging     # including proposals
+```
+
+**Measure against a reference architecture** (see [`reference/README.md`](reference/README.md))
+
+```bash
+python -m easkills pin-reference --root . --reference <name>   # after dropping a pack in
+python -m easkills align --root .                              # covered / partial / gap / out-of-scope
+```
+
+**If you are regulated** — tag in-scope ICT elements with `regulatoryScope: dora` plus
+`doraCriticality`, `provider` and `contractRef`, then:
+
+```bash
+python -m easkills dora-register --root . --as-of <date>                      # + the fields it could not fill
+python -m easkills dora-register --root . --as-of <date> --out docs/dora-register.md
+```
+
+A generator, not an attestation: read its last section first, and remember that the
+legal judgement belongs to whoever signs the filing. Untagged repositories get no
+document, which is the right answer when the regulation does not apply to you.
+
 ## Layout
 
 | Path | Holds |
@@ -56,6 +82,7 @@ python -m easkills context --root . --scope <id>      # agent context pack (AD-0
 | `model/staging/` | Machine-proposed concepts awaiting human approval. Ownership metadata is advisory here. |
 | `model/approved/` | Human-signed model. Ownership and review dates are mandatory. Everything downstream reads only from here. |
 | `landscape/` | Architecture landscape partitioned by scope: `strategic/`, `segments/`, `capabilities/`. Baseline, transition and target states are modelled as ArchiMate plateaus inside the model, not as copies of it. |
+| `reference/` | Reference architectures this model is measured against: one directory per model, hash-pinned taxonomy plus your own `mappings.yaml`. Licensed content lives here, under your licence — see `reference/README.md`. |
 | `standards/` | Standards information base. One file per standard, carrying its type (legal / industry / organisational) and lifecycle state (proposed, trial, active, deprecated, retired). |
 | `services/` | Architecture-service catalog (AD-10): one offering per file with owner, fulfilment path and SLA. |
 | `governance-log/requests/` | Demand ledger: who asked for which offering, with evidenced fulfilment. Demand feeds the staleness review queue. |

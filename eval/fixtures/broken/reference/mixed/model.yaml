@@ -1,0 +1,36 @@
+# A well-formed taxonomy, so the *mapping* rules have somewhere to fire. Each node is
+# named in mappings.yaml by the case that provokes its rule, except `x-unmapped`, which
+# is named nowhere at all -- that silence is ALN004.
+
+name: Mixed reference
+version: "1.0"
+source: Authored for eval/fixtures/broken/; not a published reference model
+
+nodes:
+  - id: x-domain
+    name: A domain with children
+    kind: domain
+  - id: x-covered-nothing
+    name: Claimed as covered with nothing behind the claim
+    kind: capability
+    parent: x-domain
+  - id: x-unknown-element
+    name: Claimed by an element that is not in the model
+    kind: capability
+    parent: x-domain
+  - id: x-staging-only
+    name: Claimed by an element that only exists as a proposal
+    kind: capability
+    parent: x-domain
+  - id: x-silent-exclusion
+    name: Declared out of scope without saying why
+    kind: capability
+    parent: x-domain
+  - id: x-twice
+    name: Judged twice, differently
+    kind: capability
+    parent: x-domain
+  - id: x-unmapped
+    name: Named by no mapping at all
+    kind: capability
+    parent: x-domain

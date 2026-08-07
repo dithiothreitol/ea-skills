@@ -13,7 +13,9 @@ outputs are always plain.
 Commands that read the oracle (`validate`, `compile`, `render`, `docs`, `gen-schema`,
 `oracle-info`) verify its SHA-256 pins first: drift is `ORACLE001` and the command
 refuses, `--skip-validation` included. `promote` and `score` inherit the check by
-running the model gate.
+running the model gate. `align` applies the same discipline to the *second* class of
+pinned data — a reference pack whose `SHA256SUMS` do not verify is refused rather than
+read (`ALN001`).
 
 ## Shared flags, and exactly where they apply
 
@@ -25,14 +27,19 @@ parser; `python -m easkills <command> --help` is the same information, per comma
 | Flag | What it does | Commands |
 |---|---|---|
 | `--root <path>` | Repository root (default: cwd) | all except `gen-schema`, `pin-oracle`, `oracle-info` |
-| `--zone approved\|staging` | Which zone to read; governance metadata is mandatory in `approved` | `validate`, `compile`, `render`, `impact` |
-| `--strict` | Warnings fail too (on `conformance`: any failed clause fails) | `validate`, `validate-facts`, `validate-gov`, `conformance`, `check` |
-| `--as-of YYYY-MM-DD` | Evaluate date-dependent checks against a fixed date, for reproducibility | `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `roadmap`, `context`, `check`, `impact` |
-| `--json <file>` | Write the machine-readable report alongside the rendered one. On `chunk` it takes **no argument** and prints JSON to stdout instead | `validate`, `validate-facts`, `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `delta`, `roadmap`, `coverage`, `score`, `chunk`, `check`, `import`, `impact`, `intake-csv` |
-| `--out <path>` | Output file (or directory, for `render`) instead of the default location | `compile`, `render`, `docs`, `context`, `import`, `intake-csv` |
+| `--zone approved\|staging` | Which zone to read; governance metadata is mandatory in `approved` | `validate`, `compile`, `render`, `impact`, `align`, `readiness` |
+| `--strict` | Warnings fail too (on `conformance`: any failed clause fails; on `align`: gaps fail; on `readiness`: any open checkpoint fails) | `validate`, `validate-facts`, `validate-gov`, `conformance`, `check`, `align`, `readiness`, `dora-register` |
+| `--as-of YYYY-MM-DD` | Evaluate date-dependent checks against a fixed date, for reproducibility | `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `roadmap`, `context`, `check`, `impact`, `dora-register` |
+| `--json <file>` | Write the machine-readable report alongside the rendered one. On `chunk` it takes **no argument** and prints JSON to stdout instead | `validate`, `validate-facts`, `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `delta`, `roadmap`, `coverage`, `score`, `chunk`, `check`, `import`, `impact`, `intake-csv`, `align`, `readiness`, `dora-register` |
+| `--out <path>` | Output file (or directory, for `render`) instead of the default location | `compile`, `render`, `docs`, `context`, `import`, `intake-csv`, `dora-register` |
 | `--skip-validation` | Build from a model with validation errors (not recommended) | `compile`, `docs` |
 | `--scope <element-id>` | The element the command is about | `context`, `check`, `impact` |
 | `--repo <path>` | The *consuming* repository being checked (`--root` stays the EA repository) | `check` |
+| `--reference <name>` | The reference pack under `reference/` (repeatable on `align`, where the default is every pack present; required on `pin-reference`) | `align`, `pin-reference` |
+
+`align` and `readiness` have **no `--as-of`**: nothing in either depends on a date, and a
+flag that only decorated the report header would be exactly the decorative conformance the
+0.11.0 review removed elsewhere.
 
 ## Validation gates
 
@@ -65,19 +72,116 @@ delta is read against the approved model it proposes to change.
 | `chunk [--file <source>] [--max-chars N] [--json]` | Splits sources into deterministic extraction chunks with exact line ranges and stable ids. |
 | `coverage [--min-coverage PCT] [--json]` | Which substantive source statements no fact cites, with line numbers — candidate clarification questions. Advisory unless the threshold gate is used. |
 
+## Is it done?
+
+| Command | Does |
+|---|---|
+| `readiness [--zone] [--strict] [--json]` | The per-layer definition of done: one checkpoint list per ArchiMate layer (Strategy, Business, Application, Technology, Motivation), each finding **naming the elements** that fail it — unsupported *and unexamined* capabilities, processes attached to neither a capability nor a service, components with no `lifecycle`/`timeDisposition`, services with no consumer, infrastructure serving nothing, obligations binding nothing, and layers the fact register covers while the model does not. **Nothing here is an error**: an unfinished layer is not a wrong model, and an empty layer is shown rather than flagged. `--strict` is how a repository that claims completeness gates on it. Rules: `RDY*`. |
+
+## Reference alignment
+
+| Command | Does |
+|---|---|
+| `align [--reference NAME]... [--zone] [--strict] [--min-coverage PCT] [--json]` | Two-way coverage against the reference architectures in `reference/<name>/` — a hash-pinned taxonomy plus a human-authored `mappings.yaml`. Per node: `covered`, `partial`, **gap**, or `out-of-scope` *with a recorded rationale*; per branch: a rolled-up percentage; plus the local elements the reference does not anchor, as information rather than findings. Only leaf nodes are scored (`partial` counts ½), an out-of-scope decision inherits down the tree while a coverage claim does not, and every ambiguity resolves towards *gap*. A pack whose pins do not verify is **refused, not read** (`ALN001`). Rules: `ALN*`. |
+| `pin-reference (--reference NAME \| --dir PATH)` | Rewrites one pack's `SHA256SUMS` over `model.yaml` and `NOTICE.md` — the drop-in step after copying a reference model in, and the upgrade step after a reviewed change to one. Never a way to silence `ALN001`. `--dir` is for a pack that does not sit under a repository's `reference/`, such as the open library in [`references/`](../references/). |
+
 ## Maintenance & reporting
 
 | Command | Does |
 |---|---|
 | `staleness [--as-of] [--json]` | Review-age per element, with per-element consumer **demand** and a `neverRequested` count; the queue orders by demand. |
 | `kpi [--as-of] [--json]` | One screen: size, evidence share, governance health, TIME portfolio and obsolescence exposure, capability support, ISO loop state, and the service line (offerings, dispositions, SLA breaches, average fulfilment). |
-| `debt [--as-of] [--json]` | EA-debt register from deterministic smell queries: isolated elements, hubs, unsupported capabilities, duplicate names, stale content, dead-standard references. |
+| `debt [--as-of] [--json]` | EA-debt register from deterministic smell queries: isolated elements, hubs, unsupported capabilities, duplicate names, stale content, dead-standard references — plus the three overlap queries below. |
 | `conformance [--strict] [--as-of] [--json]` | ISO/IEC/IEEE 42010:2022 Clause 6 checklist — `pass`/`fail` where checkable, explicit `gap` where not (never silent conformance). `--strict` exits 1 on any fail. |
 | `correspondences [--as-of] [--json]` | ISO 42010 §6.9: every relation that crosses out of the model — into the governance log, into the fact register — with the rule it is held to and the code that enforces it. Derived from the records that already declare them, so the table cannot drift from the records. |
 | `roadmap [--as-of] [--json]` | The Implementation & Migration layer read as a plan: plateaus in `plateauDate` order with what each holds, the gaps between them, and every Migrate/Eliminate disposition no plateau carries — a portfolio decision nothing schedules. |
 | `delta [--json]` | Continuous-ingestion input: entities with no model counterpart, facts no concept cites. Candidates, not defects. |
 | `impact --scope <element-id> [--zone] [--depth N] [--as-of] [--json]` | Blast radius of a change: transitive affected elements (nearest first, each with the relationship it travelled), the stakeholder groups reached through views and concerns, plus decisions, obligations, waivers, consumer requests and unowned elements inside it. Propagation direction is declared per relationship type; `Association` is reported as adjacency and never traversed. Computes the arithmetic half of the TOGAF Phase H test — the classification stays a recorded judgement. Unlike `docs`, it accepts `--zone staging`: the dangerous error here is a radius that looks *small*. |
 | `context --scope <element-id> [--out] [--as-of]` | Agent context pack (AD-09): binding requirements via `appliesTo`, standards with waivers, applicable decisions, integration neighbours — approved-only, scope-filtered, opened by a mandatory freshness label. A Capability scope expands to its realizers. |
+
+### Overlap and rationalization (`debt`)
+
+Three queries answer "does this portfolio do one job twice?". They report; they never
+conclude — redundancy is as often bought on purpose (resilience, data residency, a
+strangler running beside what it replaces) as it is drift, and nothing in the model
+distinguishes the two. What the register can do is print the data the decision needs.
+
+| Item kind | Fires when | Extra JSON fields |
+|---|---|---|
+| `rationalization-candidate` | A `Capability` is realized by ≥2 **application components**. A business role realizing the same capability is division of labour, not duplication, and is not counted. | `realizers[]` — id, name and the full property map of each, rendered as `timeDisposition` and `lifecycle` first (stated as `not recorded` when unset) then every other property the operator keeps. |
+| `overlapping-applications` | Two application components realize **≥2** of the same capabilities. One shared capability is already a candidate above; the *pair* is only a merge conversation once the overlap repeats. | `pair` (id-ordered, reported once) and `shared`. |
+| `duplicate-service` | Two services share a name (whitespace- and case-insensitive) and are offered by **disjoint** providers. Unlike `duplicate-name` this crosses service types. Excluded: pairs already joined by a relationship — an application service realizing the identically named business service is idiomatic layering — and same-provider pairs, which are a naming slip, not portfolio duplication. | `duplicateOf`, `providers`, `otherProviders`. |
+
+No new rule codes and no gate: these are report items, not findings, because "two systems
+realize this" is a question for a human and a gate that answered it would be wrong half
+the time. Routing lives in skill prose — `ea-health` for reading them, `ea-change-triage`
+for classifying the change that lands on one, `ea-board` for the decision, and `ea-adr`
+for the record that makes deliberate redundancy legible to the next reader.
+
+### Costing the exposure (`costModel` in `ea.config.yaml`)
+
+**The tool computes the exposure, the operator priced it.** That sentence is the feature.
+Nothing in this repository knows what a stale element or an open waiver is worth, and
+nothing here will guess: exposure is derived from the model and the governance log, and
+turning it into money requires unit rates the operator writes down and can defend.
+
+```yaml
+costModel:
+  currency: EUR            # required — an unlabelled amount is read in whatever
+                           # currency the reader assumes
+  staleElementDay: 1.5     # per element, per day past `stalenessDays`
+  openDispensationDay: 12  # per open dispensation, per day since it was granted
+  eolElement: 4000         # per element on a deprecated or retired standard
+  unsupportedCapability: 8000   # per capability nothing realizes
+  duplicateRealization: 15000   # per realizer beyond the first on one capability
+```
+
+Every rate is optional; the block as a whole is optional. **With no `costModel`, `debt`
+output is byte-identical to a release without this feature** — no section, no key in the
+`--json`, not one character. Amounts use decimal arithmetic, and every quantity is
+measured against `--as-of`, never the wall clock, so a figure pasted into a board pack
+reproduces a month later.
+
+The section states what it left out, next to the total, because a partial total that
+looks complete is the number that reaches a slide:
+
+- **Not priced** — an exposure with a real quantity and no configured rate. Set the rate
+  or read the total as a floor.
+- **Not measurable** — elements with no review date contribute no element-days. They are
+  named rather than counted as zero: "we cannot tell" and "it costs nothing" are
+  different answers.
+
+Rate keys are a closed vocabulary in `ea-config.schema.json`; a misspelled one is
+`SCHEMA002`, not a silent zero. Unknown *top-level* config keys are errors too — unlike
+an element's deliberately open `properties` map, a tooling key this tooling does not read
+is always a typo, and `stalenessDay` leaves the 365-day default in place while the
+repository looks fresh.
+
+## Regulatory reporting
+
+| Command | Does |
+|---|---|
+| `dora-register [--as-of] [--out] [--json] [--strict]` | Generates the DORA **Register of Information** from the approved model: ICT third-party providers, contractual arrangements, the services in scope with their criticality, the business functions depending on them, and the open dispensations covering any of it. Scope is `properties.regulatoryScope: dora` on the element — declared, never inferred from a type. Rules: `REG*`. |
+
+**A generator, not an attestation.** The document's structure follows the shape the ESAs'
+implementing technical standards ask for; its content comes from the model and nowhere
+else; no legal review has happened and no completeness against the official templates is
+claimed. The generated file carries that paragraph in its own header, *above* the tables.
+
+Its last section is the reason it is safe to hand over: **the register names its own
+gaps** — every field the template wants that the model does not carry, with the element
+ids missing it. A register that quietly omitted what it could not fill would be
+indistinguishable from a complete one.
+
+With **nothing in scope, no document is produced at all** and the command reports why.
+That is the right answer for an organisation the regulation does not apply to (the worked
+example is a food wholesaler, and is deliberately left out of scope) and the wrong one for
+an organisation that has simply not tagged its ICT services yet — the message says which
+question you are looking at. `--out` refuses rather than writing an empty page.
+
+Control-framework gaps are not part of this command. A control framework is a taxonomy,
+so it rides the reference mechanism: a pack with `kind: control` nodes, and an unmapped
+control is `ALN004`. See [`ea-regulatory`](../skills/ea-regulatory/SKILL.md).
 
 ## Consuming repositories
 
@@ -95,7 +199,7 @@ delta is read against the approved model it proposes to change.
 
 | Command | Does |
 |---|---|
-| `gen-schema` | Regenerates every JSON Schema under `schema/` — all nine, from one registry, each freshness-tested against its committed copy (the model schema derives from the oracle, so a stale one would accept what the validator rejects). |
+| `gen-schema` | Regenerates every JSON Schema under `schema/` — all twelve, from one registry, each freshness-tested against its committed copy (the model schema derives from the oracle, so a stale one would accept what the validator rejects). |
 | `oracle-info` | Oracle version, concept coverage, checksum pin status. |
 | `pin-oracle` | Rewrites the SHA-256 pins — only for deliberate, reviewed oracle upgrades; never to silence `ORACLE001`. |
 

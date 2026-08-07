@@ -189,6 +189,47 @@ Never write x/y coordinates. Give each view a `documentation` line naming the *c
 it frames and for whom -- a view that exists for no stated conversation is a view nobody
 reads.
 
+## When is this layer done
+
+Two halves, and neither answers on its own.
+
+**The mechanical half** lists what the layer does not yet record:
+
+```bash
+python -m easkills readiness --root <repo> --zone staging
+```
+
+Per layer, per checkpoint, **naming the elements**: capabilities nothing realizes and
+nothing has assessed, processes attached to neither a capability nor a service,
+components with no `lifecycle`/`timeDisposition` (invisible to every portfolio report),
+services with no consumer, infrastructure that serves nothing, obligations that bind
+nothing, and layers the fact register covers while the model does not. Nothing there is
+an error -- an unfinished layer is not a wrong model -- so read it as a worklist, and
+resist the temptation to close a checkpoint by adding an edge you cannot evidence. A
+fabricated Realization satisfies `readiness` and corrupts the model; the report is not
+worth that.
+
+**The judgement half** is three questions the tooling cannot ask:
+
+1. **Does the grain match the evidence?** One interview supports a handful of elements.
+   If your layer has more elements than the sources have sentences, you are elaborating,
+   not modelling -- and a measured run did exactly that, inventing services and processes
+   nothing stated. Prefer a lopsided layer that the sources support: the lopsidedness
+   *is* information about where to interview next.
+2. **Do the names survive contest?** Read each name to someone who works there. If they
+   say "we don't call it that", the name is wrong even when the element is right --
+   traceability dies at vocabulary, and so does the golden-set score.
+3. **Are the gaps recorded rather than painted over?** A capability nothing realizes is a
+   finding worth keeping, not a hole to fill with a plausible application. Write the
+   weakness down (`properties: {assessment: weak}`, or a `Gap` element) and it stops being
+   an open checkpoint *because it is now examined* -- which is the honest way to close
+   `RDY001`, and the only one.
+
+A layer is done when the mechanical list is empty **or** every remaining item has a
+recorded reason, and all three questions have answers you would defend in a review. Not
+when the report is green: `--strict` is a claim about completeness, and you should only
+make it once someone has looked.
+
 ## Reporting back
 
 Say what you added, what evidence backs it, and what you had to assume. List assumptions

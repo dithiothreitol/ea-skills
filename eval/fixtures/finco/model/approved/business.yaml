@@ -1,0 +1,39 @@
+# The business functions the ICT estate supports. DORA asks which of these depend on a
+# third-party service, so they have to exist in the model before the register can answer.
+
+elements:
+  - id: cap-payment-services
+    type: Capability
+    name: Payment Services
+    documentation: Kestrel's ability to accept, authorise and settle customer payments.
+    owner: architecture@kestrel.example
+    lastReviewed: 2026-07-01
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  - id: process-payment-execution
+    type: BusinessProcess
+    name: Payment Execution
+    documentation: Authorises, clears and settles an outbound customer payment.
+    owner: payments-ops@kestrel.example
+    lastReviewed: 2026-07-01
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  - id: process-customer-onboarding
+    type: BusinessProcess
+    name: Customer Onboarding
+    documentation: Identity verification and account opening for a new customer.
+    owner: onboarding@kestrel.example
+    lastReviewed: 2026-07-01
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  - id: actor-customer
+    type: BusinessActor
+    name: Retail Customer
+    documentation: Holder of a Kestrel payment account.
+    owner: product@kestrel.example
+    lastReviewed: 2026-07-01
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.

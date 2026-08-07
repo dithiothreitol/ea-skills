@@ -1,0 +1,40 @@
+# Every mapping rule, one entry each. Annotated with the code it provokes.
+
+mappings:
+  # ALN000: `covered` with no `elements`. Enforced by the schema, because a coverage
+  # claim with nothing behind it is not a claim; the rationale for an *exclusion* is
+  # left to ALN005 instead, so a missing one reads as governance, not as formatting.
+  - ref: x-covered-nothing
+    status: covered
+
+  # ALN003: the element does not exist in the model being read.
+  - ref: x-unknown-element
+    status: covered
+    elements: [app-imaginary]
+
+  # ALN007: the element exists only in model/staging/, and this report reads `approved`.
+  # The node stays a gap -- promotion is what would close it.
+  - ref: x-staging-only
+    status: covered
+    elements: [app-proposed-portal]
+
+  # ALN005: out-of-scope with no rationale. Fails closed: the node is reported as a gap,
+  # because an exclusion nobody signed does not exclude anything.
+  - ref: x-silent-exclusion
+    status: out-of-scope
+
+  # ALN006: two entries for one node. The first is kept, the second reported -- and they
+  # disagree, which is why "one node, one recorded judgement" is an error and not a merge.
+  - ref: x-twice
+    status: partial
+    elements: [app-finance]
+  - ref: x-twice
+    status: out-of-scope
+    rationale: The same node, judged the opposite way in the same file.
+
+  # ALN002: no node of this pack has that id.
+  - ref: x-nonexistent-node
+    status: covered
+    elements: [app-finance]
+
+  # x-unmapped appears nowhere: ALN004.

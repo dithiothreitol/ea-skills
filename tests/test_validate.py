@@ -248,6 +248,11 @@ def test_governance_metadata_is_advisory_in_staging(tmp_path, broken_root):
 
     shutil.copytree(broken_root, tmp_path / "repo")
     staging = tmp_path / "repo" / "model" / "staging"
+    # The fixture carries its own staging proposal (for ALN007). This test is about the
+    # zone rules applied to the *approved* content, so that proposal is cleared first --
+    # otherwise the move below lands inside it instead of becoming it.
+    if staging.is_dir():
+        shutil.rmtree(staging)
     staging.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(str(tmp_path / "repo" / "model" / "approved"), str(staging))
 

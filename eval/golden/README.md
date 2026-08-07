@@ -79,9 +79,52 @@ happened once and is recorded so the difference stays legible:
   half credit nine times over, dropping `clinic/facts` from 83% to 74% -- while following
   the skill more closely than gold did. The fix belonged in gold, not in the scorer.
 
+* **2026-08-06, `clinic`: the capability layer added (3 capabilities, 3 realizations).**
+  Recorded here in full, because it is the second gold change and the one most easily
+  mistaken for the forbidden move.
+
+  *The contradiction.* `ea-capability-map` states that the capability map is **the spine**,
+  that it is modelled **before anything else**, and that the load-bearing relationship is
+  `ApplicationComponent --Realization--> Capability`. `ea-model` repeats it. Gold's
+  `clinic` had **no Strategy layer at all** — so a run that followed the method produced
+  three elements gold could not match, and lost precision for obeying the skill it was
+  being measured on. `python -m easkills readiness --root eval/golden/clinic` prints
+  `Strategy  empty` next to a Business and Application layer that are complete, which is
+  the contradiction stated mechanically.
+
+  *Why this is a correction against the rules and not against a run.* Three measured runs
+  (0.11.0) independently produced three clinic capabilities, and that is what **exposed**
+  the problem — it is not the authority for the fix. The capabilities written into gold
+  were derived from the register the way the skill prescribes: each is a noun phrase
+  naming something the clinic can do, each cites the fact that evidences it, and there are
+  three because the interview supports three. Not six: `ea-capability-map` says the 6–12
+  range "is a shape, not a target", and that "a single interview supports the capabilities
+  it names and no more". Gold's names were **not** copied from any run's output, and the
+  entity table was **not** given aliases to make matching easier — that would be tuning
+  gold to the thing it measures.
+
+  *The counter-argument, and why it lost.* A two-page interview could be said to stop
+  legitimately below the capability line: nobody in it utters the word "capability", and
+  the only capability term any source in the set names outright is the worked example's
+  "Customer service is the weak spot". But the skills do not make the map conditional on
+  the sources naming it — they make it the first thing modelled and the thing everything
+  else attaches to. A yardstick that omits the spine measures method compliance as error.
+  If the position is ever reversed, it is this paragraph that has to be argued with.
+
+  *Consequence for the baseline, stated because it is easy to miss.* `clinic`'s element and
+  relationship denominators changed, so the 0.11.0 baseline for those two categories is
+  **not comparable** across this change — the same situation as adding `ea-capability-map`
+  to the measured phase, and it is noted in `eval/harness/README.md` rather than left to be
+  inferred. `facts` and `entities` are untouched and stay comparable.
+
 The rule that stays: a golden case may be corrected against the skills' own stated rules,
 never against a run's output. If a run disagrees with gold and no rule is on the run's
 side, the run is what is wrong.
+
+Two tells that separate the two, worth naming because this change had to pass both: a
+correction can be argued **from a sentence in a skill** without mentioning any run, and it
+leaves gold's *vocabulary* alone. Tuning names, adding aliases, or relaxing a statement so a
+run matches is the forbidden move even when the number moves in the same direction.
 
 ## Adding a case
 

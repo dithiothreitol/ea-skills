@@ -10,7 +10,7 @@ and living governance out. All of it in git.
 [![CI](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Validation rules](https://img.shields.io/badge/validation%20rules-118-brightgreen.svg)](docs/RULES.md)
+[![Validation rules](https://img.shields.io/badge/validation%20rules-141-brightgreen.svg)](docs/RULES.md)
 [![ArchiMate 3.2](https://img.shields.io/badge/ArchiMate-3.2-orange.svg)](oracle/NOTICE.md)
 [![ISO/IEC/IEEE 42010](https://img.shields.io/badge/ISO%2FIEC%2FIEEE-42010%3A2022-lightgrey.svg)](docs/RULES.md)
 
@@ -132,7 +132,7 @@ flowchart LR
 ```
 
 Every arrow is a deterministic command with an exit-code contract, and every stage is
-driven by one of the **22 [agent skills](skills/)** — from `ea-intake` through
+driven by one of the **24 [agent skills](skills/)** — from `ea-intake` through
 `ea-approve` to `ea-board`. The orchestrator (`ea-run`) routes requests catalog-first
 and keeps the stage order honest.
 
@@ -144,6 +144,8 @@ and keeps the stage order honest.
 | Document | `ea-stakeholders`, `ea-views`, `ea-docs` | `docs`, `render`, ISO loop rules, freshness CI check |
 | Govern | `ea-standards-base`, `ea-dispensation`, `ea-adr`, `ea-compliance`, `ea-service` | `validate-gov` — expiry and SLA are enforced, not filed |
 | Maintain | `ea-health`, `ea-change-triage`, `ea-board`, `ea-context` | `kpi`, `debt`, `staleness`, `conformance`, `correspondences`, `roadmap`, `delta`, `context`, `impact` |
+| Assess | `ea-model`, `ea-capability-map`, `ea-align` | `readiness` — the per-layer definition of done, every checkpoint naming its elements; `align --strict` — the model against a hash-pinned reference architecture, every unmapped node a named gap and every exclusion a recorded decision |
+| Comply | `ea-regulatory` | `dora-register` — the Register of Information from the approved model, with the fields it could not fill named; control gaps ride `align` as `ALN004` |
 | Consume | `ea-check` | `check --scope` inside a product repo — standards lifecycle vs declared dependencies |
 | Evaluate | `ea-eval` | `score --min-f1` against the [golden set](eval/golden/); the score names every unmatched item, and relationships the model only *implies* count as half a match via ArchiMate's derivation rules |
 
@@ -167,7 +169,7 @@ the product used to be the untested half. `eval/harness/` now runs the skills ag
 golden set with an API key — a blind scratch repository, the pipeline the prose describes,
 three runs per case because the spread is the honest part — and scores the result; a second
 harness checks that the governance skills produce records satisfying their own rules. Five
-of the 22 skills are measured that way and [the coverage page](docs/SKILL-COVERAGE.md) says
+of the 24 skills are measured that way and [the coverage page](docs/SKILL-COVERAGE.md) says
 exactly which, including the two nothing mechanical covers. The first baseline paid for the
 harness the same day by exposing three prose defects invisible to reading.
 
@@ -241,6 +243,26 @@ from `model/approved/` only. Output is deterministic — the "as of" date is the
 `lastReviewed` in the model, not the wall clock — so the generated files are committed
 and CI fails when they go stale.
 
+**"Is this layer done?" is measured against two yardsticks, not a feeling.** `coverage`
+answers *did we model what we were told*; `align` answers *did we model what a business
+like this has* — against a **reference architecture** in `reference/<name>/`: a
+hash-pinned taxonomy plus a human-authored mapping. Every node comes back `covered`,
+`partial`, a **named gap**, or `out-of-scope` *with a mandatory rationale*, because a gap
+somebody decided about and a gap nobody noticed must not look the same. Coverage claims
+resting on staging proposals do not count, exclusions inherit down a branch while
+coverage claims never do, and a pack whose pins do not verify is refused rather than
+read. Licensed reference models (BIAN, APQC PCF, eTOM) stay in the adopter's repository
+under the adopter's licence — this repository ships the mechanism and only
+[openly licensed content](references/).
+
+**The tool computes the exposure, the operator prices it.** Debt is measurable — element-days
+past the staleness threshold, dispensation-days open, elements on retired standards,
+unrealized capabilities, surplus realizers. What any of that is *worth* is not, so nothing
+here guesses: unit rates live in the adopter's `ea.config.yaml`, and with none configured
+`debt` prints exposure exactly as it did before the feature existed. When a total is
+printed it names what it left out — exposures with no rate, elements with no review date —
+because a partial total that looks complete is the number that reaches a slide.
+
 **The oracle is vendored and hash-pinned.** Semantic rules come from Archi's
 `relationships.xml` (the ArchiMate 3.2 permitted-relationship matrix) and the Open
 Group exchange schemas — not from rules typed from memory, and genuinely not fetched
@@ -286,10 +308,14 @@ agents. What is not otherwise available is the *combination*:
 | Governance + maintenance (SIB, dispensations with expiry, debt, staleness, service catalog, agent context packs) | ✓ | — | — | partial (PR gate) | partial (docs) | partial |
 | Impact analysis / dependency traversal | ✓ declared propagation per relationship type | — | — | — | — | ✓ |
 | Roadmap / target-state planning | ✓ ArchiMate plateaus, gated (`PLAT*`) | — | — | — | — | ✓ |
+| Regulatory reporting (DORA Register of Information) | ✓ generated from the model, gaps named in the document, explicitly not an attestation | — | — | — | — | partial |
+| Reference-architecture alignment | ✓ hash-pinned taxonomy, gap per node, exclusion needs a rationale | — | — | — | — | ✓ (content bundled) |
+| Application rationalization / duplicate-functionality detection | ✓ derived from realization edges, printed with each realizer's portfolio properties; never auto-concluded | — | — | — | — | ✓ |
+| Technology-debt sizing and costing | ✓ exposure derived, priced only by the operator's own rates; the total names what it left out | — | — | — | — | ✓ |
 
 Verified against the 2026-07-29 competitive survey behind
 [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md); the ea-skills column reflects this
-repository as of 2026-08-04. Neighbours move fast, so this table carries a standing
+repository as of 2026-08-07. Neighbours move fast, so this table carries a standing
 obligation: **re-check monthly, and correct it when a claim stops being true** — it is
 tracked as an open item below and in [BLUEPRINT §8a](docs/BLUEPRINT.md), because no
 test can check a competitor's changelog. Each capability exists somewhere; the
@@ -298,8 +324,9 @@ elsewhere.
 
 ## Status and roadmap
 
-**All planned phases are complete** — see [CHANGELOG.md](CHANGELOG.md) for the full
-history and [BLUEPRINT §8a](docs/BLUEPRINT.md) for per-phase design decisions.
+**Phases 0–6 are complete**; Phase 7 is under way, one increment per release — see
+[CHANGELOG.md](CHANGELOG.md) for the full history and
+[BLUEPRINT §8a](docs/BLUEPRINT.md) for per-phase design decisions.
 
 | Phase | Scope | Status |
 |---|---|---|
@@ -310,6 +337,7 @@ history and [BLUEPRINT §8a](docs/BLUEPRINT.md) for per-phase design decisions.
 | 4 | Governance & maintenance: SIB, dispensations, ADRs, compliance, health reports, agent context packs | **done** |
 | 5 | Evaluation: golden-set regression harness, capability comparison | **done** |
 | 6 | Service layer: offering catalog with SLAs, demand ledger, demand-weighted maintenance | **done** |
+| 7 | Reference, regulation, proposal: alignment to reference architectures, per-layer readiness, rationalization, cost, regulatory reporting, generated proposals | **in progress** — `align`, `readiness`, the rationalization queries, the debt cost model and `dora-register` landed |
 
 Deliberately open (decisions, not backlog): the **network facade** (MCP/HTTP) over the
 read-only commands stays deferred until the demand ledger shows someone asking for it —
@@ -326,10 +354,13 @@ is the drill.
 ```
 easkills/        deterministic tooling (oracle, DSL, validators, compiler, renderer,
                  docgen, governance, correspondences, impact, roadmap reports,
-                 exchange importer, CSV intake, context packs, scorer, CLI)
+                 reference packs and alignment, exchange importer, CSV intake,
+                 context packs, scorer, CLI)
 oracle/          vendored, hash-pinned rule data + NOTICE.md
+references/      the open reference-model library adopters copy from (public domain /
+                 public law only -- licensed models live in the adopter's repository)
 schema/          JSON Schemas -- all generated, never hand-edited
-skills/          the 22 agent skills (this is the product)
+skills/          the 24 agent skills (this is the product)
 template/        scaffold to copy for a new enterprise
 eval/example/    worked example, clean (doubles as the largest golden case)
 eval/golden/     golden-set cases for the regression harness
@@ -346,7 +377,7 @@ docs/            GETTING-STARTED, CLI reference, RULES catalogue, BLUEPRINT (des
 |---|---|
 | [Getting started](docs/GETTING-STARTED.md) | Tutorial: from a raw interview to a validated, documented architecture |
 | [CLI reference](docs/CLI.md) | Every command, flag and exit-code contract |
-| [Rule catalogue](docs/RULES.md) | All 118 validation rules with severities and rationale |
+| [Rule catalogue](docs/RULES.md) | All 141 validation rules with severities and rationale |
 | [Blueprint](docs/BLUEPRINT.md) | The research-verified design: decisions, evidence, per-phase log |
 | [Golden set](eval/golden/README.md) | How pipeline quality is measured |
 | [Skill coverage](docs/SKILL-COVERAGE.md) | Which instrument measures which skill — including where nothing does |

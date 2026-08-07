@@ -160,7 +160,10 @@ def test_a_type_disagreement_inside_one_layer_is_half_a_match(candidate):
     )
     elements = score.score(candidate, CLINIC).categories["elements"]
     assert elements.partial == 1
-    assert elements.matched == pytest.approx(5.5), "found, but classified differently"
+    # Everything matched except the one retyped element, which counts half. Expressed
+    # against `gold` rather than a literal so a legitimate change to the golden case
+    # (the 2026-08-06 capability layer was one) moves the arithmetic, not the intent.
+    assert elements.matched == pytest.approx(elements.gold - 0.5), "found, but classified differently"
     assert 0.9 < elements.f1 < 1.0
 
 
@@ -171,7 +174,7 @@ def test_a_type_change_across_layers_is_not_a_match(candidate):
         text.replace("    type: ApplicationService", "    type: BusinessService"), encoding="utf-8"
     )
     elements = score.score(candidate, CLINIC).categories["elements"]
-    assert elements.partial == 0 and elements.matched == 5
+    assert elements.partial == 0 and elements.matched == elements.gold - 1
 
 
 def test_regrouping_gold_facts_covers_the_same_ground(candidate):
@@ -199,10 +202,16 @@ def test_regrouping_gold_facts_covers_the_same_ground(candidate):
         head + merged + "\n  - id: fact-portal-hosting" + rest, encoding="utf-8"
     )
     # Keep the candidate's own gates green: it must cite the fact it actually wrote.
+    # Three places cite the two merged facts since gold gained its capability layer --
+    # `app-ehr`, `cap-billing`, and the Realization between them -- and a single missed
+    # one is PROV007, which makes the whole score untrustworthy rather than merely lower.
     model = _model_file(candidate).read_text(encoding="utf-8")
     _model_file(candidate).write_text(
         model.replace(
             "      - fact: fact-billing-module-in-ehr\n      - fact: fact-no-separate-billing",
+            "      - fact: fact-billing-inside-ehr",
+        ).replace(
+            "      - fact: fact-billing-module-in-ehr",
             "      - fact: fact-billing-inside-ehr",
         ),
         encoding="utf-8",
@@ -274,13 +283,18 @@ relationships:""",
     assert relationships.partial_gold == (
         "Serving Booking Portal -> Patient (derived DR4 via Booking Flow)",
     )
-    assert relationships.gold_credit == pytest.approx(4.5)
+    # One gold edge was re-grained into two, so: every other gold edge matches fully and
+    # that one counts half; on the candidate side the two edges carrying the derivation
+    # count half each, which is why the credit lands back on `gold`. Written against
+    # `relationships.gold` so a change to the golden case moves the arithmetic, not the
+    # claim -- the 2026-08-06 capability layer was exactly such a change.
+    assert relationships.gold_credit == pytest.approx(relationships.gold - 0.5)
     assert set(relationships.partial_candidate) == {
         "Serving Booking Portal -> Booking Flow",
         "Assignment Patient -> Booking Flow",
     }
-    assert relationships.matched == pytest.approx(5.0)
-    assert relationships.recall == pytest.approx(0.9)
+    assert relationships.matched == pytest.approx(relationships.gold)
+    assert relationships.recall == pytest.approx((relationships.gold - 0.5) / relationships.gold)
     # The invented element still costs element precision -- derivation forgives the edge,
     # not the elaboration.
     assert report.categories["elements"].precision < 1.0

@@ -1,6 +1,7 @@
 """Maintenance reports and agent context packs must be deterministic, honest about
 gaps, and scoped to the approved zone only."""
 
+import os
 from datetime import date
 
 from easkills import cli, contextpack, reports
@@ -127,6 +128,269 @@ def test_debt_register_on_broken(broken_root):
     assert "duplicate-name" in kinds
     assert "stale-content" in kinds
     assert "dead-standard-reference" in kinds
+
+
+# ------------------------------------------------------- overlap and rationalization
+
+
+def _overlap_root(tmp_path, body: str):
+    """A throwaway model root. Overlap is a portfolio shape, and the worked example is
+    deliberately not that shape -- a wholesaler that ran two order systems would be a
+    worse teaching example, so these queries are exercised on fixtures built per test."""
+    approved = tmp_path / "model" / "approved"
+    approved.mkdir(parents=True)
+    (approved / "overlap.yaml").write_text(body, encoding="utf-8", newline="\n")
+    return tmp_path
+
+
+def _kinds(data, kind: str) -> list[dict]:
+    return [item for item in data["items"] if item["kind"] == kind]
+
+
+TWO_REALIZERS = """\
+elements:
+  - id: cap-billing
+    type: Capability
+    name: Billing
+  - id: app-legacy
+    type: ApplicationComponent
+    name: Legacy Suite
+    properties:
+      timeDisposition: Eliminate
+      functionalFit: poor
+  - id: app-saas
+    type: ApplicationComponent
+    name: SaaS Platform
+    properties:
+      lifecycle: production
+  - id: role-collections
+    type: BusinessRole
+    name: Collections Team
+relationships:
+  - id: rel-legacy-billing
+    type: Realization
+    source: app-legacy
+    target: cap-billing
+  - id: rel-saas-billing
+    type: Realization
+    source: app-saas
+    target: cap-billing
+  - id: rel-role-billing
+    type: Realization
+    source: role-collections
+    target: cap-billing
+"""
+
+
+def test_a_capability_realized_twice_is_a_rationalization_candidate(tmp_path):
+    data = reports.debt(_overlap_root(tmp_path, TWO_REALIZERS), today=TODAY)
+    candidates = _kinds(data, "rationalization-candidate")
+    assert [c["concept"] for c in candidates] == ["cap-billing"]
+    assert [r["id"] for r in candidates[0]["realizers"]] == ["app-legacy", "app-saas"]
+    # Every finding names its items: the realizer ids are in the printed line too, not
+    # only in the JSON, so the terminal reader never has to go looking.
+    assert "app-legacy" in candidates[0]["detail"] and "app-saas" in candidates[0]["detail"]
+
+
+def test_a_business_role_realizing_a_capability_is_not_duplicate_functionality(tmp_path):
+    """Division of labour is not overlap.
+
+    The golden set's Appointment Booking is realized by the booking portal *and* the
+    front desk -- correct modelling of a clinic. Counting the role as a realizer would
+    make the query fire on it, which is the RDY008 mistake: for an advisory report the
+    only real failure mode is noise.
+    """
+    data = reports.debt(_overlap_root(tmp_path, TWO_REALIZERS), today=TODAY)
+    realizers = _kinds(data, "rationalization-candidate")[0]["realizers"]
+    assert "role-collections" not in {r["id"] for r in realizers}
+    assert "BusinessRole" not in reports.RATIONALIZATION_REALIZER_TYPES
+
+
+def test_the_candidate_carries_the_properties_the_decision_needs(tmp_path):
+    """"Two systems do this" is a question; "two systems do this, one Eliminate with a
+    poor fit, one in production" is a decision. Unset keys say so rather than vanishing,
+    and keys this repository never invented are printed because the operator's own fit
+    score is exactly the column that matters."""
+    data = reports.debt(_overlap_root(tmp_path, TWO_REALIZERS), today=TODAY)
+    rendered = reports.render_debt(data)
+    assert "timeDisposition: Eliminate" in rendered
+    assert "functionalFit: poor" in rendered, "an operator's own property key is not dropped"
+    assert "lifecycle: not recorded" in rendered, "an unset portfolio key is stated, not omitted"
+
+
+TWO_SHARED = """\
+elements:
+  - id: cap-billing
+    type: Capability
+    name: Billing
+  - id: cap-crm
+    type: Capability
+    name: Customer Management
+  - id: app-legacy
+    type: ApplicationComponent
+    name: Legacy Suite
+  - id: app-saas
+    type: ApplicationComponent
+    name: SaaS Platform
+relationships:
+  - id: rel-legacy-billing
+    type: Realization
+    source: app-legacy
+    target: cap-billing
+  - id: rel-saas-billing
+    type: Realization
+    source: app-saas
+    target: cap-billing
+  - id: rel-legacy-crm
+    type: Realization
+    source: app-legacy
+    target: cap-crm
+  - id: rel-saas-crm
+    type: Realization
+    source: app-saas
+    target: cap-crm
+"""
+
+
+def test_an_application_pair_sharing_two_capabilities_is_reported_once(tmp_path):
+    data = reports.debt(_overlap_root(tmp_path, TWO_SHARED), today=TODAY)
+    pairs = _kinds(data, "overlapping-applications")
+    assert len(pairs) == 1, "an unordered pair is one finding, not two"
+    assert pairs[0]["pair"] == ["app-legacy", "app-saas"]
+    assert pairs[0]["shared"] == ["cap-billing", "cap-crm"]
+
+
+def test_one_shared_capability_is_not_yet_a_pair(tmp_path):
+    """The threshold is what separates the two queries. One shared capability is already
+    a rationalization candidate; the *pair* only becomes a merge conversation when the
+    overlap repeats, and reporting both at one shared capability would just say the same
+    thing twice in two vocabularies."""
+    body = TWO_SHARED.replace(
+        "  - id: rel-saas-crm\n    type: Realization\n    source: app-saas\n    target: cap-crm\n", ""
+    )
+    data = reports.debt(_overlap_root(tmp_path, body), today=TODAY)
+    assert _kinds(data, "overlapping-applications") == []
+    assert [c["concept"] for c in _kinds(data, "rationalization-candidate")] == ["cap-billing"]
+    assert reports.OVERLAP_MIN_SHARED == 2
+
+
+def test_two_realizations_between_one_pair_do_not_invent_an_overlap(tmp_path):
+    """A duplicated edge is a modelling slip. Counting it as a second realizer would turn
+    that slip into a portfolio finding, and someone would go to a meeting about it."""
+    body = TWO_REALIZERS + """\
+  - id: rel-legacy-billing-again
+    type: Realization
+    source: app-legacy
+    target: cap-billing
+"""
+    body = body.replace(
+        "  - id: rel-saas-billing\n    type: Realization\n    source: app-saas\n    target: cap-billing\n", ""
+    )
+    data = reports.debt(_overlap_root(tmp_path, body), today=TODAY)
+    assert _kinds(data, "rationalization-candidate") == []
+
+
+DUPLICATE_SERVICES = """\
+elements:
+  - id: app-legacy
+    type: ApplicationComponent
+    name: Legacy Suite
+  - id: role-collections
+    type: BusinessRole
+    name: Collections Team
+  - id: svc-invoice-a
+    type: ApplicationService
+    name: Invoice Issuing
+  - id: svc-invoice-b
+    type: BusinessService
+    name: invoice   issuing
+relationships:
+  - id: rel-legacy-invoice
+    type: Realization
+    source: app-legacy
+    target: svc-invoice-a
+  - id: rel-collections-invoice
+    type: Assignment
+    source: role-collections
+    target: svc-invoice-b
+"""
+
+
+def test_services_named_alike_and_offered_by_different_providers_are_reported(tmp_path):
+    """The plain duplicate-name query compares type *and* name, so it cannot see these
+    two at all -- and it would say nothing about who offers them, which is the only fact
+    that separates "two teams built the same thing" from "someone typed a name twice"."""
+    data = reports.debt(_overlap_root(tmp_path, DUPLICATE_SERVICES), today=TODAY)
+    duplicates = _kinds(data, "duplicate-service")
+    assert [d["concept"] for d in duplicates] == ["svc-invoice-b"]
+    assert duplicates[0]["duplicateOf"] == "svc-invoice-a"
+    assert duplicates[0]["providers"] == ["role-collections"]
+    assert duplicates[0]["otherProviders"] == ["app-legacy"]
+    assert _kinds(data, "duplicate-name") == [], "different types -- the older query is blind here"
+    # Whitespace and case are noise in a name comparison; the register would otherwise
+    # miss the most common way a duplicate actually gets typed.
+    assert "invoice   issuing" in duplicates[0]["detail"]
+
+
+def test_a_service_realizing_an_identically_named_service_is_idiomatic_layering(tmp_path):
+    """An application service realizing the business service of the same name is textbook
+    ArchiMate. A query that flagged it would punish correct modelling -- so a pair already
+    joined by a relationship is excluded, and this test is what keeps the exclusion."""
+    body = DUPLICATE_SERVICES + """\
+  - id: rel-app-realizes-business
+    type: Realization
+    source: svc-invoice-a
+    target: svc-invoice-b
+"""
+    data = reports.debt(_overlap_root(tmp_path, body), today=TODAY)
+    assert _kinds(data, "duplicate-service") == []
+
+
+def test_one_component_publishing_two_same_named_services_is_not_portfolio_duplication(tmp_path):
+    """Same provider, so nothing was built twice. That is a modelling slip for
+    duplicate-name to catch, and reporting it here would put a naming typo on the
+    rationalization list."""
+    body = DUPLICATE_SERVICES.replace("source: role-collections", "source: app-legacy")
+    data = reports.debt(_overlap_root(tmp_path, body), today=TODAY)
+    assert _kinds(data, "duplicate-service") == []
+
+
+def test_the_worked_example_and_the_golden_set_are_overlap_free(example_root, repo_root):
+    """Both are teaching material. A wholesaler running two order systems, or a two-doctor
+    clinic running two EHRs, would teach the wrong shape -- so the overlap queries must
+    stay silent on them, and this test is how a future edit that introduces duplication
+    by accident gets caught."""
+    for root in (example_root, repo_root / "eval" / "golden" / "clinic"):
+        kinds = {item["kind"] for item in reports.debt(root, today=TODAY)["items"]}
+        assert not (kinds & set(reports.OVERLAP_KINDS)), f"{root.name} has grown an overlap"
+        assert kinds <= set(reports.DEBT_KINDS), "the register emits a kind nothing documents"
+
+
+def test_overlap_findings_are_stable_across_hash_seeds(tmp_path, repo_root):
+    """Byte stability, tested the only way that can fail.
+
+    The overlap queries build sets of ids, and set iteration order moves with the
+    interpreter's string-hash seed -- which is randomised *per process*, so comparing
+    two calls inside one test would pass while the register produced a different
+    diff on every real run. Two subprocesses with pinned, different seeds is the check.
+    """
+    import subprocess
+    import sys
+
+    root = _overlap_root(tmp_path, TWO_SHARED)
+    outputs = []
+    for seed in ("0", "12345"):
+        result = subprocess.run(
+            [sys.executable, "-m", "easkills", "debt", "--root", str(root), "--as-of", TODAY.isoformat()],
+            capture_output=True,
+            text=True,
+            cwd=repo_root,
+            env={**os.environ, "PYTHONHASHSEED": seed, "NO_COLOR": "1"},
+        )
+        assert result.returncode == 0, result.stderr
+        outputs.append(result.stdout)
+    assert outputs[0] == outputs[1]
+    assert "app-legacy" in outputs[0] and "cap-crm" in outputs[0]
 
 
 # ----------------------------------------------------------------------- conformance

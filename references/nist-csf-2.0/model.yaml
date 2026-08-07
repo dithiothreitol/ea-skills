@@ -1,0 +1,157 @@
+# NIST Cybersecurity Framework 2.0 -- Functions and Categories.
+#
+# Public domain (a work of the U.S. federal government); see NOTICE.md for the
+# citation. Transcribed at the *structural* level only: the six Functions and the
+# twenty-two Categories, with their published identifiers. Subcategories are not
+# included -- they are the level at which control implementation is argued, and a
+# taxonomy this tooling only measures coverage against does not need them. Add them
+# locally if your organisation maps at that grain, and re-pin (`pin-reference`).
+#
+# Descriptions are deliberately absent: the Framework's own wording is the normative
+# text, and a paraphrase sitting in a YAML file is the kind of thing that gets quoted
+# back as if it were the standard.
+
+name: NIST Cybersecurity Framework 2.0
+version: "2.0"
+source: NIST CSWP 29 (February 2024), Functions and Categories
+
+nodes:
+  - id: govern
+    name: Govern
+    kind: domain
+    externalId: GV
+  - id: govern-organizational-context
+    name: Organizational Context
+    kind: control
+    parent: govern
+    externalId: GV.OC
+  - id: govern-risk-management-strategy
+    name: Risk Management Strategy
+    kind: control
+    parent: govern
+    externalId: GV.RM
+  - id: govern-roles-responsibilities-authorities
+    name: Roles, Responsibilities, and Authorities
+    kind: control
+    parent: govern
+    externalId: GV.RR
+  - id: govern-policy
+    name: Policy
+    kind: control
+    parent: govern
+    externalId: GV.PO
+  - id: govern-oversight
+    name: Oversight
+    kind: control
+    parent: govern
+    externalId: GV.OV
+  - id: govern-supply-chain-risk-management
+    name: Cybersecurity Supply Chain Risk Management
+    kind: control
+    parent: govern
+    externalId: GV.SC
+
+  - id: identify
+    name: Identify
+    kind: domain
+    externalId: ID
+  - id: identify-asset-management
+    name: Asset Management
+    kind: control
+    parent: identify
+    externalId: ID.AM
+  - id: identify-risk-assessment
+    name: Risk Assessment
+    kind: control
+    parent: identify
+    externalId: ID.RA
+  - id: identify-improvement
+    name: Improvement
+    kind: control
+    parent: identify
+    externalId: ID.IM
+
+  - id: protect
+    name: Protect
+    kind: domain
+    externalId: PR
+  - id: protect-identity-management-authentication-access-control
+    name: Identity Management, Authentication, and Access Control
+    kind: control
+    parent: protect
+    externalId: PR.AA
+  - id: protect-awareness-and-training
+    name: Awareness and Training
+    kind: control
+    parent: protect
+    externalId: PR.AT
+  - id: protect-data-security
+    name: Data Security
+    kind: control
+    parent: protect
+    externalId: PR.DS
+  - id: protect-platform-security
+    name: Platform Security
+    kind: control
+    parent: protect
+    externalId: PR.PS
+  - id: protect-technology-infrastructure-resilience
+    name: Technology Infrastructure Resilience
+    kind: control
+    parent: protect
+    externalId: PR.IR
+
+  - id: detect
+    name: Detect
+    kind: domain
+    externalId: DE
+  - id: detect-continuous-monitoring
+    name: Continuous Monitoring
+    kind: control
+    parent: detect
+    externalId: DE.CM
+  - id: detect-adverse-event-analysis
+    name: Adverse Event Analysis
+    kind: control
+    parent: detect
+    externalId: DE.AE
+
+  - id: respond
+    name: Respond
+    kind: domain
+    externalId: RS
+  - id: respond-incident-management
+    name: Incident Management
+    kind: control
+    parent: respond
+    externalId: RS.MA
+  - id: respond-incident-analysis
+    name: Incident Analysis
+    kind: control
+    parent: respond
+    externalId: RS.AN
+  - id: respond-incident-response-reporting-and-communication
+    name: Incident Response Reporting and Communication
+    kind: control
+    parent: respond
+    externalId: RS.CO
+  - id: respond-incident-mitigation
+    name: Incident Mitigation
+    kind: control
+    parent: respond
+    externalId: RS.MI
+
+  - id: recover
+    name: Recover
+    kind: domain
+    externalId: RC
+  - id: recover-incident-recovery-plan-execution
+    name: Incident Recovery Plan Execution
+    kind: control
+    parent: recover
+    externalId: RC.RP
+  - id: recover-incident-recovery-communication
+    name: Incident Recovery Communication
+    kind: control
+    parent: recover
+    externalId: RC.CO

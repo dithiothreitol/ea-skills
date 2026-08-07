@@ -13,10 +13,12 @@ import sys
 from pathlib import Path
 
 from . import (
+    alignment,
     aoef,
     check as check_mod,
     contextpack,
     docgen,
+    dora,
     dsl,
     facts as facts_mod,
     genschema,
@@ -26,6 +28,8 @@ from . import (
     intake,
     oracle,
     promote as promote_mod,
+    readiness as readiness_mod,
+    reference as reference_mod,
     render as render_mod,
     reports,
     score as score_mod,
@@ -262,6 +266,54 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="PCT",
         help="exit 1 if overall coverage falls below this percentage (0-100)",
     )
+
+    p_readiness = sub.add_parser(
+        "readiness", help="per-layer definition of done: the checkpoints each layer has not met"
+    )
+    _add_common(p_readiness)
+    p_readiness.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+    p_readiness.add_argument(
+        "--strict", action="store_true", help="exit 1 while any checkpoint is open (completeness gate)"
+    )
+
+    p_align = sub.add_parser(
+        "align", help="two-way coverage of the model against the reference models in reference/"
+    )
+    _add_common(p_align)
+    p_align.add_argument(
+        "--reference",
+        dest="reference",
+        action="append",
+        metavar="NAME",
+        help="reference pack to align against (repeatable; default: every pack under reference/)",
+    )
+    p_align.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+    p_align.add_argument("--strict", action="store_true", help="treat warnings (gaps) as failures too")
+    p_align.add_argument(
+        "--min-coverage",
+        type=float,
+        metavar="PCT",
+        help="exit 1 if reference coverage falls below this percentage (0-100)",
+    )
+
+    p_dora = sub.add_parser(
+        "dora-register", help="generate the DORA Register of Information from the approved model"
+    )
+    p_dora.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_dora.add_argument("--out", type=Path, help="write the register document here (default: print the findings)")
+    p_dora.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+    p_dora.add_argument("--as-of", dest="as_of", metavar="YYYY-MM-DD", help="evaluate waiver expiry against this date")
+    p_dora.add_argument("--strict", action="store_true", help="treat warnings as failures too")
+
+    p_pin_ref = sub.add_parser(
+        "pin-reference", help="rewrite a reference pack's SHA256SUMS after a deliberate upgrade"
+    )
+    p_pin_ref.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_pin_ref.add_argument("--reference", dest="reference", metavar="NAME", help="the pack under reference/ to pin")
+    # For a pack that does not sit under a repository's `reference/` -- the open library
+    # in this repository is one (`references/`, plural, because it is a library to copy
+    # *from*, not a pack to align against).
+    p_pin_ref.add_argument("--dir", dest="directory", type=Path, help="the pack directory to pin, by path")
 
     sub.add_parser("gen-schema", help="regenerate the JSON Schemas under schema/ from the oracle")
     sub.add_parser("pin-oracle", help="rewrite oracle/SHA256SUMS from the current oracle files")
@@ -634,6 +686,91 @@ def cmd_coverage(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_readiness(args: argparse.Namespace) -> int:
+    report = readiness_mod.analyse(args.root.resolve(), zone=args.zone)
+    _emit_report(args, report.as_dict(), report.render())
+    return 1 if args.strict and report.warnings else 0
+
+
+def cmd_dora_register(args: argparse.Namespace) -> int:
+    register = dora.build(args.root.resolve(), today=_parse_as_of(args.as_of))
+    print(dora.render(register))
+    if args.json_out:
+        args.json_out.parent.mkdir(parents=True, exist_ok=True)
+        args.json_out.write_text(
+            json.dumps(register.as_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
+        )
+        print(f"\nJSON report written to {args.json_out}")
+    if args.out:
+        # Refusing to write an empty document is the point: a page that looks like a
+        # filing and says nothing is the worst artifact this command could produce.
+        try:
+            document = dora.markdown(register)
+        except dora.DoraError as exc:
+            print(_error(str(exc)))
+            return 1
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(document, encoding="utf-8", newline="\n")
+        print(_ok(f"Register written to {args.out}"))
+    if not register.ok:
+        return 1
+    return 1 if args.strict and register.warnings else 0
+
+
+def cmd_align(args: argparse.Namespace) -> int:
+    try:
+        report = alignment.align(args.root.resolve(), zone=args.zone, references=args.reference)
+    except alignment.AlignmentError as exc:
+        print(_error(str(exc)))
+        return 1
+    print(report.render())
+    if args.json_out:
+        args.json_out.parent.mkdir(parents=True, exist_ok=True)
+        args.json_out.write_text(json.dumps(report.as_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"\nJSON report written to {args.json_out}")
+    if not report.ok:
+        return 1
+    if args.min_coverage is not None:
+        # Refusing rather than passing vacuously: with nothing in scope there is no
+        # coverage to compare, and a gate that reads "100%" of nothing is how an
+        # unmeasured repository ends up looking aligned.
+        if report.ratio is None:
+            print(
+                f"\nNo reference node is in scope, so coverage cannot be measured -- "
+                f"the --min-coverage {args.min_coverage:.0f}% gate cannot pass. Add a pack under "
+                f"{reference_mod.REFERENCE_DIRNAME}/, or drop the flag."
+            )
+            return 1
+        if report.ratio * 100 < args.min_coverage:
+            print(f"\nReference coverage {report.ratio:.0%} is below the required {args.min_coverage:.0f}%")
+            return 1
+    return 1 if args.strict and report.warnings else 0
+
+
+def cmd_pin_reference(args: argparse.Namespace) -> int:
+    if bool(args.reference) == bool(args.directory):
+        print(_error("pass exactly one of --reference <name> or --dir <path>"))
+        return 1
+    if args.directory:
+        directory = args.directory if args.directory.is_absolute() else Path.cwd() / args.directory
+    else:
+        directory = reference_mod.reference_dir(args.root.resolve()) / args.reference
+    try:
+        lines = reference_mod.write_pins(directory)
+    except reference_mod.ReferenceError as exc:
+        print(_error(str(exc)))
+        return 1
+    print(f"Pinned {len(lines)} file(s) of reference pack '{directory.name}':")
+    for line in lines:
+        print(f"  {line}")
+    print(
+        "\nRe-pin only for a deliberate, reviewed upgrade of the pack -- never to silence "
+        "ALN001, which exists because coverage measured against an edited taxonomy is not a "
+        "measurement."
+    )
+    return 0
+
+
 def cmd_gen_schema(_args: argparse.Namespace) -> int:
     if not _oracle_intact():
         return 1
@@ -693,6 +830,10 @@ HANDLERS = {
     "validate-facts": cmd_validate_facts,
     "chunk": cmd_chunk,
     "coverage": cmd_coverage,
+    "readiness": cmd_readiness,
+    "align": cmd_align,
+    "dora-register": cmd_dora_register,
+    "pin-reference": cmd_pin_reference,
     "gen-schema": cmd_gen_schema,
     "pin-oracle": cmd_pin_oracle,
     "oracle-info": cmd_oracle_info,

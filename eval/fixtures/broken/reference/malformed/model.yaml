@@ -1,0 +1,22 @@
+# ALN000, twice, for defects no JSON Schema can express: a duplicate node id, and a
+# `parent` naming a node this pack does not hold. Both make the file unusable as a
+# taxonomy -- coverage of `m-dup` would be ambiguous, and `m-orphan` sits in no branch --
+# so they are reported as "this does not read as a taxonomy" rather than tolerated.
+
+name: Malformed reference
+nodes:
+  - id: m-root
+    name: A domain
+    kind: domain
+  - id: m-dup
+    name: First definition
+    kind: capability
+    parent: m-root
+  - id: m-dup
+    name: Second definition of the same id
+    kind: capability
+    parent: m-root
+  - id: m-orphan
+    name: Child of a node that does not exist
+    kind: capability
+    parent: m-nonexistent

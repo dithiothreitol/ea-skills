@@ -1,7 +1,42 @@
-# Gold model for the clinic case. Six elements, five relationships, every concept
-# citing a fact from the register.
+# Gold model for the clinic case: every concept cites a fact from the register.
+#
+# The Strategy layer was added 2026-08-06. `ea-capability-map` states that the capability
+# map is the spine, comes first, and is what everything else attaches to; gold held no
+# Strategy layer, so a run following the method lost precision for obeying it. Three
+# capabilities, because the interview supports three -- the 6-12 range in the skill is "a
+# shape, not a target". Reasoning and the counter-argument: eval/golden/README.md.
 
 elements:
+  # --- Strategy: what the clinic can do -----------------------------------------------
+  - id: cap-appointment-booking
+    type: Capability
+    name: Appointment Booking
+    documentation: Taking and confirming patient appointments, through either channel.
+    owner: practice-manager@novakclinic.example
+    lastReviewed: 2026-07-01
+    provenance:
+      - fact: fact-booking-portal-channel
+      - fact: fact-booking-front-desk-channel
+
+  - id: cap-patient-records
+    type: Capability
+    name: Patient Records Management
+    documentation: Holding patient charts and treatment notes.
+    owner: practice-manager@novakclinic.example
+    lastReviewed: 2026-07-01
+    provenance:
+      - fact: fact-ehr-role
+
+  - id: cap-billing
+    type: Capability
+    name: Billing
+    documentation: Producing patient invoices. No separate billing system exists.
+    owner: practice-manager@novakclinic.example
+    lastReviewed: 2026-07-01
+    provenance:
+      - fact: fact-billing-module-in-ehr
+      - fact: fact-no-separate-billing
+
   - id: actor-patient
     type: BusinessActor
     name: Patient
@@ -67,6 +102,35 @@ elements:
       - fact: fact-backup-untested
 
 relationships:
+  # --- the attachment the capability map exists for ------------------------------------
+  - id: rel-portal-realizes-appointment-booking
+    type: Realization
+    source: app-booking-portal
+    target: cap-appointment-booking
+    provenance:
+      - fact: fact-booking-portal-channel
+
+  - id: rel-front-desk-realizes-appointment-booking
+    type: Realization
+    source: actor-front-desk
+    target: cap-appointment-booking
+    provenance:
+      - fact: fact-booking-front-desk-channel
+
+  - id: rel-ehr-realizes-patient-records
+    type: Realization
+    source: app-ehr
+    target: cap-patient-records
+    provenance:
+      - fact: fact-ehr-role
+
+  - id: rel-ehr-realizes-billing
+    type: Realization
+    source: app-ehr
+    target: cap-billing
+    provenance:
+      - fact: fact-billing-module-in-ehr
+
   - id: rel-ehr-realizes-scheduling
     type: Realization
     source: app-ehr

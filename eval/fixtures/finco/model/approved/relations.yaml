@@ -1,0 +1,81 @@
+# Which ICT element supports which business function. This is what lets the register
+# answer DORA's actual question -- not "what do we buy" but "what stops working if
+# this provider does".
+
+relationships:
+  - id: rel-ledger-serves-execution
+    type: Serving
+    source: app-core-ledger
+    target: process-payment-execution
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  - id: rel-card-serves-execution
+    type: Serving
+    source: app-card-processing
+    target: process-payment-execution
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  - id: rel-initiation-serves-execution
+    type: Serving
+    source: service-payment-initiation
+    target: process-payment-execution
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  - id: rel-kyc-serves-onboarding
+    type: Serving
+    source: app-kyc-screening
+    target: process-customer-onboarding
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  - id: rel-crm-serves-onboarding
+    type: Serving
+    source: app-crm
+    target: process-customer-onboarding
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  - id: rel-platform-serves-ledger
+    type: Serving
+    source: node-cloud-platform
+    target: app-core-ledger
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  - id: rel-platform-realizes-payment-services
+    type: Realization
+    source: node-cloud-platform
+    target: cap-payment-services
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  - id: rel-execution-realizes-payment-services
+    type: Realization
+    source: process-payment-execution
+    target: cap-payment-services
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  - id: rel-execution-serves-customer
+    type: Serving
+    source: process-payment-execution
+    target: actor-customer
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  - id: rel-onboarding-serves-customer
+    type: Serving
+    source: process-customer-onboarding
+    target: actor-customer
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.
+
+  - id: rel-reporting-serves-onboarding
+    type: Serving
+    source: app-internal-reporting
+    target: process-customer-onboarding
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.

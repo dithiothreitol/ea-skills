@@ -1,0 +1,10 @@
+# ALN000: this file is not YAML. The pins still verify -- they are over bytes, and these
+# bytes are the ones that were pinned -- so the pack is read and the *parse* is what
+# fails. ALN008 stays silent here: "declares no nodes" would be a misleading diagnosis
+# for a file that never parsed.
+
+name: Unreadable reference
+nodes:
+  - id: u-one
+    name: [unclosed
+    kind: capability

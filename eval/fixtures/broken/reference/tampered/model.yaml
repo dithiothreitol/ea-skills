@@ -1,0 +1,10 @@
+# ALN001: this file does not match the digest recorded in SHA256SUMS -- the line below
+# was added after pinning, which is exactly what a tampered or drifted pack looks like.
+# `align` must refuse to read the pack, so none of its nodes are reported as covered or
+# as gaps: an unverified yardstick produces no measurement at all.
+
+name: Tampered reference
+nodes:
+  - id: t-one
+    name: A node nobody should see in a report
+    kind: capability

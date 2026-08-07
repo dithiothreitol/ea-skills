@@ -15,9 +15,12 @@ zones (`ORACLE`/`SCHEMA`/`ID`/`REF`/`PROV`/`GOV`/`MOT`/`STD`/`ISO`/`REL`/`NAME`/
 `python -m easkills validate-facts` covers the fact register (`FACT`/`ENT`/`SRC`), and
 `python -m easkills validate-gov` covers the standards base, governance log, the
 service layer and the correspondences that cross between them
-(`SIB`/`DEC`/`DISP`/`COMP`/`SVC`/`REQ`/`CORR`). A fourth command, `python -m
-easkills check` (`CHK`), runs outside this repository entirely — in a consuming
-product repository — and is catalogued in its own section at the end.
+(`SIB`/`DEC`/`DISP`/`COMP`/`SVC`/`REQ`/`CORR`). Three further commands own a family each,
+deliberately kept out of the model gate so it stays focused: `python -m easkills
+readiness` (`RDY`) asks whether each layer is *finished*, `python -m easkills align`
+(`ALN`) measures the model against a reference architecture, and `python -m easkills
+check` (`CHK`) runs outside this repository entirely — in a consuming product
+repository. All three are catalogued in their own sections at the end.
 
 ## Layer 0 -- oracle integrity
 
@@ -33,7 +36,7 @@ product repository — and is catalogued in its own section at the end.
 |---|---|---|
 | `SCHEMA000` | error | The YAML file cannot be parsed, or its top level is not a mapping. |
 | `SCHEMA001` | error | The file violates `schema/model.schema.json` -- unknown key, missing required field, bad identifier pattern, or a `type` that is not an ArchiMate 3.2 concept. |
-| `SCHEMA002` | error | An `ea.config.yaml` value other rules depend on is unusable: `stalenessDays`/`quoteMatchThreshold` not a number or outside its usable range, or `factsRoot`/`sourcesDir` resolving outside the repository. The documented default is applied so the run still completes -- but a silently mis-set threshold decides whether fabricated quotes pass, so it is an error, never a fallback in silence. |
+| `SCHEMA002` | error | An `ea.config.yaml` value other rules depend on is unusable: `stalenessDays`/`quoteMatchThreshold` not a number or outside its usable range, or `factsRoot`/`sourcesDir` resolving outside the repository. The documented default is applied so the run still completes -- but a silently mis-set threshold decides whether fabricated quotes pass, so it is an error, never a fallback in silence. The file is additionally checked against `schema/ea-config.schema.json`, which closes the key vocabulary: an unknown top-level key or `costModel` rate key is this code too. Unlike an element's deliberately open `properties` map, a *tooling* key the tooling does not read is always a typo, and the failure is silent -- `stalenessDay` leaves the 365-day default in place while the repository looks fresh. A key both checks object to is reported once. |
 | `ID001` | error | Duplicate identifier. Reported against the second definition, naming the file holding the first. |
 | `ID002` | error | The same identifier is used by both an element and a relationship. |
 | `REF001` | error | A relationship endpoint does not resolve to an element in this zone. |
@@ -318,6 +321,118 @@ the code that enforces them is more useful than reporting the same defect twice.
 |---|---|---|
 | `CORR001` | warning | An element of the approved model still realises a decision whose status is `superseded`, `rejected` or `deprecated`. The record is in perfect order -- successor named, rationale present -- so no `DEC*` rule can see this; what is stale is the *relation*. A warning, not an error: the model is not malformed, the governance log has simply moved on without it. |
 | `CORR002` | warning | A requirement, constraint, principle or goal binds elements of which **every** one is TIME `Eliminate`. The obligation outlives its bearers -- the seven-year retention requirement nobody thinks about until the system holding the records is switched off. One eliminated bearer among several is a migration, not a gap, and is not reported. |
+
+## Layer readiness -- `readiness` (the RDY family)
+
+`python -m easkills readiness` is the mechanical half of "is this layer done?". One
+checkpoint list per ArchiMate layer, each finding **naming the elements** that fail it —
+the 0.11.0 scorer lesson, where a count without names cost three investigations that were
+hand-diffs of two YAML trees.
+
+**Nothing in this family is an error, ever.** An unfinished layer is not a wrong model,
+and a report that blocked a commit for incompleteness would be switched off within a week
+— after which it measures nothing while still looking like coverage. `--strict` is how a
+repository that *claims* completeness opts into the gate.
+
+**An empty layer is shown, never flagged.** The report prints `empty` beside it, so the
+shape is visible without inventing a finding. Same rule that keeps `PLAT005` silent when
+a repository has no plateaus: not having started a layer is not breaking it.
+
+**A part contributes through its whole.** `RDY006`, `RDY007` and `RDY008` are satisfied
+when the element *or any element that composes/aggregates it* serves or realizes
+something. The worked example's `PostgreSQL 16` is composed into the ERP application
+server, and the server serves the ERP — correct, idiomatic ArchiMate that the first
+version of this checklist reported as unfinished technology. A checkpoint that flags
+idiomatic modelling teaches people to ignore the report.
+
+| Code | Severity | Layer | Rule |
+|---|---|---|---|
+| `RDY001` | warning | Strategy | A `Capability` that nothing realizes **and** whose weakness the model does not record. Both idioms count as recorded: a `properties: {assessment: ...}` value (what `ea-capability-map` teaches) or an associated `Gap`/`Assessment` element. `debt` lists *every* unsupported capability as a smell; this asks the narrower question — unsupported *and unexamined* — because an examined gap is a finding worth keeping, not a hole to fill with a plausible application. |
+| `RDY002` | **info** | Strategy | A `Capability` no reference mapping anchors. Silent when no reference pack exists — no reference model, no question, rather than "every capability is unanchored". Deliberately **info**, not warning: this is the same observation `align` reports as information, and making it a warning would fail `readiness --strict` for a business doing something its industry blueprint never heard of. One observation, one severity, whichever report it appears in. |
+| `RDY003` | warning | Business | A `BusinessProcess`/`BusinessFunction` realizing neither a capability nor a service. A process attached to neither cannot be read as delivering anything, and appears in no capability or portfolio view. |
+| `RDY004` | warning | Business | A `BusinessActor`/`BusinessRole` attached to nothing. Overlaps `SMELL001`, which catches the total orphan in the *gate*; this asks the narrower per-layer question and can fire where `SMELL001` does not (an actor whose only link is an `Association` to another actor). |
+| `RDY005` | warning | Application | An `ApplicationComponent` with no `lifecycle` or no `timeDisposition`. The TIME quadrants and the obsolescence exposure are derived from these, so until they are set the component is invisible to every portfolio report — present in the model and absent from every conversation the model exists for. |
+| `RDY006` | warning | Application | An `ApplicationComponent` that realizes nothing (containment counted, see above). An application supporting no capability and publishing no service is either unmodelled work or a system nobody can justify keeping. |
+| `RDY007` | warning | Application | An `ApplicationService` with no recorded consumer. Scoped to the application layer, per the increment that defined it: a `BusinessService` with no consumer is the same defect and is **not** checked yet — said out loud rather than left as an apparent clean bill of health. |
+| `RDY008` | warning | Technology | A `Node`/`Device`/`SystemSoftware` that serves and realizes nothing. Infrastructure nothing runs on cannot be costed, retired or impact-assessed. |
+| `RDY009` | warning | Motivation | A `Requirement`/`Constraint` with no `appliesTo` at all. Distinct from `MOT001`, where the selector exists and points at something absent: here the obligation has no bearer, so no context pack will ever serve it to the team it was written for. |
+| `RDY010` | warning | cross | The fact register covers a layer (via `topics:`) that the model leaves empty — evidence gathered and never modelled, the one kind of incompleteness the *sources* can prove. The facts carrying the topic are named. `topics:` is a free tag by schema, so only values that name a layer are read: `risk` and `integration` are real topics in the golden set and neither is a layer. |
+
+## Reference alignment -- `align` (the ALN family)
+
+`python -m easkills align` measures the model against a **reference architecture**: a
+hash-pinned taxonomy in `reference/<name>/` (`model.yaml` + `NOTICE.md` + `SHA256SUMS`)
+plus a human-authored `mappings.yaml`. It answers the question `coverage` cannot — *did
+we model what an industry blueprint says a business like this has*, as opposed to *did
+we model what we were told*.
+
+The family is owned by `align`, not by `validate`: a repository with no reference pack is
+not an invalid repository, and the model gate stays about the model.
+
+Three things to know before reading a report:
+
+* **Only leaf nodes are scored.** A branch is a heading, not something an application
+  realizes; branches carry a rolled-up percentage of their subtree instead. `covered`
+  counts 1, `partial` counts ½ (found the connection, contested the grain — the same
+  arithmetic the golden-set scorer uses for a derived relationship), `gap` counts 0,
+  `out-of-scope` leaves the denominator.
+* **`out-of-scope` inherits downwards; coverage does not.** Excluding a branch is one
+  decision about one area, so it carries to the whole subtree. Claiming a branch covered
+  would be a claim about every leaf under it, and those are earned one at a time.
+* **Everything fails closed.** An exclusion without a rationale does not exclude
+  (`ALN005`); a claim resting on an element this zone does not hold does not cover
+  (`ALN003`, `ALN007`). Under-reporting a gap is the failure mode that matters here, so
+  every ambiguity resolves towards *gap*.
+
+`mappings.yaml` is deliberately **not** hash-pinned: it is the one file an architect
+edits, so pinning it would make re-pinning a reflex, and a pin you re-run without reading
+is not a pin. The taxonomy is what must not move underneath a coverage claim.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `ALN000` | error | A reference or mapping file cannot be read: unparsable, top level not a mapping, violating `schema/reference.schema.json` / `schema/reference-mappings.schema.json`, or structurally impossible in a way no schema expresses — a duplicate node id, a `parent` that is not a node of the same pack, a parent cycle. This is also where a coverage claim with no `elements` lands, because a claim with nothing behind it is not a claim. |
+| `ALN001` | error | The pack does not match its pinned SHA-256 sums, has no `SHA256SUMS`, or does not pin `model.yaml` and `NOTICE.md`. The pack is **refused, not read**: coverage measured against an edited taxonomy is not a measurement, so no node of it is reported as covered *or* as a gap. Same discipline as `ORACLE001`; re-pin with `pin-reference` only for a deliberate, reviewed upgrade. |
+| `ALN002` | error | A mapping targets a node id the reference does not hold. A mapping to nothing is coverage of nothing. |
+| `ALN003` | error | A mapping names an element id that is not in the zone being read. Check the id, or model the thing before claiming it as coverage. |
+| `ALN004` | warning | **The gap**: a leaf node is mapped to nothing and not declared out-of-scope. Either the architecture has a gap there, or the decision not to cover it is unrecorded — and those are different problems with the same silence. A warning, not an error: an unmapped node is a question. Suppressed when a more specific code already names that node as the reason it is a gap (`ALN003`, `ALN005`, `ALN007`), which keeps the finding list free of duplicates while the node table still shows every gap. |
+| `ALN005` | error | `out-of-scope` with no rationale. Out-of-scope is a decision somebody signs; without one the node is reported as a gap, so a silent exclusion excludes nothing. |
+| `ALN006` | error | Two mapping entries target one reference node. One node, one recorded judgement — the first is kept and the second reported, because two entries usually disagree. |
+| `ALN007` | warning | A mapping claims coverage from an element that exists only in `model/staging/`, while the report reads `approved`. The node stays a gap until the proposal is promoted; `--zone staging` is how to ask what promotion would close. |
+| `ALN008` | error | The pack declares no nodes. An empty yardstick reports full coverage of nothing, which is worse than no yardstick at all. Silent when `ALN000` already said the taxonomy did not parse. |
+
+Local elements that no mapping anchors are reported as **information, never as
+findings**. A business does things its industry blueprint never heard of, and a tool that
+called that a defect would teach architects to model the blueprint instead of the
+business.
+
+## Regulatory register -- `dora-register` (the REG family)
+
+`python -m easkills dora-register` generates the DORA Register of Information from the
+approved model. Scope is declared per element by `properties.regulatoryScope: dora`, not
+inferred from a type and not listed in config -- scope is a fact about the element, so it
+lives next to it, moves with it, and shows up in the diff of the commit that changed it.
+
+**A generator, not an attestation.** The structure follows the shape the ESAs'
+implementing technical standards ask a register to have; the content comes from the
+model and nowhere else; no completeness against the official templates is claimed. The
+generated document says so in its own header, above the tables, and its last section
+lists every field the model could not fill with the element ids missing it. That section
+is the reason the document is safe to hand over: it states what it does not know.
+
+With no element in scope, no register is produced at all -- the correct output for an
+organisation the regulation does not apply to, and a deliberate refusal to emit an empty
+page that looks like a filing.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `REG001` | warning | An in-scope element carries no `doraCriticality`. The register cannot say how much depends on it, and an unclassified dependency is the one a supervisor asks about. |
+| `REG002` | error | A `critical` element has no `provider` or no `contractRef`. These are the first two fields a register is read for; a critical row with neither is not a partial answer, it is a blank. |
+| `REG003` | info | A `critical` or `important` element is covered by an **open dispensation**. Exposure to disclose, not a violation to fix -- making this a warning would push people to close waivers to clear a report, losing the record of the exposure the register exists to show. |
+| `REG004` | warning | A register section is empty while in-scope content exists. Silence in a regulatory document reads as "nothing to report", which is a different statement from "we did not record it". |
+
+Control-framework gaps are **not** a REG code: a control framework is a taxonomy, so an
+unmapped control is `ALN004` against a `kind: control` reference pack. One mechanism,
+one rule family -- see [`ea-regulatory`](../skills/ea-regulatory/SKILL.md).
 
 ## Consuming repositories -- `ea-check` (AD-09)
 

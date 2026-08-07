@@ -1,0 +1,41 @@
+# Staging proposals, here for two reasons.
+#
+# ALN007 needs an element that exists as a proposal and not in `approved`, so that a
+# mapping claiming coverage from it can be shown to leave the reference node a gap until
+# promotion.
+#
+# RDY001/RDY002 need a Capability -- and RDY010 needs the Strategy layer of the *approved*
+# zone to stay empty, which it cannot if a capability is approved. A proposed capability
+# layer is what staging is for, so the two live here and are read with
+# `readiness --zone staging`.
+
+elements:
+  - id: app-proposed-portal
+    type: ApplicationComponent
+    name: Proposed Self-Service Portal
+    assumed: true
+    rationale: A proposal, not evidence -- which is the whole point of this fixture file.
+
+  # --- RDY001 + RDY002: nothing realizes it, and no reference node anchors it ---------
+  - id: cap-unsupported-unexamined
+    type: Capability
+    name: Capability Nobody Supports Or Examined
+    documentation: >
+      No realizer, no assessment property, no associated Gap -- so RDY001 fires. Also
+      named by no mapping in any reference pack, so RDY002 reports it as a local
+      capability the reference does not anchor.
+    assumed: true
+    rationale: A fixture element for RDY001/RDY002, not a claim about any real capability.
+
+  # --- RDY001 must stay SILENT here: the weakness is recorded, so it is examined -------
+  - id: cap-weakness-recorded
+    type: Capability
+    name: Capability Whose Weakness Is Recorded
+    documentation: >
+      Also has no realizer -- but the model says so, in the property `ea-capability-map`
+      teaches. An examined gap is not a readiness finding, which is the whole distinction
+      RDY001 draws; RDY002 still reports it as unanchored.
+    properties:
+      assessment: weak
+    assumed: true
+    rationale: The negative half of the RDY001 case -- it proves the rule stays silent.

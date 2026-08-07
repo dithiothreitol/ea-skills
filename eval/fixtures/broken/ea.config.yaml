@@ -8,3 +8,12 @@ stalenessDays: 30
 # a silently mis-set threshold decides whether fabricated quotes pass.
 quoteMatchThreshold: 90
 factsRoot: .
+# --- SCHEMA002: a rate key this tool does not know how to apply. Unknown keys are errors
+# in ea.config.yaml, unlike an element's open property map -- a model's own property keys
+# are the organisation's business, but a misspelled *rate* silently prices nothing while
+# the total still reads like a total. The exposure it was meant to price is reported as
+# "not priced" beside that total, which is the second half of the same guarantee.
+costModel:
+  currency: EUR
+  staleElementDay: 2
+  eolElemnt: 4000

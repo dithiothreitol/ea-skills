@@ -1,0 +1,11 @@
+name: Kestrel Payments Enterprise Architecture
+documentation: >
+  Dedicated fixture for the DORA Register of Information. Kestrel Payments is a
+  fictional e-money institution; the model exists only to exercise the REG rules and
+  the generated register end to end. It is deliberately small and deliberately
+  separate from the worked example, which is a food wholesaler DORA does not apply to
+  -- pretending otherwise would have taught the wrong thing about scope.
+stalenessDays: 365
+quoteMatchThreshold: 0.90
+factsRoot: .
+sourcesDir: facts/sources

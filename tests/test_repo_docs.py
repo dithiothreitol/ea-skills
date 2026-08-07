@@ -82,6 +82,60 @@ def test_documented_skill_count_matches_the_skills_directory(repo_root):
             )
 
 
+def test_every_debt_kind_is_documented_and_every_documented_kind_exists(repo_root):
+    """A debt item nobody can interpret is noise with a label on it.
+
+    `docs/CLI.md` says when each kind fires; `ea-health` says what the honest response
+    is. Both matter, and the second is the one that decays -- a query is easy to add and
+    easy to leave unexplained, which is how a register becomes a page people skim.
+    """
+    from easkills import reports
+
+    source = _read(repo_root, "easkills/reports.py")
+    emitted = set(re.findall(r"add\(\s*\"([a-z-]+)\"", source)) | set(
+        re.findall(r"\"kind\":\s*\"([a-z-]+)\"", source)
+    )
+    assert emitted == set(reports.DEBT_KINDS), (
+        "reports.py emits kinds that DEBT_KINDS does not list (or the reverse): "
+        f"{emitted ^ set(reports.DEBT_KINDS)}"
+    )
+    health = _read(repo_root, "skills/ea-health/SKILL.md")
+    for kind in reports.DEBT_KINDS:
+        assert kind in health, f"ea-health does not say what to do about the debt kind `{kind}`"
+
+    # The overlap kinds additionally carry structured JSON fields, and a machine-readable
+    # contract belongs in the CLI reference.
+    assert set(reports.OVERLAP_KINDS) <= set(reports.DEBT_KINDS)
+    cli = _read(repo_root, "docs/CLI.md")
+    for kind in reports.OVERLAP_KINDS:
+        assert kind in cli, f"docs/CLI.md does not document the JSON shape of `{kind}`"
+
+
+NUMBER_WORDS = {
+    "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15
+}
+
+
+def test_documented_schema_count_matches_the_registry(repo_root):
+    """"All eleven are freshness-tested" went stale the moment a twelfth was added, and
+    nothing failed -- the freshness test iterates the registry, so it grew silently while
+    the sentence promising the coverage did not. A count in prose that no test checks is
+    the defect this repository keeps rediscovering; this is the check for that one."""
+    from easkills import genschema
+
+    expected = len(genschema.SCHEMAS)
+    pattern = re.compile(r"all (\w+)(?:\s+are freshness-tested|, from one registry)")
+    found = 0
+    for relative in ("CONTRIBUTING.md", "docs/CLI.md"):
+        for word in pattern.findall(_read(repo_root, relative)):
+            assert word in NUMBER_WORDS, f"{relative} spells a schema count this test cannot read: {word!r}"
+            assert NUMBER_WORDS[word] == expected, (
+                f"{relative} claims {word} schemas, genschema.SCHEMAS holds {expected}"
+            )
+            found += 1
+    assert found == 2, "both schema-count sentences must stay findable, or this test stops checking them"
+
+
 def test_contributing_pre_push_gate_mirrors_ci(repo_root):
     """"CI runs exactly this" has to be true, or a green local gate means nothing."""
     contributing = _read(repo_root, "CONTRIBUTING.md")
@@ -217,6 +271,14 @@ def test_every_literal_the_checks_compare_against_is_in_its_vocabulary():
     # Reports filter the model by these exact ArchiMate names.
     assert {"ApplicationComponent", "Capability"} <= set(oracle.element_types())
     assert "Realization" in oracle.relationship_types()
+
+    # The overlap queries filter on these; a typo makes the register silently blind,
+    # which reads exactly like a portfolio with no duplication in it.
+    from easkills import reports
+
+    assert set(reports.RATIONALIZATION_REALIZER_TYPES) <= set(oracle.element_types())
+    assert set(reports.SERVICE_TYPES) <= set(oracle.element_types())
+    assert set(reports.PROVIDING_RELATIONSHIPS) <= set(oracle.relationship_types())
 
     # The TIME vocabulary is shared by the schema, docgen and the KPI.
     from easkills import docgen

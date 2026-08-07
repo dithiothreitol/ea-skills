@@ -1,0 +1,10 @@
+id: std-exit-plan
+name: Documented and tested exit plan for every critical ICT service
+type: organisation
+lifecycle: active
+description: >
+  Every ICT service supporting a critical or important function has an exit plan that
+  has been tested within the last twelve months. Waiving it is a register event, not an
+  internal exception -- which is why the dispensation is short-dated.
+owner: ciso@kestrel.example
+lastReviewed: 2026-07-01

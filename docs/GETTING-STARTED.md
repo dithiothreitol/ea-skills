@@ -199,18 +199,125 @@ them; what the 3.2 matrix forbids is reported by the gate, not silently kept.
 Promote in slices (`ea-import` explains the discipline), evidence what matters
 through intake, and let the rest sit visibly in staging.
 
+## 5b. Ask whether a layer is done
+
+Two yardsticks, and the first one is inside the model already:
+
+```bash
+python -m easkills readiness --root .                    # the approved model
+python -m easkills readiness --root . --zone staging     # including what you are proposing
+```
+
+One checkpoint list per layer, each finding naming the elements that fail it: capabilities
+nothing realizes *and* nothing has assessed, processes attached to neither a capability nor
+a service, applications with no `lifecycle`/`timeDisposition` (invisible to every portfolio
+report until they have one), services with no consumer, infrastructure serving nothing,
+obligations binding nothing, and layers your fact register covers while your model does not.
+
+**Nothing there is an error.** An unfinished layer is not a wrong model, and a layer you
+have not started is printed as `empty` rather than flagged. Read it as a worklist — and
+never close a checkpoint with an edge you cannot evidence, because a fabricated Realization
+satisfies the report and corrupts the model. The honest way to close an unsupported
+capability is to record the weakness (`properties: {assessment: weak}`, or a `Gap`
+element): the gap stops being *unexamined*, which is what the checkpoint actually asks.
+
+```bash
+python -m easkills readiness --root . --strict    # a completeness claim, for CI
+```
+
+Add that gate when the report is one you would defend, not on day one.
+
+## 5c. Measure against a reference architecture
+
+`coverage` (step 1) answers *did we model what we were told*. It cannot answer *is this
+layer done*, because the sources are not a yardstick — they are one conversation. A
+**reference model** is the second yardstick: an industry blueprint's list of what a
+business like yours has.
+
+Drop one into `reference/<name>/` — a taxonomy (`model.yaml`), a `NOTICE.md` saying where
+it came from and under what licence, and the pins:
+
+```bash
+mkdir -p reference/wholesale-core
+$EDITOR reference/wholesale-core/model.yaml reference/wholesale-core/NOTICE.md
+python -m easkills pin-reference --root . --reference wholesale-core
+python -m easkills align --root .
+```
+
+Every node comes back as a **gap** at first, which is the honest starting point. You close
+them by authoring `reference/<name>/mappings.yaml`: one entry per node, either naming the
+local elements that answer it (`covered`, or `partial` with a note saying what is missing)
+or recording that it is `out-of-scope` **with a rationale** — without one the node stays a
+gap, because a silent exclusion excludes nothing (`ALN005`). That asymmetry is the whole
+feature: a gap you decided about looks different from a gap nobody noticed.
+
+```bash
+python -m easkills align --root . --zone staging       # what promotion would close
+python -m easkills align --root . --strict             # gaps fail: for a repo claiming completeness
+python -m easkills align --root . --min-coverage 80    # or a floor, while you fill in
+```
+
+The tooling ships only openly licensed packs (`references/` in this repository — NIST CSF
+2.0 is public domain). BIAN, APQC PCF, eTOM and the rest are **licensed**: export them
+from the copy your organisation holds. Never let a person or an agent type a licensed
+taxonomy from memory — it is a licence problem and a fabrication problem at once, and
+nobody can tell an accurate transcription from a plausible one. Judgement calls (which
+reference, how coarse a mapping may be, when a gap is a business choice) are the
+[`ea-align`](../skills/ea-align/SKILL.md) skill's subject.
+
+## 5d. If you are regulated: the DORA register
+
+Skip this if you are not. If you are an EU financial entity, tag every ICT element DORA
+puts in scope — on the element, not in a list somewhere:
+
+```yaml
+properties:
+  regulatoryScope: dora
+  doraCriticality: critical        # critical | important | standard
+  provider: PaySwitch AG
+  contractRef: ctr-2023-payswitch
+```
+
+```bash
+python -m easkills dora-register --root . --as-of 2026-07-30
+python -m easkills dora-register --root . --as-of 2026-07-30 --out docs/dora-register.md
+```
+
+The register tabulates providers, contracts, in-scope services, the business functions
+depending on them, and the open dispensations covering any of it. **It is a generator,
+not an attestation** — the structure follows the shape the ESAs' technical standards ask
+for, the content comes from your model, and the legal judgement belongs to whoever signs
+the filing. The generated document says exactly that in its own header.
+
+Read its **last section first**: it lists every field the register wanted and the model
+did not carry, with element ids. With nothing tagged, no document is produced at all —
+correct for an organisation DORA does not apply to (the worked example is a food
+wholesaler, deliberately out of scope), and a warning sign for one that has simply not
+tagged its estate yet. Control-framework gaps ride the reference mechanism from §5c
+instead: a pack of `kind: control` nodes, an unmapped control is `ALN004`. Both are
+[`ea-regulatory`](../skills/ea-regulatory/SKILL.md)'s subject.
+
 ## 6. Operate — the loops that keep it alive
 
 ```bash
 python -m easkills kpi --root .          # incl. the service/demand line
 python -m easkills staleness --root .    # review queue, ordered by consumer demand
-python -m easkills debt --root .         # EA-smell register
+python -m easkills debt --root .         # EA-smell register, incl. rationalization candidates
 python -m easkills conformance --root .  # ISO 42010 Clause 6 checklist
 python -m easkills correspondences --root .   # §6.9: what relates to what, and the rule it is held to
 python -m easkills roadmap --root .      # plateaus, gaps, and intent nothing schedules
 python -m easkills delta --root .        # what the facts know that the model doesn't
 python -m easkills context --root . --scope <element-id>   # pack for a dev team/agent
 ```
+
+`debt` will also cost its own findings, but only once you tell it what things are worth.
+Add a `costModel` block to `ea.config.yaml` (the scaffold ships it commented out) with a
+currency and whichever unit rates your organisation can defend — per stale element-day,
+per open dispensation-day, per element on a dead standard, per unrealized capability, per
+surplus realizer. **The tool computes the exposure; you priced it.** Set only the rates
+you can source: an exposure with no rate is printed as *not priced* beside the total,
+which is a true statement, and a plausible guess is not. With no `costModel` the register
+prints exactly what it printed before — the feature is invisible until you opt in.
 
 When a change request arrives, do not eyeball its blast radius:
 
@@ -235,7 +342,7 @@ someone asks EA for something → record it in `governance-log/requests/`
 
 ## Working with the agent skills
 
-Everything above is what the 22 [agent skills](../skills/) instruct an agent to do —
+Everything above is what the 24 [agent skills](../skills/) instruct an agent to do —
 with the judgement calls (what is a capability, which concern a view frames, when to
 decline a request) spelled out per skill. Point your agent at this repository, start
 with `ea-run` (it checks repo state and routes), and keep one rule in view: **the

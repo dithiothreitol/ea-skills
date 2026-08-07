@@ -78,12 +78,16 @@ facts:
         quote: The primary data center hosts two application servers
 
   # --- FACT006: references an entity that is not in the table -------------------------
+  # Also RDY010 (readiness): the `strategy` topic says the register covers the Strategy
+  # layer, while the approved model holds no Strategy element -- evidence gathered and
+  # never modelled, which is the one kind of incompleteness the sources can prove.
   - id: fact-unknown-entity
     statement: Order records are held by the finance system.
     provenance:
       - file: facts/sources/notes.md
         quote: Order records are held by the finance system
     entities: [no-such-entity]
+    topics: [strategy]
 
   # --- FACT007: duplicates the statement of fact-unknown-entity -----------------------
   - id: fact-zz-duplicate-statement

@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ea-skills:schema:reference",
+  "title": "EA Skills reference taxonomy",
+  "description": "One reference architecture or industry blueprint, as a taxonomy of nodes the local model is measured against. Hash-pinned: the tooling refuses to read a pack whose SHA256SUMS do not match (ALN001).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "nodes"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "description": "Human name of the reference model, e.g. 'NIST CSF 2.0'."
+    },
+    "version": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "The edition this pack transcribes; part of what the NOTICE cites."
+    },
+    "source": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "Where the taxonomy came from. Licence terms live in NOTICE.md."
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+      "maxLength": 80
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "kind"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/slug"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "kind": {
+          "enum": [
+            "capability",
+            "control",
+            "process",
+            "domain"
+          ],
+          "description": "What the node is; `align` reads local elements per kind."
+        },
+        "parent": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+          "maxLength": 80,
+          "description": "Id of the node this one decomposes. The only relation a taxonomy has: out-of-scope decisions inherit down it, coverage claims do not."
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "externalId": {
+          "type": "string",
+          "maxLength": 40,
+          "description": "The code the source publishes, e.g. 'GV.OC'. Printed in reports."
+        }
+      }
+    }
+  }
+}

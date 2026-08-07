@@ -70,6 +70,46 @@ full of invented capabilities is worse than a lopsided map the sources support -
 the lopsidedness *is information* about where interviewing should go next; list it
 in your report as clarification questions.
 
+## When is the capability map done
+
+```bash
+python -m easkills readiness --root <repo> --zone staging   # the Strategy section
+python -m easkills align --root <repo>                      # if a reference model exists
+```
+
+`readiness` names every capability that **nothing realizes and nothing has assessed**
+(`RDY001`). That list is the map's first product, not its defect list: a capability with
+no application support is exactly the finding a portfolio conversation needs. Two honest
+ways to close such an item, and one dishonest one:
+
+* attach the realizer that exists and was not modelled -- `ApplicationComponent
+  --Realization--> Capability`;
+* record the weakness where the next reader will see it (`properties: {assessment:
+  weak}`, or a `Gap` element), which closes the checkpoint *because the gap is now
+  examined*;
+* **never** invent a plausible application to make the line go away. That satisfies the
+  report and corrupts the model, and nobody downstream can tell it from a real system.
+
+If a reference model is present, `align` answers the other direction -- reference nodes
+your map has no capability for (`ALN004`) -- and `readiness` reports the mirror image as
+*information* (`RDY002`): your capabilities the reference does not anchor. Neither is a
+defect by itself. A long unanchored list usually means the reference is the wrong one for
+this business, not that the business is wrong.
+
+The judgement half, which no report can run:
+
+1. **Grain matches evidence.** Six to twelve is the shape of an enterprise map built on
+   enterprise evidence. A single interview supports what it names -- three capabilities
+   from a two-page interview is a *correct* map, not a thin one.
+2. **Names survive contest.** Read the map aloud to someone who works there. A capability
+   they do not recognise is wrong even if the underlying activity is real.
+3. **No process wearing a capability's clothes.** Re-read the list for verbs. "Pick
+   Orders" is a process that got typed as a capability, and it will pull the whole map
+   towards an org chart within two revisions.
+
+Done means: every capability evidenced, every unsupported one either attached or recorded,
+and the three questions answered. Not "the map reached six".
+
 ## Finish
 
 ```bash

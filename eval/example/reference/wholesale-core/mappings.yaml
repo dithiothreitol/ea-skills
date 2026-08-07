@@ -1,0 +1,72 @@
+# What the Aurora Foods model answers in the Wholesale Core reference, and what it
+# deliberately does not. Authored by a human; nothing here is generated.
+#
+# The rule this file obeys: every leaf node of the taxonomy is accounted for. A node
+# with no entry is a gap (ALN004) -- which is a legitimate state, just not one this
+# example is allowed to sit in, because the example is the "zero findings" claim.
+#
+# `align` scores leaves only, and an out-of-scope decision inherits down the tree, so
+# `wc-corporate` covers its two children with one recorded decision.
+
+mappings:
+  - ref: wc-customer-service
+    status: covered
+    elements: [cap-customer-service]
+    note: >
+      The capability is modelled and the sources call it the weak spot; weakness is a
+      property of a covered capability, not a gap in coverage.
+
+  - ref: wc-customer-master-data
+    status: out-of-scope
+    rationale: >
+      Customer master data lives in the ERP and is governed by the finance-systems
+      roadmap, not by this architecture description, whose declared scope is the
+      order-to-delivery flow. Revisit if a second system starts holding customer records.
+
+  - ref: wc-order-capture
+    status: covered
+    elements: [cap-order-management, app-order-portal, service-order-intake]
+
+  - ref: wc-order-fulfilment
+    status: covered
+    elements: [process-order-fulfilment, cap-warehouse-operations]
+
+  - ref: wc-invoicing
+    status: partial
+    elements: [app-erp-core]
+    note: >
+      The ERP core does the invoicing and the sources say so, but no capability is
+      modelled for it and receivables are not modelled at all -- so the application is
+      recorded and the capability line stays half-answered on purpose.
+
+  - ref: wc-pricing
+    status: partial
+    elements: [app-order-portal]
+    note: >
+      The portal shows prices, which is the publishing end. Where the prices are decided
+      is not in any source, so it is a clarification question rather than an element.
+
+  - ref: wc-warehouse-operations
+    status: covered
+    elements: [cap-warehouse-operations, app-wms]
+
+  - ref: wc-inventory
+    status: partial
+    elements: [app-wms]
+    note: >
+      The WMS is where stock is known ("we check stock"), but nothing in the model
+      distinguishes stock on hand from stock committed to open orders.
+
+  - ref: wc-transport
+    status: out-of-scope
+    rationale: >
+      Deliveries are contracted to a third-party carrier; Aurora Foods operates no
+      transport capability of its own. Recorded as a decision so the next reader can tell
+      an outsourced capability from a forgotten one.
+
+  - ref: wc-corporate
+    status: out-of-scope
+    rationale: >
+      This description scopes the order-to-delivery flow. Financial accounting and HR are
+      run on the ERP's own modules and are out of scope of this model; the exclusion is
+      declared once at the domain and inherited by everything under it.

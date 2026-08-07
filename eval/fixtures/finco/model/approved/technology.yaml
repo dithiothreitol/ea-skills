@@ -1,0 +1,17 @@
+# Infrastructure is in scope too: DORA's register is about ICT third-party dependency,
+# not about the application layer.
+
+elements:
+  - id: node-cloud-platform
+    type: Node
+    name: Cloud Platform
+    documentation: The public-cloud region the payment estate runs in.
+    owner: platform@kestrel.example
+    lastReviewed: 2026-07-01
+    properties:
+      regulatoryScope: dora
+      doraCriticality: critical
+      provider: Nimbus Cloud SE
+      contractRef: ctr-2025-nimbus
+    assumed: true
+    rationale: Fixture content authored for the REG rules, not extracted from a source.

@@ -140,6 +140,30 @@
               "type": "string",
               "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
               "description": "When a Plateau is reached; orders the roadmap. Read by 'roadmap' and 'docs', checked by PLAT001-PLAT003."
+            },
+            "regulatoryScope": {
+              "enum": [
+                "dora"
+              ],
+              "description": "Puts this element in a regulatory register's scope. An enum, not free text: 'DORA' or 'dora ' would silently drop the element out of the register, and under-inclusion is the failure mode that matters here. Use your own property key for scopes this tool does not generate a register for."
+            },
+            "doraCriticality": {
+              "enum": [
+                "critical",
+                "important",
+                "standard"
+              ],
+              "description": "DORA criticality of the function this element supports. Read by 'dora-register'; REG001 reports an in-scope element without one."
+            },
+            "provider": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The ICT third-party service provider. Required on critical elements (REG002)."
+            },
+            "contractRef": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Reference to the contractual arrangement covering this element. Required on critical elements (REG002); the register lists it, it never reads the contract."
             }
           },
           "additionalProperties": {
@@ -293,6 +317,30 @@
               "type": "string",
               "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
               "description": "When a Plateau is reached; orders the roadmap. Read by 'roadmap' and 'docs', checked by PLAT001-PLAT003."
+            },
+            "regulatoryScope": {
+              "enum": [
+                "dora"
+              ],
+              "description": "Puts this element in a regulatory register's scope. An enum, not free text: 'DORA' or 'dora ' would silently drop the element out of the register, and under-inclusion is the failure mode that matters here. Use your own property key for scopes this tool does not generate a register for."
+            },
+            "doraCriticality": {
+              "enum": [
+                "critical",
+                "important",
+                "standard"
+              ],
+              "description": "DORA criticality of the function this element supports. Read by 'dora-register'; REG001 reports an in-scope element without one."
+            },
+            "provider": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The ICT third-party service provider. Required on critical elements (REG002)."
+            },
+            "contractRef": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Reference to the contractual arrangement covering this element. Required on critical elements (REG002); the register lists it, it never reads the contract."
             }
           },
           "additionalProperties": {

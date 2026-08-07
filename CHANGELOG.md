@@ -7,6 +7,293 @@ project's build phases (design log with per-decision rationale:
 
 ## [Unreleased]
 
+### Added — `dora-register` and the controls overlay (Phase 7.5)
+
+`python -m easkills dora-register` generates the DORA **Register of Information** from
+the approved model: ICT third-party providers, contractual arrangements, the services in
+scope with their criticality, the business functions depending on them, and every open
+dispensation covering any of it. Four rules, `REG001`–`REG004`. New skill:
+[`ea-regulatory`](skills/ea-regulatory/SKILL.md) — the second and last of Phase 7, taking
+the catalogue to **24**.
+
+**A generator, not an attestation, and the document says so above its own tables.** The
+structure follows the shape the ESAs' implementing technical standards ask for; the
+content comes from the model and nowhere else; no legal review has happened and no
+completeness against the official templates is claimed.
+
+What makes it worth generating is the last section: **the register names its own gaps** —
+every field the template wants that the model does not carry, with the element ids
+missing it. A register that quietly omitted what it could not fill would be
+indistinguishable from a complete one, and the person filing it would learn the
+difference from a supervisor. This is the first regulatory output here whose completeness
+is *tested* rather than asserted.
+
+Three decisions worth reading:
+
+- **Nothing in scope produces no document at all** — not an empty one. The worked example
+  is a food wholesaler DORA does not apply to, and it reports exactly that. An empty page
+  that looks like a filing is the worst artifact this command could emit, so `--out`
+  refuses to write one.
+- **Scope is a property on the element** (`regulatoryScope: dora`), not a list in config:
+  it lives next to what it describes, moves with it, and shows up in the diff of the
+  commit that changed it. It is a **closed enum**, because the failure mode of a
+  regulatory report is *under-inclusion* — `DORA` as free text would drop the element
+  silently and nothing downstream would ever say so.
+- **`REG003` is info.** An open waiver on a critical service is exposure to disclose, not
+  a violation to fix. As a warning it would push people to close dispensations to clear a
+  report, destroying the record of the very thing the register exists to show. The clean
+  fixture carries one on purpose and still passes `--strict`.
+
+Controls need no new mechanism: a control framework is a taxonomy, so it rides the 7.1
+reference overlay (`kind: control`) and an unmapped control is `ALN004`. NIST CSF 2.0 has
+shipped in [`references/`](references/) since 7.1.
+
+Fixtures follow the `ea-check` precedent — domain honesty over convention:
+`eval/fixtures/finco/` (a fictional e-money institution, clean under `--strict`) and
+`eval/fixtures/finco-broken/`, one element per REG failure mode. Both are in CI, positive
+and negative.
+
+### Added — a cost model over the debt register (Phase 7.4)
+
+**The tool computes the exposure, the operator priced it.** That sentence is the feature,
+and the report prints it above every total. Debt is measurable — element-days past the
+staleness threshold, dispensation-days open since granted, elements on deprecated or
+retired standards, capabilities nothing realizes, realizers beyond the first on one
+capability. What any of that is *worth* is not measurable here, so nothing guesses:
+`ea.config.yaml` gains an optional `costModel` with a `currency` and five unit rates the
+operator writes down and can defend.
+
+**With no `costModel`, `debt` output is byte-identical** — no section, no key in the
+`--json`, not one character. A test asserts it, because the alternative makes every
+existing report diff unreadable for a feature nobody switched on.
+
+The total says what it left out, on the lines directly beneath it:
+
+- **Not priced** — an exposure with a real quantity and no configured rate. A partial
+  total that looks complete is worse than no total, because it is the number that reaches
+  a slide.
+- **Not measurable** — elements with no review date carry no element-days, and are named
+  rather than counted as zero. "We cannot tell" and "it costs nothing" are different
+  answers, and only one of them is honest.
+
+Amounts use `Decimal`, not float. Every quantity is measured against `--as-of`, so a
+figure pasted into a board pack reproduces a month later.
+
+`ea.config.yaml` gains a generated schema (`schema/ea-config.schema.json`, the twelfth),
+and with it a **closed key vocabulary** — a misspelled rate key or top-level key is
+`SCHEMA002`, not a silent zero. This is deliberately stricter than an element's open
+`properties` map: a model's own property keys are the organisation's business, but a
+*tooling* key the tooling does not read is always a typo, and `stalenessDay` leaves the
+365-day default in place while the repository looks fresh. Where the schema and the older
+hand-written range checks overlap, one typo still produces one finding.
+
+`ea-health` gains a "Reading the cost section" guide whose first instruction is to read
+the total as a floor, and whose last is never to set a rate to make a number look right.
+
+### Added — overlap and rationalization queries in `debt` (Phase 7.3)
+
+The operator demand said "EA→IT mapping with duplicate-functionality detection". The model
+already held the answer; nothing was reading it. `debt` gains three queries — no new rule
+codes, no gate, no new command:
+
+- **`rationalization-candidate`** — a `Capability` realized by two or more application
+  components, printed with each realizer's `timeDisposition`, `lifecycle` and every other
+  property the portfolio records against it.
+- **`overlapping-applications`** — an application pair realizing **two or more** of the
+  same capabilities. One shared capability is already a candidate above; the *pair* is
+  only a merge conversation once the overlap repeats.
+- **`duplicate-service`** — one service name (whitespace- and case-insensitive) offered by
+  **disjoint** providers, across service types, which the older `duplicate-name` query
+  compares type-first and therefore cannot see.
+
+**The register never says "duplicate".** Redundancy is as often bought on purpose —
+resilience, data residency, a strangler running beside what it replaces — as it is drift,
+and nothing in a model distinguishes the two. So the queries report the *data a decision
+needs* and route the decision to a human: `ea-health` reads them, `ea-change-triage`
+classifies the change that lands on one (undecided overlap is a re-architecting trigger,
+not an incremental change), `ea-board` takes it as a standing agenda item, and deliberate
+redundancy ends in an **ADR** — without one, the next reader cannot tell design from decay
+and the same finding is re-litigated every quarter.
+
+Three exclusions are the difference between a query and noise, and each is pinned by its
+own test: a **business role** realizing a capability alongside a component is division of
+labour, not duplication (the golden set's Appointment Booking is exactly that shape); a
+service **realizing an identically named service** one layer up is idiomatic ArchiMate; and
+two same-named services from the **same** provider are a naming slip for `duplicate-name`,
+not portfolio duplication. Byte stability is tested across two pinned `PYTHONHASHSEED`
+values in subprocesses — the only way an id-set ordering bug can actually fail.
+
+The worked example and the golden set stay overlap-free, and a test says so: a wholesaler
+running two order systems, or a two-doctor clinic running two EHRs, would teach the wrong
+shape. The queries are exercised on fixtures built per test instead.
+
+### Added — `readiness`: the per-layer definition of done (Phase 7.2)
+
+"Is the application layer finished?" was answerable only by an architect's feeling.
+`python -m easkills readiness` is the mechanical half: one checkpoint list per ArchiMate
+layer (Strategy, Business, Application, Technology, Motivation), ten codes `RDY001`–`RDY010`,
+each finding **naming the elements** that fail it — the 0.11.0 scorer lesson, where a count
+without names turned three investigations into hand-diffs of two YAML trees.
+
+**Nothing in the family is an error, by design.** An unfinished layer is not a wrong model,
+and a report that blocked a commit for incompleteness would be switched off within a week —
+after which it measures nothing while still looking like coverage. `--strict` is how a
+repository that *claims* completeness opts into the gate. An empty layer is printed as
+`empty` rather than flagged: not having started a layer is not breaking it, the same rule
+that keeps `PLAT005` silent when there are no plateaus.
+
+Three decisions worth reading before using the report:
+
+- **A part contributes through its whole.** `RDY006`/`RDY007`/`RDY008` are satisfied when
+  the element *or anything that composes it* serves or realizes something. Writing the
+  checklist without that reported the worked example's `PostgreSQL 16` — composed into the
+  server that serves the ERP — as unfinished technology. Correct, idiomatic ArchiMate, and
+  the first thing the report got wrong; a checkpoint that flags idiomatic modelling teaches
+  people to ignore the report.
+- **`RDY001` asks the narrower question: unsupported *and unexamined*.** A capability whose
+  weakness the model records — `properties: {assessment: weak}`, the idiom
+  `ea-capability-map` teaches, or an associated `Gap` — is examined, and closes the
+  checkpoint. `debt` still lists every unsupported capability as a smell. The honest way to
+  close a readiness item is to record the gap, never to invent a plausible realizer.
+- **`RDY002` is *info*, not warning** — a deliberate refinement of the plan. It is the same
+  observation `align` reports as information (a local capability no reference anchors), and
+  as a warning it would fail `readiness --strict` for a business doing something its
+  industry blueprint never heard of, which is the failure mode 7.1 designed the unanchored
+  list against. One observation, one severity, whichever report it appears in.
+
+`ea-model` and `ea-capability-map` gain a **"When is this layer done"** section: the
+mechanical half points at `readiness`, the judgement half is three questions no report can
+ask — does the grain match the evidence, do the names survive contest, are the gaps recorded
+rather than painted over.
+
+### Changed — gold: `clinic` gains its capability layer
+
+Recorded in full in [`eval/golden/README.md`](eval/golden/README.md), because it is the
+second gold change and the one most easily mistaken for the forbidden move.
+
+`ea-capability-map` states that the capability map is **the spine**, comes **first**, and is
+what everything attaches to. Gold's `clinic` had no Strategy layer at all — so a run that
+followed the method produced three elements gold could not match, and lost precision for
+obeying the skill it was being measured on. `readiness --root eval/golden/clinic` prints
+`Strategy  empty` beside a complete Business and Application layer: the contradiction,
+stated mechanically.
+
+The three capabilities were derived from the register the way the skill prescribes — noun
+phrases, each citing the fact that evidences it, three because the interview supports three
+("the 6–12 range is a shape, not a target"). They were **not** copied from any run's output
+and the entity table was **not** given aliases to make matching easier: three measured runs
+*exposed* the problem and are not the authority for the fix. The same distinction that made
+the 2026-08-06 atomicity correction legitimate.
+
+**The `clinic` element and relationship baselines are therefore not comparable across this
+change**, and `eval/harness/README.md` now says so at the point where someone would read the
+numbers. `facts` and `entities` are untouched. A harness rerun is owed for that and for the
+prose change above.
+
+Four count-pinned score tests moved with gold and were rewritten against
+`category.gold` rather than literals, so the next legitimate change to a golden case moves
+the arithmetic instead of the claim.
+
+### Added — reference-architecture alignment: the second yardstick (Phase 7.1)
+
+"Is this layer done?" had no mechanical answer. `coverage` answers *did we model what we
+were told* — complete against one conversation, and silent about the invoicing capability
+nobody mentioned. `python -m easkills align` adds the other half: *did we model what a
+business like this has*, measured against a **reference architecture**.
+
+- **`easkills/reference.py`** — reference packs as a *third class of hash-pinned oracle
+  data*, living in the consuming repository: `reference/<name>/model.yaml` (a taxonomy of
+  nodes with `id`/`name`/`kind`/`parent`, and deliberately no relationships — edges
+  between architecture elements belong in `model/`, where the ArchiMate oracle governs
+  them), `NOTICE.md`, and `SHA256SUMS` over both. A pack whose pins do not verify — or
+  that has none, or does not pin its NOTICE — is **refused rather than read**: coverage
+  measured against an edited taxonomy is not a lower number, it is not a measurement.
+  `mappings.yaml` is deliberately *not* pinned, because it is the one file an architect
+  edits and pinning it would make re-pinning a reflex.
+- **`easkills/alignment.py` + `align`** — per node `covered` / `partial` / **gap** /
+  `out-of-scope`, per branch a rolled-up percentage, plus the local elements the
+  reference does not anchor as *information, never findings* (a business does things its
+  blueprint never heard of). `--zone`, `--reference` (repeatable), `--strict`, `--json`,
+  `--min-coverage`.
+- **Nine rule codes, `ALN000`–`ALN008`**, owned by `align` rather than `validate`: a
+  repository with no reference pack is not an invalid repository, and the model gate stays
+  about the model. The flagship is `ALN005` — `out-of-scope` without a rationale is an
+  *error*, and the node keeps reporting as a gap, so a silent exclusion excludes nothing.
+- **`pin-reference`** — writes a pack's `SHA256SUMS`; the drop-in step after copying a
+  reference model in, and the upgrade step after a reviewed change. Carries `pin-oracle`'s
+  warning, for the same reason.
+- **The open library, `references/`** — NIST CSF 2.0 (Functions and Categories; public
+  domain, NOTICE citing NIST CSWP 29). Structure only: no normative wording is paraphrased,
+  because a paraphrase in a YAML file gets quoted back as if it were the standard. It ships
+  **labelled as an unverified draft yardstick** — see below.
+- **Skill `ea-align`** (23 skills now) — choosing a reference honestly (what the
+  organisation licensed and argues in, not what looks impressive), mapping as *judgement
+  recorded*, out-of-scope as a decision with three parts, and where a gap goes next:
+  `ea-intake` clarification question, modelling work, ADR, or the board agenda.
+
+**Three design calls worth reading before the first mapping.**
+
+*Only leaf nodes are scored, and `partial` counts half.* A branch is a heading, not
+something an application realizes; branches carry their subtree's percentage instead.
+Half credit for `partial` is the arithmetic the golden-set scorer already uses for a
+derived relationship — found the connection, contested the grain.
+
+*`out-of-scope` inherits down a branch; coverage never does.* Excluding an area is one
+decision about one area, so one recorded rationale can account for a whole domain — much
+better than nine copies of it. Claiming a branch covered would be a claim about every leaf
+under it, and those are earned one at a time.
+
+*Everything fails closed.* An exclusion with no rationale does not exclude (`ALN005`); a
+claim resting on an element the zone does not hold does not cover (`ALN003`, `ALN007`).
+Under-reporting a gap is the failure mode that matters, so every ambiguity resolves
+towards *gap*. `--min-coverage` refuses to pass when nothing is in scope, rather than
+reporting 100% of an empty set — the defect this repository has already paid for once.
+
+### Added — the licensed-content boundary, stated where it can be enforced
+
+BIAN, APQC PCF, eTOM and ACORD are the reference models organisations actually own, and
+none may be redistributed here. The split is **mechanism here, content at the adopter**:
+`template/reference/README.md` is the drop-in procedure, every shipped pack carries a
+NOTICE naming its source and open status, and a test refuses a pack in `references/` whose
+NOTICE does not state that status. `ea-align` says the rest out loud: an agent asked to
+"add the BIAN service domains" from memory commits a licence breach and a fabrication at
+once, and nobody downstream can tell an accurate transcription from a plausible one.
+
+### Added — a verification status per shipped pack, because nothing can check it
+
+The reference layer has no mechanical provenance check. One layer down every element's
+quote is located in a real file; here, a Category name that is subtly wrong looks identical
+to a correct one to `align` and to every adopter. The NIST pack was written from working
+knowledge of CSF 2.0 rather than read off CSWP 29 node by node, so it ships saying so: its
+NOTICE carries a **verification status** telling readers not to cite its nodes as evidence
+of what NIST requires, and `references/README.md` repeats it in the table adopters read
+first. A test asserts the two agree, because an unverified pack quietly losing its caveat is
+how a draft yardstick becomes an authority.
+
+The obligation and how to discharge it are written next to the pack: read the source, correct
+or confirm `model.yaml`, drop the status section, re-pin, and say in the commit message that
+the reading happened.
+
+The worked example therefore ships `wholesale-core`, a small capability reference
+**authored for it** and labelled as such — clean under `align --strict`, which means every
+node of it is either answered by the model or excluded by a recorded decision. Two `partial`
+mappings and one exclusion carry the notes that make them readable; a whole domain is
+excluded by one decision its children inherit. `eval/fixtures/broken/reference/` holds five
+packs, one per failure mode, each with valid pins of its own so the pack under test is the
+one the rule is about.
+
+### Changed
+
+- `gen-schema` writes twelve schemas (`reference`, `reference-mappings` and `ea-config`
+  added); the freshness test covers them by construction, from the same registry, and a
+  doc test now pins the written count against it — "eleven" had gone stale silently once.
+- CI and the CONTRIBUTING pre-push block gain `align --strict` on the worked example and
+  the negative-fixture counterpart. `align` deliberately has **no `--as-of`**: nothing in
+  reference alignment depends on a date, and a flag that only decorated the report header
+  would be the decorative conformance the 0.11.0 review removed elsewhere.
+- The negative fixture gains `model/staging/proposal.yaml`, without which `ALN007` had no
+  provoking case.
+
 ## [0.11.0] — 2026-08-06 — the measurement release
 
 The mechanism was complete; the product was under-measured. Six weaknesses were listed

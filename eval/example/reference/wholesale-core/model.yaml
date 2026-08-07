@@ -1,0 +1,107 @@
+# Wholesale Core -- a small capability reference for the worked example.
+#
+# This taxonomy is AUTHORED FOR THIS REPOSITORY (see NOTICE.md). It is not a
+# transcription of BIAN, APQC PCF, eTOM or any other licensed reference model, and it
+# is not an industry standard: it exists so `align` has something to be exercised
+# against and so a reader can see what a real pack looks like without this repository
+# redistributing content it does not own.
+#
+# Deliberately small -- four domains and the capabilities under them -- and deliberately
+# *wider than the example model*, because that asymmetry is the point: a reference names
+# things the architecture does not cover, and the interesting output is what happens to
+# those.
+
+name: Wholesale Core capability reference
+version: "1.0"
+source: Authored for the ea-skills worked example; not a published reference model
+
+nodes:
+  - id: wc-customer
+    name: Customer Management
+    kind: domain
+    externalId: WC-1
+    description: Everything the business does to acquire, serve and know its customers.
+  - id: wc-customer-service
+    name: Customer Service
+    kind: capability
+    parent: wc-customer
+    externalId: WC-1.1
+    description: Answering customer questions about orders, products and deliveries.
+  - id: wc-customer-master-data
+    name: Customer Master Data
+    kind: capability
+    parent: wc-customer
+    externalId: WC-1.2
+    description: Maintaining the authoritative record of who each customer is.
+
+  - id: wc-order-to-cash
+    name: Order to Cash
+    kind: domain
+    externalId: WC-2
+    description: From an order arriving to the money for it being collected.
+  - id: wc-order-capture
+    name: Order Capture
+    kind: capability
+    parent: wc-order-to-cash
+    externalId: WC-2.1
+    description: Taking an order and confirming what was ordered.
+  - id: wc-order-fulfilment
+    name: Order Fulfilment
+    kind: capability
+    parent: wc-order-to-cash
+    externalId: WC-2.2
+    description: Turning a confirmed order into goods on their way to the customer.
+  - id: wc-invoicing
+    name: Invoicing and Receivables
+    kind: capability
+    parent: wc-order-to-cash
+    externalId: WC-2.3
+    description: Billing for what was delivered and collecting what is owed.
+  - id: wc-pricing
+    name: Product and Pricing Management
+    kind: capability
+    parent: wc-order-to-cash
+    externalId: WC-2.4
+    description: Deciding and publishing what is sold and at what price.
+
+  - id: wc-logistics
+    name: Warehouse and Logistics
+    kind: domain
+    externalId: WC-3
+    description: Holding goods and moving them.
+  - id: wc-warehouse-operations
+    name: Warehouse Operations
+    kind: capability
+    parent: wc-logistics
+    externalId: WC-3.1
+    description: Receiving, storing, picking, packing and dispatching goods.
+  - id: wc-inventory
+    name: Inventory Management
+    kind: capability
+    parent: wc-logistics
+    externalId: WC-3.2
+    description: Knowing what stock exists, where it is, and what is committed.
+  - id: wc-transport
+    name: Transport and Delivery
+    kind: capability
+    parent: wc-logistics
+    externalId: WC-3.3
+    description: Getting dispatched goods to the customer's door.
+
+  - id: wc-corporate
+    name: Corporate Functions
+    kind: domain
+    externalId: WC-4
+    description: The capabilities every business has and none of them competes on.
+  - id: wc-financial-accounting
+    name: Financial Accounting
+    kind: capability
+    parent: wc-corporate
+    externalId: WC-4.1
+    description: Keeping the books and reporting the numbers.
+  - id: wc-human-resources
+    name: Human Resources
+    kind: capability
+    parent: wc-corporate
+    externalId: WC-4.2
+    description: Hiring, paying and developing people.

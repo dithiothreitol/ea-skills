@@ -71,6 +71,24 @@ jobs:
       - name: Fact coverage of the worked example
         run: python -m easkills coverage --root eval/example --min-coverage 100
 
+      # The per-layer definition of done. Zero open checkpoints under --strict is a
+      # claim the example makes: every layer it models, it finishes.
+      - name: Layer readiness of the worked example (strict)
+        run: python -m easkills readiness --root eval/example --strict
+
+      # The example ships a reference pack (authored for it -- no licensed content in
+      # this repository). Zero findings under --strict means every node of the taxonomy
+      # is either answered by the model or excluded by a recorded decision.
+      - name: Reference alignment of the worked example (strict)
+        run: python -m easkills align --root eval/example --strict
+
+      # The worked example is deliberately out of DORA scope (a food wholesaler), so the
+      # regulatory gate runs on its own fixture. Clean means: no error, no warning, and
+      # the REG003 the fixture carries on purpose -- a waiver on a critical service is
+      # exposure to disclose, not a defect to fix.
+      - name: DORA register of the regulated fixture (strict)
+        run: python -m easkills dora-register --root eval/fixtures/finco --as-of 2026-07-30 --strict
+
       - name: Compile worked example
         run: python -m easkills compile --root eval/example
 
@@ -131,6 +149,21 @@ jobs:
         run: |
           if python -m easkills validate-gov --root eval/fixtures/broken; then
             echo "::error::the broken governance log validated cleanly -- the validator is not catching violations"
+            exit 1
+          fi
+
+      - name: Negative reference fixture must fail
+        run: |
+          if python -m easkills align --root eval/fixtures/broken; then
+            echo "::error::the broken reference packs aligned cleanly -- align is not catching violations"
+            exit 1
+          fi
+
+      # A register generator that never refuses is a rubber stamp.
+      - name: Negative regulatory fixture must fail
+        run: |
+          if python -m easkills dora-register --root eval/fixtures/finco-broken --as-of 2026-07-30; then
+            echo "::error::the broken DORA fixture registered cleanly -- the REG rules are not catching violations"
             exit 1
           fi
 

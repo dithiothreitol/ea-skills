@@ -1,0 +1,24 @@
+# ISO 42010 apparatus, kept minimal: the fixture exists for the REG rules, but a model
+# repository that skipped stakeholders and views would not pass its own gate, and a
+# fixture that cannot pass the gate teaches people to bypass it.
+
+stakeholders:
+  - id: stakeholder-ciso
+    name: CISO
+    description: Accountable for ICT risk and for the DORA register's completeness.
+    concerns:
+      - concern-third-party-concentration
+      - concern-critical-function-continuity
+
+  - id: stakeholder-compliance
+    name: Head of Compliance
+    description: Owns the regulatory filing and answers the supervisor.
+    concerns:
+      - concern-third-party-concentration
+
+concerns:
+  - id: concern-third-party-concentration
+    statement: How much of the payment estate depends on a single ICT third-party provider?
+
+  - id: concern-critical-function-continuity
+    statement: Which business functions stop if one provider fails, and what waiver is open on them?

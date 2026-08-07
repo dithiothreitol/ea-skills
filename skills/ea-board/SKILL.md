@@ -25,11 +25,22 @@ Collect, in this order (the standing agenda):
 4. **Proposed decisions** -- ADRs with `status: proposed` awaiting acceptance.
 5. **Health movements** -- `kpi`/`debt`/`staleness` deltas since the last run:
    obsolescence exposure, unsupported capabilities, the review queue by owner.
-6. **Service performance** -- the `kpi` Service line: SLA breaches (`REQ006`) each
+6. **Rationalization candidates** -- `debt` items of kind `rationalization-candidate`,
+   `overlapping-applications` and `duplicate-service`. Each is a board item precisely
+   because the tool cannot decide it: overlap is either portfolio drift or *bought
+   redundancy*, and only a human knows which. The decision the board makes is one of
+   three, and all three end in a record: consolidate (which system wins, and who funds
+   the migration), **keep both on purpose** -- which means an ADR naming the reason, so
+   the finding stops coming back every quarter -- or split the capability, because two
+   realizers can also mean the map is drawn too coarse. Bring the realizers' TIME
+   dispositions to the table; `debt` prints them next to each candidate for this reason.
+   An overlap carried unrecorded from one board to the next is the finding, not the
+   overlap.
+7. **Service performance** -- the `kpi` Service line: SLA breaches (`REQ006`) each
    need a disposition (fulfil, decline, renegotiate the promise), offerings nobody
    requests are candidates for retirement, and repeated informal asks are a missing
    catalog entry.
-7. **Pending promotions** -- staged content whose review is stuck
+8. **Pending promotions** -- staged content whose review is stuck
    (`promote --dry-run` shows what is ready).
 
 For each item, prepare the *decision to be made*, not just the topic: "renew

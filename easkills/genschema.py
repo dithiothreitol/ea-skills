@@ -28,6 +28,9 @@ DISPENSATION_SCHEMA_PATH = SCHEMA_DIR / "dispensation.schema.json"
 COMPLIANCE_SCHEMA_PATH = SCHEMA_DIR / "compliance.schema.json"
 SERVICE_SCHEMA_PATH = SCHEMA_DIR / "service.schema.json"
 REQUEST_SCHEMA_PATH = SCHEMA_DIR / "request.schema.json"
+REFERENCE_SCHEMA_PATH = SCHEMA_DIR / "reference.schema.json"
+REFERENCE_MAPPINGS_SCHEMA_PATH = SCHEMA_DIR / "reference-mappings.schema.json"
+CONFIG_SCHEMA_PATH = SCHEMA_DIR / "ea-config.schema.json"
 
 STANDARD_TYPES = ["legal", "industry", "organisation"]
 STANDARD_LIFECYCLES = ["proposed", "trial", "active", "deprecated", "retired"]
@@ -48,6 +51,19 @@ TIME_DISPOSITIONS = ("Invest", "Migrate", "Tolerate", "Eliminate")
 
 # Dependency manifests `ea-check` reads in a consuming repository (AD-09).
 MANIFEST_KINDS = ("package.json", "pom.xml", "requirements.txt")
+
+# What a reference-taxonomy node can be, and what a mapping may say about one. Closed
+# vocabularies, for the reason `timeDisposition` is one: `align` reasons per kind, so a
+# value it does not recognise would silently drop the node out of the report that reads it.
+REFERENCE_NODE_KINDS = ("capability", "control", "process", "domain")
+REFERENCE_MAPPING_STATUSES = ("covered", "partial", "out-of-scope")
+
+# Regulatory registers this tool generates, and DORA's criticality vocabulary. Closed for
+# the reason above, and one more: the failure mode of a *regulatory* register is
+# under-inclusion. `regulatoryScope: DORA` as free text would drop the element out of the
+# register silently, and nothing downstream would ever say so.
+REGULATORY_SCOPES = ("dora",)
+CRITICALITIES = ("critical", "important", "standard")
 
 SLUG_PATTERN = "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$"
 DATE_PATTERN = "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
@@ -128,6 +144,37 @@ def build_schema() -> dict[str, Any]:
                     "description": (
                         "When a Plateau is reached; orders the roadmap. Read by 'roadmap' "
                         "and 'docs', checked by PLAT001-PLAT003."
+                    ),
+                },
+                "regulatoryScope": {
+                    "enum": list(REGULATORY_SCOPES),
+                    "description": (
+                        "Puts this element in a regulatory register's scope. An enum, not "
+                        "free text: 'DORA' or 'dora ' would silently drop the element out "
+                        "of the register, and under-inclusion is the failure mode that "
+                        "matters here. Use your own property key for scopes this tool does "
+                        "not generate a register for."
+                    ),
+                },
+                "doraCriticality": {
+                    "enum": list(CRITICALITIES),
+                    "description": (
+                        "DORA criticality of the function this element supports. Read by "
+                        "'dora-register'; REG001 reports an in-scope element without one."
+                    ),
+                },
+                "provider": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The ICT third-party service provider. Required on critical elements (REG002).",
+                },
+                "contractRef": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": (
+                        "Reference to the contractual arrangement covering this element. "
+                        "Required on critical elements (REG002); the register lists it, it "
+                        "never reads the contract."
                     ),
                 },
             },
@@ -646,6 +693,234 @@ def build_request_schema() -> dict[str, Any]:
     }
 
 
+def build_reference_schema() -> dict[str, Any]:
+    """Schema for ``reference/<name>/model.yaml`` -- a hash-pinned reference taxonomy.
+
+    Deliberately *not* a model: nodes carry a `parent` and nothing else relational. No
+    relationships, no behaviour, no properties this tooling would then have to interpret.
+    Edges between architecture elements are what `model/` is for, and the ArchiMate
+    oracle governs them; a reference model that grew edges would be a second metamodel
+    with no oracle behind it.
+
+    Note the absence of ``minItems`` on ``nodes``: an empty pack is reported by
+    ``ALN008``, which can say *why* an empty yardstick is worse than none, where a
+    schema error could only say the array was too short.
+    """
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:ea-skills:schema:reference",
+        "title": "EA Skills reference taxonomy",
+        "description": (
+            "One reference architecture or industry blueprint, as a taxonomy of nodes the "
+            "local model is measured against. Hash-pinned: the tooling refuses to read a "
+            "pack whose SHA256SUMS do not match (ALN001)."
+        ),
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["name", "nodes"],
+        "properties": {
+            "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120,
+                "description": "Human name of the reference model, e.g. 'NIST CSF 2.0'.",
+            },
+            "version": {
+                "type": "string",
+                "maxLength": 40,
+                "description": "The edition this pack transcribes; part of what the NOTICE cites.",
+            },
+            "source": {
+                "type": "string",
+                "maxLength": 300,
+                "description": "Where the taxonomy came from. Licence terms live in NOTICE.md.",
+            },
+            "nodes": {"type": "array", "items": {"$ref": "#/$defs/node"}},
+        },
+        "$defs": {
+            "slug": _slug_def(),
+            "node": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["id", "name", "kind"],
+                "properties": {
+                    "id": {"$ref": "#/$defs/slug"},
+                    "name": {"type": "string", "minLength": 1, "maxLength": 200},
+                    "kind": {
+                        "enum": list(REFERENCE_NODE_KINDS),
+                        "description": "What the node is; `align` reads local elements per kind.",
+                    },
+                    "parent": {
+                        **_slug_def(),
+                        "description": (
+                            "Id of the node this one decomposes. The only relation a taxonomy has: "
+                            "out-of-scope decisions inherit down it, coverage claims do not."
+                        ),
+                    },
+                    "description": {"type": "string", "maxLength": 1000},
+                    "externalId": {
+                        "type": "string",
+                        "maxLength": 40,
+                        "description": "The code the source publishes, e.g. 'GV.OC'. Printed in reports.",
+                    },
+                },
+            },
+        },
+    }
+
+
+def build_reference_mappings_schema() -> dict[str, Any]:
+    """Schema for ``reference/<name>/mappings.yaml`` -- the human-authored judgement.
+
+    ``elements`` is required for a coverage claim (a claim with nothing behind it is not
+    a claim), but ``rationale`` is **not** required for ``out-of-scope``: that case is
+    reported by ``ALN005`` instead, so a missing rationale reads as the governance
+    finding it is rather than as a formatting error. It is the one place here where a
+    weaker schema is the more honest design.
+    """
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:ea-skills:schema:reference-mappings",
+        "title": "EA Skills reference mappings",
+        "description": (
+            "What local model content answers each node of a reference taxonomy, or why a "
+            "node is out of this architecture's scope. Authored by a human; never generated."
+        ),
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["mappings"],
+        "properties": {
+            "mappings": {"type": "array", "items": {"$ref": "#/$defs/mapping"}},
+        },
+        "$defs": {
+            "slug": _slug_def(),
+            "mapping": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["ref", "status"],
+                "properties": {
+                    "ref": {**_slug_def(), "description": "Id of the reference node this entry judges."},
+                    "status": {
+                        "enum": list(REFERENCE_MAPPING_STATUSES),
+                        "description": (
+                            "'covered' when local content answers the node; 'partial' when it "
+                            "answers part of it (counts half); 'out-of-scope' when the "
+                            "architecture deliberately does not cover it."
+                        ),
+                    },
+                    "elements": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {"$ref": "#/$defs/slug"},
+                        "description": "Local element ids that answer this node.",
+                    },
+                    "note": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "description": "Why this mapping is the judgement it is -- especially for 'partial'.",
+                    },
+                    "rationale": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "description": "Mandatory for 'out-of-scope' (enforced by ALN005, not here).",
+                    },
+                },
+                "allOf": [
+                    {
+                        "if": {
+                            "required": ["status"],
+                            "properties": {"status": {"enum": ["covered", "partial"]}},
+                        },
+                        "then": {"required": ["elements"]},
+                    }
+                ],
+            },
+        },
+    }
+
+
+# The rate keys `costModel` accepts, and the exposure each one prices. The tuple is the
+# single definition: `easkills/cost.py` derives one quantity per key, this schema accepts
+# exactly these keys, and a test pins the two against each other -- so a rate that prices
+# nothing, or an exposure with no way to price it, cannot ship.
+COST_RATE_KEYS: tuple[tuple[str, str], ...] = (
+    ("staleElementDay", "Per element, per day past `stalenessDays`."),
+    ("openDispensationDay", "Per open dispensation, per day since it was granted."),
+    ("eolElement", "Per element referencing a deprecated or retired standard."),
+    ("unsupportedCapability", "Per capability nothing realizes."),
+    ("duplicateRealization", "Per realizer beyond the first on one capability."),
+)
+
+
+def build_config_schema() -> dict[str, Any]:
+    """``ea.config.yaml``.
+
+    Strict on both levels, unlike an element's open ``properties`` map. A model's own
+    property keys are the organisation's business; a *tooling* config key that the
+    tooling does not read is always a defect -- ``stalenessDay`` silently leaves the
+    documented 365-day default in place, and the repository looks fresh because nothing
+    said otherwise. Ranges live here as well as in ``dsl.config_number`` so a
+    schema-aware editor flags ``quoteMatchThreshold: 90`` while it is being typed;
+    ``check_config`` reports each key once (see SCHEMA002).
+    """
+    rates = {
+        key: {
+            "type": "number",
+            "minimum": 0,
+            "description": description,
+        }
+        for key, description in COST_RATE_KEYS
+    }
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:ea-skills:schema:ea-config",
+        "title": "EA Skills repository configuration",
+        "description": "Repository-level settings. Every key is optional; the documented default applies.",
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "name": {"type": "string", "minLength": 1, "description": "Model name, used in generated documents."},
+            "documentation": {"type": "string", "description": "What this model covers and what it is for."},
+            "stalenessDays": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Elements not reviewed within this many days are stale (GOV004, `staleness`).",
+            },
+            "quoteMatchThreshold": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Minimum similarity for a provenance quote to count as approximate (PROV004).",
+            },
+            "factsRoot": {"type": "string", "description": "Directory provenance file references resolve against."},
+            "sourcesDir": {"type": "string", "description": "Directory holding the raw source documents."},
+            "costModel": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["currency"],
+                "description": (
+                    "Optional. Unit rates that turn the debt register's exposure into money. "
+                    "The tool computes the exposure; the operator prices it. Absent, `debt` "
+                    "output is unchanged."
+                ),
+                "properties": {
+                    "currency": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 8,
+                        "description": (
+                            "Printed beside every amount. Required, because an unlabelled "
+                            "number in a board pack is read in whatever currency the reader "
+                            "assumes."
+                        ),
+                    },
+                    **rates,
+                },
+            },
+        },
+    }
+
+
 def _write_json(target: Path, payload: dict[str, Any]) -> Path:
     target.parent.mkdir(parents=True, exist_ok=True)
     # newline="\n" so regenerating on Windows does not rewrite every line ending and
@@ -675,6 +950,9 @@ SCHEMAS: tuple[tuple[Path, Callable[[], dict[str, Any]]], ...] = (
     (COMPLIANCE_SCHEMA_PATH, build_compliance_schema),
     (SERVICE_SCHEMA_PATH, build_service_schema),
     (REQUEST_SCHEMA_PATH, build_request_schema),
+    (REFERENCE_SCHEMA_PATH, build_reference_schema),
+    (REFERENCE_MAPPINGS_SCHEMA_PATH, build_reference_mappings_schema),
+    (CONFIG_SCHEMA_PATH, build_config_schema),
 )
 
 
@@ -722,3 +1000,15 @@ def load_service_schema(path: Path | None = None) -> dict[str, Any]:
 
 def load_request_schema(path: Path | None = None) -> dict[str, Any]:
     return _load(path or REQUEST_SCHEMA_PATH, build_request_schema)
+
+
+def load_reference_schema(path: Path | None = None) -> dict[str, Any]:
+    return _load(path or REFERENCE_SCHEMA_PATH, build_reference_schema)
+
+
+def load_reference_mappings_schema(path: Path | None = None) -> dict[str, Any]:
+    return _load(path or REFERENCE_MAPPINGS_SCHEMA_PATH, build_reference_mappings_schema)
+
+
+def load_config_schema(path: Path | None = None) -> dict[str, Any]:
+    return _load(path or CONFIG_SCHEMA_PATH, build_config_schema)

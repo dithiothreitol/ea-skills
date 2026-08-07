@@ -33,9 +33,54 @@ response:
 * `duplicate-name` -- merge or rename; duplicate names silently corrupt every view
   and conversation downstream.
 
+Three of the kinds are about the portfolio doing one job twice, and they read
+differently from the rest: none of them is a defect on its face.
+
+* `rationalization-candidate` -- a capability realized by two or more application
+  components, printed with each realizer's `timeDisposition`, `lifecycle` and any
+  other property the portfolio records against it.
+* `overlapping-applications` -- an application pair realizing the same capabilities
+  more than once. The pair is the merge conversation; the candidates above are its
+  symptoms.
+* `duplicate-service` -- one service name offered by *different* providers. (A
+  service realizing an identically named service one layer up is idiomatic and is
+  not reported; so is one component publishing two same-named services, which is a
+  naming slip for `duplicate-name`.)
+
+Redundancy is often deliberate -- resilience, data residency, a strangler running
+beside what it replaces. The tooling cannot tell that from drift, so the honest
+response is to record which one it is: **deliberate redundancy gets an ADR**, and
+undecided overlap goes to the board (`ea-board`) or through triage
+(`ea-change-triage`) as a re-architecting item. An overlap that survives two health
+reviews without a record is the finding.
+
 Debt items are worked through `ea-delta-ingest` (model corrections, as staged
 proposals) or accepted explicitly in the report -- never fixed by deleting the
 evidence of the problem.
+
+## Reading the cost section
+
+It only appears when `ea.config.yaml` carries a `costModel`. **The tool computed the
+exposure, the operator priced it** -- the register prints that sentence because it is
+the only honest thing to say about the number underneath it. Never present a total
+without it, and never present one as an estimate the tooling produced.
+
+* **Read the total as a floor, not a figure.** The section lists every exposure it
+  could not price and every element it could not measure; both are underneath the
+  total, and both mean the real number is larger. If the list is long, the useful
+  output of this run is *the list*, not the sum.
+* **The rates are the organisation's, and they are arguable.** When a total is
+  challenged, the argument is about a rate, not about the tool -- which is the point
+  of the split. Bring the rate line, not the arithmetic.
+* **Movement beats level.** One total means little; the same rates run monthly show
+  whether exposure is accruing or being worked off. Keep the `--json` alongside the
+  KPI history.
+* **Never set a rate to make a number look right.** A rate exists to be defended in
+  the meeting where someone asks where it came from. If nobody can source one, leave
+  it unset -- "not priced" is a true statement and a plausible guess is not.
+* **`--as-of` is not optional for anything quoted.** Two of the exposures accrue
+  daily; a figure without the date it was computed for cannot be reproduced or
+  compared.
 
 ## Reading staleness
 
