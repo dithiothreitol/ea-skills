@@ -54,7 +54,9 @@ zestarzeje się cicho.
 „generują, a nie zaświadczają", bo dokładnie to mówi nagłówek generowanego dokumentu.
 Zmiana tego zdania na slajdzie byłaby obietnicą, której narzędzie nie składa.
 
-**Żadnego przemilczenia statusu weryfikacji pakietów.** Dwa z trzech pakietów
-referencyjnych noszą etykietę `structure not yet verified` i slajd 10 to mówi wprost.
-Pominięcie tej informacji zrobiłoby z draftu autorytet, czyli dokładnie tę awarię, przed
-którą etykieta istnieje.
+**Statusu weryfikacji pakietów nie ma na slajdzie, a jest w treści wpisu.** Dwa z trzech
+pakietów referencyjnych noszą etykietę `structure not yet verified`. Na slajdzie 10 zdanie
+o tym stanowiło komentarz do wewnętrznej dyscypliny repozytorium, w angielskim żargonie,
+nieczytelny dla odbiorcy, który nie zna pojęcia pakietu referencyjnego. Informacja przeszła
+do akapitu o ograniczeniach w treści wpisu, gdzie jest miejsce, by ją wyjaśnić. **Usunięcie
+jej z obu miejsc naraz byłoby przemilczeniem** i tego robić nie wolno.

@@ -322,7 +322,7 @@ h1 .em { color: var(--redline); }
   <div class="content">
     <div class="sheet">Proweniencja</div>
     <h1 class="md">Każdy element wskazuje<br><span class="em">plik i linię</span></h1>
-    <p class="lead">Cytat nieobecny w źródle kończy się błędem walidacji. Fabrykowanie odniesień jest udokumentowaną słabością modeli językowych, więc wykrywa je automat.</p>
+    <p class="lead">Cytat nieobecny w źródle kończy się błędem walidacji. Fabrykowanie odniesień jest udokumentowaną słabością modeli językowych, więc wykrywa je walidator.</p>
     <div class="mono-block"><span class="steel">- id:</span> app-erp-core
   <span class="steel">type:</span> ApplicationComponent
   <span class="steel">provenance:</span>
@@ -344,14 +344,14 @@ h1 .em { color: var(--redline); }
   <div class="content">
     <div class="sheet">Kolejność stadiów</div>
     <h1 class="md">Kolejność, której<br>nie można <span class="em">skrócić</span></h1>
-    <p class="lead">Modelowanie bez rejestru faktów daje pojęcia bez pokrycia. Widoki przed rozmową ze stakeholderami dają diagramy, o które nikt nie prosił.</p>
+    <p class="lead">Modelowanie bez rejestru faktów daje pojęcia bez pokrycia. Widoki przed ustaleniem odbiorców i ich potrzeb powstają bez adresata.</p>
     <div class="steps">
       <div class="step"><span class="n">01</span><span>Fakty ze źródeł<span class="sub">cytat zweryfikowany maszynowo</span></span></div>
-      <div class="step"><span class="n">02</span><span>Mapa zdolności<span class="sub">kręgosłup, nie ozdoba</span></span></div>
+      <div class="step"><span class="n">02</span><span>Mapa zdolności<span class="sub">punkt odniesienia dla pozostałych warstw</span></span></div>
       <div class="step"><span class="n">03</span><span>Model warstwa po warstwie<span class="sub">do strefy roboczej</span></span></div>
       <div class="step"><span class="n">04</span><span>Walidacja<span class="sub">146 reguł, kod wyjścia</span></span></div>
       <div class="step"><span class="n">05</span><span>Przegląd człowieka<span class="sub">jedyna droga do zatwierdzenia</span></span></div>
-      <div class="step"><span class="n">06</span><span>Widoki i dokumentacja<span class="sub">na końcu, nie na początku</span></span></div>
+      <div class="step"><span class="n">06</span><span>Widoki i dokumentacja<span class="sub">z modelu zatwierdzonego</span></span></div>
     </div>
     <div class="spacer"></div>
     <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span class="site">archxs.com</span><span>05 / 11</span></div>
@@ -364,7 +364,7 @@ h1 .em { color: var(--redline); }
   <div class="content">
     <div class="sheet">Bramka</div>
     <h1 class="lg"><span class="em">146 reguł</span><br>i kod wyjścia</h1>
-    <p class="lead">Walidacja nie negocjuje. Każde znalezisko wskazuje konkretny element, a przy tej samej dacie odniesienia raport jest bajt w bajt identyczny.</p>
+    <p class="lead">Kod wyjścia 0 przy przejściu, 1 przy błędzie. Każde znalezisko wskazuje konkretny element, a przy tej samej dacie odniesienia raport jest bajt w bajt identyczny.</p>
     <div class="mono-block"><span class="dim">$</span> python -m easkills validate --strict
 
 <span class="red">REL001</span>  Realization: BusinessActor → ApplicationService
@@ -421,7 +421,7 @@ h1 .em { color: var(--redline); }
       <div class="card">
         <div class="tag">Przeglądy</div>
         <div class="ct">Kolejka z właścicielem</div>
-        <div class="cd">Ułożona wg tego, o co odbiorcy faktycznie pytają.</div>
+        <div class="cd">Ułożona według tego, o co odbiorcy faktycznie pytają.</div>
       </div>
       <div class="card accent">
         <div class="tag">Dług i portfel</div>
@@ -450,10 +450,10 @@ h1 .em { color: var(--redline); }
       <div class="card accent">
         <div class="tag">AI Act</div>
         <div class="ct">Inwentarz systemów</div>
-        <div class="cd">Klasa ryzyka, rola operatora, nadzór z art. 14. Praktyka zakazana to błąd, nie wiersz.</div>
+        <div class="cd">Klasa ryzyka, rola operatora, nadzór z art. 14. Praktyka zakazana z art. 5 kończy się błędem.</div>
       </div>
     </div>
-    <p class="lead" style="margin-top:28px">Oba dokumenty generują, a nie zaświadczają. Każdy kończy listą pól, których model nie wypełnił.</p>
+    <p class="lead" style="margin-top:28px">Oba dokumenty są generowane i nie stanowią poświadczenia zgodności. Każdy kończy listą pól, których model nie wypełnił.</p>
     <div class="spacer"></div>
     <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span class="site">archxs.com</span><span>09 / 11</span></div>
   </div>
@@ -465,13 +465,13 @@ h1 .em { color: var(--redline); }
   <div class="content">
     <div class="sheet">Ramy kontrolne</div>
     <h1 class="md">Nieprzeanalizowany obszar<br>ma <span class="em">nazwę</span></h1>
-    <p class="lead">Rama kontrolna jest wczytywana jako przypięta hashem taksonomia. Węzeł bez pokrycia stanowi nazwaną lukę, a wyłączenie wymaga podpisanego uzasadnienia.</p>
+    <p class="lead">Rama wczytuje się jako przypięta hashem taksonomia. Węzeł bez pokrycia stanowi nazwaną lukę, a wyłączenie wymaga podpisanego uzasadnienia.</p>
     <div class="steps">
       <div class="step"><span class="n">01</span><span>NIST CSF 2.0<span class="sub">zweryfikowany wobec CSWP 29</span></span></div>
       <div class="step"><span class="n">02</span><span>NIST AI RMF 1.0<span class="sub">4 funkcje, 19 kategorii</span></span></div>
       <div class="step"><span class="n">03</span><span>KNF Rekomendacja D<span class="sub">4 obszary, 22 rekomendacje, treść po polsku</span></span></div>
     </div>
-    <p class="lead">Pakiet nieprzeczytany przez człowieka wobec źródła nosi etykietę <span class="em">structure not yet verified</span>. Wersja robocza opisana jako robocza nie stanie się autorytetem przez przeoczenie.</p>
+    <p class="lead">Rama licencjonowana albo własny katalog kontroli wchodzi tą samą ścieżką, po stronie organizacji. Każda jest raportowana osobno, ponieważ dzielą one obszar odmiennie.</p>
     <div class="spacer"></div>
     <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span class="site">archxs.com</span><span>10 / 11</span></div>
   </div>
