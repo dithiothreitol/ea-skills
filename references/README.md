@@ -8,8 +8,8 @@ here** — everything in this directory is either public domain or public law, w
 | Pack | Nodes | Source | Licence | Verification |
 |---|---|---|---|---|
 | [`nist-csf-2.0/`](nist-csf-2.0/) | functions + categories | NIST CSWP 29 (2024) | public domain (17 U.S.C. §105) | **verified 2026-08-07** against the cited edition, see its [NOTICE](nist-csf-2.0/NOTICE.md) |
-| [`nist-ai-rmf-1.0/`](nist-ai-rmf-1.0/) | functions + categories | NIST AI 100-1 (2023) | public domain (17 U.S.C. §105) | **structure not yet verified** — transcribed from the published text, awaiting the human reading its [NOTICE](nist-ai-rmf-1.0/NOTICE.md) describes |
-| [`knf-rek-d-2013/`](knf-rek-d-2013/) | areas + recommendations | Uchwała 7/2013 KNF (Dz. Urz. KNF 2013 poz. 5) | public law (art. 4 polskiego prawa autorskiego) | **structure not yet verified** — transcribed from the official PDF, awaiting the human reading its [NOTICE](knf-rek-d-2013/NOTICE.md) describes |
+| [`nist-ai-rmf-1.0/`](nist-ai-rmf-1.0/) | functions + categories | NIST AI 100-1 (2023) | public domain (17 U.S.C. §105) | **structure not yet verified** — cross-checked mechanically against the primary PDF 2026-08-08 (all matched), awaiting the human reading its [NOTICE](nist-ai-rmf-1.0/NOTICE.md) describes |
+| [`knf-rek-d-2013/`](knf-rek-d-2013/) | areas + recommendations | Uchwała 7/2013 KNF (Dz. Urz. KNF 2013 poz. 5) | public law (art. 4 polskiego prawa autorskiego) | **structure not yet verified** — heading-to-recommendation correspondence checked against the document body 2026-08-08 (all matched), awaiting the human reading its [NOTICE](knf-rek-d-2013/NOTICE.md) describes |
 
 ## Using one
 

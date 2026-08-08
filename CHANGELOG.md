@@ -49,10 +49,16 @@ Functions and nineteen Categories with each category's outcome statement **verba
 because the RMF publishes no short names; the KNF pack carries the four areas and
 twenty-two recommendations, each node named with the document's own section heading and
 carrying the recommendation's statement verbatim in Polish. **Both are labelled
-`structure not yet verified`** — transcribed from the published texts, not from memory,
-but the human reading against the cited editions that `references/README.md` requires
-has not happened yet, and the tests that keep the caveat in both the NOTICE and the
-library table cover them from day one.
+`structure not yet verified`**, and both were then cross-checked mechanically against
+their primary sources: the AI RMF pack against the PDF of NIST AI 100-1 (all four
+Functions and nineteen Categories matched), the KNF pack against the document body, which
+turned the one thing the pack had *inferred* — which heading belongs to which numbered
+recommendation — into something read off the source (all twenty-two matched). Neither
+`model.yaml` needed a correction, and neither label changed: this repository defines a
+verified pack as one **a human** has read the primary source for, and a machine
+confirming that two strings agree is not that. The NOTICEs now say both halves, so the
+reading that remains is short and its scope is written down. The tests that keep the
+caveat in both the NOTICE and the library table cover these packs from day one.
 
 ### Added — `ea-ai-governance`, and security architecture written into the existing skills
 

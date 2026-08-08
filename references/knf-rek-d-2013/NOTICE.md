@@ -20,15 +20,28 @@ recommendation's statement **verbatim, in Polish** as its description. The detai
 numbered guidance under each recommendation (1.1, 1.2, …) is not included. Nothing is
 paraphrased or translated — the document's own wording is the normative text.
 
-**Verification status: structure not yet verified.** The areas, statements and headings
-were transcribed from the text of the cited official PDF (list of recommendations,
-pp. 8–11; areas, p. 4; headings, table of contents), not written from memory — but no
-human has yet walked `model.yaml` against the cited edition and confirmed the wording
-and, in particular, the heading-to-recommendation correspondence, which this pack infers
-from the document's order. Until that reading happens and this section becomes a dated
-statement of it: do not cite these nodes as evidence of what the source requires, and do
-not let one of their gaps alone drive a decision. A gap list produced against this pack
-is still useful; its provenance is provisional.
+**Verification status: structure not yet verified.** Two things are true at once here,
+and collapsing them into one word is exactly what this section exists to prevent.
+
+*What has been done (2026-08-08).* The areas, statements and headings were transcribed
+from the text of the cited official PDF (list of recommendations, pp. 8–11; areas, p. 4;
+headings, table of contents), not written from memory. The one inference the pack
+originally rested on — which heading belongs to which numbered recommendation, taken from
+the table of contents' order — has since been **checked directly against the document
+body**: each `N. Rekomendacja N` section opener in chapters IV–VII was located and the
+heading preceding it compared against `model.yaml`. All twenty-two matched, so the
+correspondence is now read off the source rather than inferred; no correction was needed.
+
+*What has not been done.* That check was run by an agent, not read by a person. This
+repository defines a verified pack as one **a human** has read the primary source for and
+walked the taxonomy against, and the distinction is not ceremony: a mechanical comparison
+confirms that two strings agree, not that the taxonomy means what a reader will take it to
+mean — and this pack additionally carries Polish legal text, where that gap is wider, not
+narrower. Until a person does that reading and replaces this section with a dated
+statement of it, treat the pack as a draft yardstick: do not cite these nodes as evidence
+of what the source requires, and do not let one of their gaps alone drive a decision. A
+gap list produced against this pack is still useful, and the check above should make the
+remaining reading short.
 
 **What this pack is for.** It is a yardstick for `python -m easkills align`: a checklist
 of the IT-governance and ICT-security areas KNF's supervisory expectations name, so an

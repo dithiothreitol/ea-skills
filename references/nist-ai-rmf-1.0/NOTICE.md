@@ -17,15 +17,27 @@ statement verbatim. Subcategories and the Playbook's suggested actions are **not
 included, and nothing is paraphrased: the Framework's own text is the authority on what
 each Category requires.
 
-**Verification status: structure not yet verified.** The Functions and Categories were
-transcribed from the Framework's text as published by NIST (the AI RMF Core, via NIST's
-AI Resource Center rendering of NIST AI 100-1), not written from memory — but no human
-has yet walked `model.yaml` against the cited edition and confirmed identifiers, wording
-and parentage, which is the reading this repository requires before a pack stops being a
-draft yardstick. Until that reading happens and this section becomes a dated statement
-of it: do not cite these nodes as evidence of what the source requires, and do not let
-one of their gaps alone drive a decision. A gap list produced against this pack is still
-useful; its provenance is provisional.
+**Verification status: structure not yet verified.** Two things are true at once here,
+and collapsing them into one word is exactly what this section exists to prevent.
+
+*What has been done (2026-08-08).* The pack was first transcribed from NIST's AI Resource
+Center rendering of the Core — a secondary rendering, which this repository's rule
+excludes. It has since been **cross-checked mechanically against the cited primary
+publication**: the PDF of NIST AI 100-1 (January 2023) was fetched, its Core tables
+extracted, and all four Functions and nineteen Categories compared against `model.yaml` —
+identifiers, parentage, and each Category statement as far as the tables expose it (the
+left-hand cells wrap, so four statements are confirmed in full and fifteen on their
+leading text). Everything matched; no correction was needed.
+
+*What has not been done.* That check was run by an agent, not read by a person. This
+repository defines a verified pack as one **a human** has read the primary source for and
+walked the taxonomy against, and the distinction is not ceremony: a mechanical comparison
+confirms that two strings agree, not that the taxonomy means what a reader will take it to
+mean. Until a person does that reading and replaces this section with a dated statement of
+it, treat the pack as a draft yardstick: do not cite these nodes as evidence of what the
+source requires, and do not let one of their gaps alone drive a decision. A gap list
+produced against this pack is still useful, and the cross-check above should make the
+remaining reading short.
 
 **What this pack is for.** It is a yardstick for `python -m easkills align`: a checklist
 of AI-risk-management areas an architecture is measured against, so an unexamined area
