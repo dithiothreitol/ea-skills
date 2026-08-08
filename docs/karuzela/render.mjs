@@ -21,7 +21,7 @@ const SRC = pathToFileURL(join(here, 'slides.html')).href;
 const OUT = join(here, 'out');
 mkdirSync(OUT, { recursive: true });
 
-const IDS = ['s01', 's02', 's03', 's04', 's05', 's06', 's07', 's08', 's09', 's10'];
+const IDS = ['s01', 's02', 's03', 's04', 's05', 's06', 's07', 's08', 's09', 's10', 's11'];
 
 const browser = await chromium.launch();
 const page = await browser.newPage({

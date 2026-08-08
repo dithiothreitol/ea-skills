@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="./fonts/fonts.css" />
 <style>
 /* ─────────────────────────────────────────────────────────────────────────────
-   ea-skills — karuzela LinkedIn, 10 × 1080×1350.
+   ea-skills — karuzela LinkedIn, 11 × 1080×1350.
    Wygląd: system "Engineering Blueprint" z archxs-website (globals.css).
    Mechanizm: slides.html + render.mjs, jak w tic-bot-toe/docs/szkolenie/tools.
    Kolory i tokeny przepisane, nie wymyślone — patrz BRAND.md.
@@ -161,7 +161,7 @@ h1 .em { color: var(--redline); }
 .foot b { color: var(--ink); font-weight: 500; }
 
 /* ── Karty ────────────────────────────────────────────────────────────────── */
-.cols { display: flex; gap: 28px; margin-top: 52px; }
+.cols { display: flex; gap: 28px; margin-top: 48px; }
 .card {
   flex: 1;
   background: var(--paper-raised);
@@ -239,7 +239,7 @@ h1 .em { color: var(--redline); }
 /* ── Rysunek (SVG z eval/example) ─────────────────────────────────────────── */
 .figure { margin-top: 40px; background: #ffffff; border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
 .figure img { display: block; width: 100%; height: auto; }
-.figure.compact img { max-height: 460px; width: auto; margin: 0 auto; }
+.figure.compact img { max-height: 430px; width: auto; margin: 0 auto; }
 .caption {
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
   font-size: 22px; color: var(--ink-soft); margin-top: 18px; line-height: 1.4;
@@ -268,12 +268,12 @@ h1 .em { color: var(--redline); }
 <section class="slide night" id="s01">
   <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
   <div class="content">
-    <div class="sheet">Po co to powstało</div>
+    <div class="sheet">Punkt wyjścia</div>
     <div class="spacer"></div>
     <h1 class="lg">Model architektury<br>żyje <span class="em">jeden kwartał</span></h1>
-    <p class="lead">Potem nikt już do niego nie zagląda. Nie dlatego, że był zły, tylko dlatego, że nic nie pilnowało, żeby nadążał.</p>
+    <p class="lead">Potem nikt już do niego nie zagląda. Powodem nie jest zła notacja, lecz brak mechanizmu, który wymusza aktualność.</p>
     <div class="spacer"></div>
-    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>01 / 10</span></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>01 / 11</span></div>
   </div>
 </section>
 
@@ -283,21 +283,11 @@ h1 .em { color: var(--redline); }
   <div class="content">
     <div class="sheet">Co to jest</div>
     <h1 class="xl">ea-skills</h1>
-    <p class="lead">Notatki z wywiadów, dokumentacja i arkusze na wejściu. Model ArchiMate 3.2 w gicie, widoki i opis architektury na wyjściu.</p>
-    <div class="cols">
-      <div class="card">
-        <div class="tag">Wejście</div>
-        <div class="ct">To, co już masz</div>
-        <div class="cd">Wywiady, dokumentacja, arkusze, rejestry. Bez wcześniejszego porządkowania.</div>
-      </div>
-      <div class="card accent">
-        <div class="tag">Wyjście</div>
-        <div class="ct">Model, który się broni</div>
-        <div class="cd">ArchiMate 3.2, widoki, opis w kształcie ISO 42010, rekordy zarządcze.</div>
-      </div>
-    </div>
+    <p class="lead">Wejście nieustrukturyzowane: wywiady, dokumentacja, arkusze. Wyjście: model ArchiMate 3.2 w gicie, widoki i opis architektury.</p>
+    <div class="figure compact"><img src="../../eval/example/docs/views/layered-overview.svg" alt="" /></div>
+    <div class="caption">widok wygenerowany komendą <b>easkills render</b> z modelu przykładowego, bez rysowania ręką</div>
     <div class="spacer"></div>
-    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>02 / 10</span></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>02 / 11</span></div>
   </div>
 </section>
 
@@ -307,7 +297,7 @@ h1 .em { color: var(--redline); }
   <div class="content">
     <div class="sheet">Podział ról</div>
     <h1 class="md">Agent proponuje,<br><span class="em">bramka rozstrzyga</span></h1>
-    <p class="lead">O tym, czy relacja jest w ArchiMate dopuszczalna, nie decyduje model językowy. Decyduje macierz 11 569 par ze źródeł Archi, przypięta hashem.</p>
+    <p class="lead">O dopuszczalności relacji nie decyduje model językowy, lecz macierz 11 569 par ze źródeł Archi, przypięta hashem.</p>
     <div class="cols">
       <div class="card">
         <div class="tag">Umiejętność agenta</div>
@@ -317,11 +307,11 @@ h1 .em { color: var(--redline); }
       <div class="card accent">
         <div class="tag">Rdzeń deterministyczny</div>
         <div class="ct">Rozstrzyga</div>
-        <div class="cd">141 reguł, macierz ArchiMate, kod wyjścia. Ten sam wynik przy każdym uruchomieniu.</div>
+        <div class="cd">146 reguł, macierz ArchiMate, kod wyjścia. Identyczny wynik przy każdym uruchomieniu.</div>
       </div>
     </div>
     <div class="spacer"></div>
-    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>03 / 10</span></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>03 / 11</span></div>
   </div>
 </section>
 
@@ -329,9 +319,9 @@ h1 .em { color: var(--redline); }
 <section class="slide night" id="s04">
   <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
   <div class="content">
-    <div class="sheet">Skąd to wiesz</div>
+    <div class="sheet">Proweniencja</div>
     <h1 class="md">Każdy element wskazuje<br><span class="em">plik i linię</span></h1>
-    <p class="lead">Cytat, którego w źródle nie ma, kończy się błędem walidacji. Założyłem, że model kiedyś coś zmyśli, i wolałem łapać to automatem.</p>
+    <p class="lead">Cytat nieobecny w źródle kończy się błędem walidacji. Fabrykowanie odniesień jest udokumentowaną słabością modeli językowych, więc wykrywa je automat.</p>
     <div class="mono-block"><span class="steel">- id:</span> app-erp-core
   <span class="steel">type:</span> ApplicationComponent
   <span class="steel">provenance:</span>
@@ -343,7 +333,7 @@ h1 .em { color: var(--redline); }
 <span class="dim">        citation that cannot be located</span>
 <span class="dim">        is a fabricated citation</span></div>
     <div class="spacer"></div>
-    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>04 / 10</span></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>04 / 11</span></div>
   </div>
 </section>
 
@@ -351,7 +341,7 @@ h1 .em { color: var(--redline); }
 <section class="slide night" id="s05">
   <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
   <div class="content">
-    <div class="sheet">Jak się z tego korzysta</div>
+    <div class="sheet">Kolejność stadiów</div>
     <h1 class="md">Kolejność, której<br>nie da się <span class="em">skrócić</span></h1>
     <p class="lead">Modelowanie bez rejestru faktów daje pojęcia bez pokrycia. Widoki przed rozmową ze stakeholderami dają diagramy, o które nikt nie prosił.</p>
     <div class="steps">
@@ -363,7 +353,7 @@ h1 .em { color: var(--redline); }
       <div class="step"><span class="n">06</span><span>Widoki i dokumentacja<span class="sub">na końcu, nie na początku</span></span></div>
     </div>
     <div class="spacer"></div>
-    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>05 / 10</span></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>05 / 11</span></div>
   </div>
 </section>
 
@@ -372,8 +362,8 @@ h1 .em { color: var(--redline); }
   <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
   <div class="content">
     <div class="sheet">Bramka</div>
-    <h1 class="lg"><span class="em">141 reguł</span><br>i kod wyjścia</h1>
-    <p class="lead">Walidacja nie negocjuje. Każde znalezisko wskazuje konkretny element, a przy tej samej dacie raport wychodzi bajt w bajt taki sam.</p>
+    <h1 class="lg"><span class="em">146 reguł</span><br>i kod wyjścia</h1>
+    <p class="lead">Walidacja nie negocjuje. Każde znalezisko wskazuje konkretny element, a przy tej samej dacie odniesienia raport jest bajt w bajt identyczny.</p>
     <div class="mono-block"><span class="dim">$</span> python -m easkills validate --strict
 
 <span class="red">REL001</span>  Realization: BusinessActor → ApplicationService
@@ -383,7 +373,7 @@ h1 .em { color: var(--redline); }
 
 <span class="dim">2 błędy · kod wyjścia 1</span></div>
     <div class="spacer"></div>
-    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>06 / 10</span></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>06 / 11</span></div>
   </div>
 </section>
 
@@ -410,7 +400,7 @@ h1 .em { color: var(--redline); }
       </div>
     </div>
     <div class="spacer"></div>
-    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>07 / 10</span></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>07 / 11</span></div>
   </div>
 </section>
 
@@ -433,46 +423,75 @@ h1 .em { color: var(--redline); }
         <div class="cd">Ułożona wg tego, o co odbiorcy faktycznie pytają.</div>
       </div>
       <div class="card accent">
-        <div class="tag">Dług</div>
-        <div class="ct">Wycena Twoimi stawkami</div>
-        <div class="cd">Narzędzie liczy ekspozycję. Ceny są organizacji, nie narzędzia.</div>
+        <div class="tag">Dług i portfel</div>
+        <div class="ct">Wycena stawkami organizacji</div>
+        <div class="cd">Ekspozycję liczy narzędzie, ceny pochodzą z organizacji.</div>
       </div>
     </div>
     <div class="spacer"></div>
-    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>08 / 10</span></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>08 / 11</span></div>
   </div>
 </section>
 
-<!-- 09 · ZASTOSOWANIA -->
+<!-- 09 · REJESTRY REGULACYJNE -->
 <section class="slide night" id="s09">
   <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
   <div class="content">
-    <div class="sheet">Gdzie to robi różnicę</div>
-    <h1 class="sm">DORA, NIST,<br>portfel <span class="em">aplikacji</span></h1>
-    <p class="lead">Rejestr Informacji generowany z modelu. Luki wobec NIST CSF 2.0 wypisane co do węzła. Nakładające się aplikacje z dyspozycją TIME.</p>
-    <div class="figure compact"><img src="../../eval/example/docs/views/layered-overview.svg" alt="" /></div>
-    <div class="caption">widok wygenerowany komendą <b>easkills render</b> z modelu przykładowego, bez rysowania ręką</div>
+    <div class="sheet">Sprawozdawczość regulacyjna</div>
+    <h1 class="sm">Dwa rejestry<br>z <span class="em">jednego modelu</span></h1>
+    <p class="lead">Zakres jest właściwością elementu, nie domysłem narzędzia. System bywa w obu zakresach naraz.</p>
+    <div class="cols">
+      <div class="card">
+        <div class="tag">DORA</div>
+        <div class="ct">Rejestr Informacji</div>
+        <div class="cd">Ryzyko dostawców ICT, krytyczność, umowy. Struktura wg standardów ESA.</div>
+      </div>
+      <div class="card accent">
+        <div class="tag">AI Act</div>
+        <div class="ct">Inwentarz systemów</div>
+        <div class="cd">Klasa ryzyka, rola operatora, nadzór z art. 14. Praktyka zakazana to błąd, nie wiersz.</div>
+      </div>
+    </div>
+    <p class="lead" style="margin-top:28px">Oba dokumenty generują, a nie zaświadczają. Każdy kończy listą pól, których model nie wypełnił.</p>
     <div class="spacer"></div>
-    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>09 / 10</span></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>09 / 11</span></div>
   </div>
 </section>
 
-<!-- 10 · CTA -->
+<!-- 10 · RAMY KONTROLNE -->
 <section class="slide night" id="s10">
   <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
   <div class="content">
-    <div class="sheet">Do sprawdzenia</div>
+    <div class="sheet">Ramy kontrolne</div>
+    <h1 class="md">Nieprzeanalizowany obszar<br>ma <span class="em">nazwę</span></h1>
+    <p class="lead">Ramy wchodzą jako przypięta hashem taksonomia. Każdy węzeł bez pokrycia jest nazwaną luką, a wyłączenie wymaga podpisanego uzasadnienia.</p>
+    <div class="steps">
+      <div class="step"><span class="n">01</span><span>NIST CSF 2.0<span class="sub">zweryfikowany wobec CSWP 29</span></span></div>
+      <div class="step"><span class="n">02</span><span>NIST AI RMF 1.0<span class="sub">4 funkcje, 19 kategorii</span></span></div>
+      <div class="step"><span class="n">03</span><span>KNF Rekomendacja D<span class="sub">4 obszary, 22 rekomendacje, treść po polsku</span></span></div>
+    </div>
+    <p class="lead">Pakiet nieprzeczytany przez człowieka wobec źródła nosi etykietę <span class="em">structure not yet verified</span>. Draft nazwany draftem nie stanie się autorytetem przez przeoczenie.</p>
+    <div class="spacer"></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>10 / 11</span></div>
+  </div>
+</section>
+
+<!-- 11 · REPOZYTORIUM -->
+<section class="slide night" id="s11">
+  <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
+  <div class="content">
+    <div class="sheet">Repozytorium</div>
     <h1 class="lg">Kod jest <span class="em">publiczny</span></h1>
     <div class="url">github.com/dithiothreitol/ea-skills</div>
-    <p class="lead">Uruchamiasz na swoim repozytorium, nie na moim demo. Przykładowy model z pełnym opisem architektury leży w środku.</p>
+    <p class="lead">Licencja MIT. Model przykładowy z kompletnym opisem architektury jest częścią repozytorium, więc wynik widać bez uruchamiania czegokolwiek.</p>
     <div class="stats">
-      <div class="stat"><div class="n">141</div><div class="l">reguł walidacji</div></div>
-      <div class="stat"><div class="n">31</div><div class="l">komend CLI</div></div>
-      <div class="stat"><div class="n">684</div><div class="l">testy</div></div>
-      <div class="stat"><div class="n">MIT</div><div class="l">licencja</div></div>
+      <div class="stat"><div class="n">146</div><div class="l">reguł walidacji</div></div>
+      <div class="stat"><div class="n">32</div><div class="l">komendy CLI</div></div>
+      <div class="stat"><div class="n">25</div><div class="l">umiejętności</div></div>
+      <div class="stat"><div class="n">716</div><div class="l">testów</div></div>
     </div>
     <div class="spacer"></div>
-    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>10 / 10</span></div>
+    <div class="foot"><span><b>ea-skills</b> · architektura korporacyjna w gicie</span><span>11 / 11</span></div>
   </div>
 </section>
 

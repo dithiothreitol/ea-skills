@@ -1,7 +1,7 @@
 # Karuzela LinkedIn (materiał po polsku)
 
-Dziesięć slajdów 1080 × 1350 opisujących, czym jest ea-skills, jak się z niego korzysta
-i gdzie robi różnicę. **To materiał marketingowy w języku polskim**, celowo trzymany
+Jedenaście slajdów 1080 × 1350 opisujących, czym jest ea-skills, jak wygląda jego użycie
+i gdzie ma zastosowanie. **To materiał marketingowy w języku polskim**, celowo trzymany
 w repozytorium: karuzela, której każda liczba wskazuje test albo komendę, jest kolejnym
 dowodem tezy tego projektu, a nie jego zanieczyszczeniem.
 
@@ -13,7 +13,7 @@ i żaden test tego nie uruchamia.
 ```bash
 cd docs/karuzela
 npm install        # raz: playwright 1.61.1
-node render.mjs    # 10 x PNG @2x + karuzela.pdf w out/
+node render.mjs    # 11 x PNG @2x + karuzela.pdf w out/
 node check.mjs     # kontrola, czy treść mieści się w slajdzie
 ```
 
@@ -22,7 +22,7 @@ sekund, a repozytorium nie nosi 25 MB PNG-ów, które i tak przy każdej poprawc
 wygenerować od nowa.
 
 **LinkedIn przyjmuje oba warianty:** `karuzela.pdf` jako post dokumentowy (przewijany
-w miejscu, wyższy czas zatrzymania) albo dziesięć PNG jako post wieloobrazkowy.
+w miejscu, wyższy czas zatrzymania) albo jedenaście PNG jako post wieloobrazkowy.
 Domyślnie PDF.
 
 ## Dlaczego akurat tak
@@ -46,13 +46,13 @@ krój zastępczy i slajdy wychodzą inne niż drugi raz.
 
 | Plik | Rola |
 |---|---|
-| [`slides.html`](slides.html) | wszystkie dziesięć slajdów, style w jednym miejscu |
+| [`slides.html`](slides.html) | wszystkie jedenaście slajdów, style w jednym miejscu |
 | [`render.mjs`](render.mjs) | Playwright: PNG-i i PDF |
 | [`check.mjs`](check.mjs) | kontrola mieszczenia się treści w kadrze |
 | [`BRAND.md`](BRAND.md) | tokeny wizualne przepisane z systemu ArchXS |
 | [`FAKTY.md`](FAKTY.md) | każda liczba i każdy kod reguły ze slajdów, z miejscem potwierdzenia |
 | `fonts/` | Fraunces, Inter, IBM Plex Mono (woff2, OFL 1.1) |
 
-Slajd 09 osadza `eval/example/docs/views/layered-overview.svg`, czyli realne wyjście
+Slajd 02 osadza `eval/example/docs/views/layered-overview.svg`, czyli realne wyjście
 komendy `render`, a nie makietę. Jeśli model przykładowy się zmieni, slajd zmieni się
 razem z nim przy następnym renderze.
