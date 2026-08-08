@@ -209,10 +209,20 @@ def test_the_scope_property_is_a_closed_enum():
     row does not announce itself. `regulatoryScope: DORA` as free text would drop the
     element out of the register and nothing downstream would ever say so."""
     properties = genschema.build_schema()["$defs"]["element"]["properties"]["properties"]["properties"]
-    assert properties["regulatoryScope"]["enum"] == list(genschema.REGULATORY_SCOPES)
+    assert properties["regulatoryScope"]["enum"] == list(genschema.regulatory_scope_values())
     assert properties["doraCriticality"]["enum"] == list(genschema.CRITICALITIES)
     assert dora.SCOPE_DORA in genschema.REGULATORY_SCOPES
     assert set(dora.CRITICALITY_ORDER) == set(genschema.CRITICALITIES)
+
+
+def test_multi_scope_declares_membership_in_this_register_too():
+    """`regulatoryScope: ai-act dora` is a DORA element and an AI Act element at once.
+    An equality test on the property would drop it from both registers silently -- the
+    exact under-inclusion the closed vocabulary exists to prevent -- so membership is
+    read through one shared splitter, and the combined value is itself in the enum."""
+    assert "ai-act dora" in genschema.regulatory_scope_values()
+    assert genschema.split_regulatory_scopes("ai-act dora") == {"ai-act", "dora"}
+    assert dora.SCOPE_DORA in genschema.split_regulatory_scopes("ai-act dora")
 
 
 def test_the_module_reads_the_same_vocabulary_the_schema_writes():

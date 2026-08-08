@@ -89,6 +89,12 @@ jobs:
       - name: DORA register of the regulated fixture (strict)
         run: python -m easkills dora-register --root eval/fixtures/finco --as-of 2026-07-30 --strict
 
+      # Same bar for the second register: strict passes while carrying the AIR003 the
+      # fixture holds on purpose -- an open waiver on a transparency-risk system is
+      # accepted AI risk to disclose, not a defect to fix.
+      - name: AI Act inventory of the AI fixture (strict)
+        run: python -m easkills ai-act-register --root eval/fixtures/aico --as-of 2026-07-30 --strict
+
       # No `propose` step here on purpose. It exits 0 whether or not it proposes
       # anything -- a generator that failed on "there is work to do" would be unusable --
       # so a CI step running it could not fail, and a gate that cannot fail is worse than
@@ -171,6 +177,10 @@ jobs:
         run: |
           if python -m easkills dora-register --root eval/fixtures/finco-broken --as-of 2026-07-30; then
             echo "::error::the broken DORA fixture registered cleanly -- the REG rules are not catching violations"
+            exit 1
+          fi
+          if python -m easkills ai-act-register --root eval/fixtures/aico-broken --as-of 2026-07-30; then
+            echo "::error::the broken AI Act fixture inventoried cleanly -- the AIR rules are not catching violations"
             exit 1
           fi
 

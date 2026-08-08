@@ -163,7 +163,10 @@ def build(root: Path, today: date | None = None) -> Register:
 
     entries: list[Entry] = []
     for element in sorted(model.elements.values(), key=lambda e: e.id):
-        if element.properties.get(SCOPE_PROPERTY) != SCOPE_DORA:
+        # Membership, not equality: `regulatoryScope: ai-act dora` is in this register's
+        # scope too, and an equality test would drop the multi-scope element silently --
+        # the exact under-inclusion the closed vocabulary exists to prevent.
+        if SCOPE_DORA not in genschema.split_regulatory_scopes(element.properties.get(SCOPE_PROPERTY)):
             continue
         entries.append(
             Entry(

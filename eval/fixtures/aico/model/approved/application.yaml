@@ -1,0 +1,69 @@
+# The AI estate. `regulatoryScope: ai-act` is what puts a system in the inventory --
+# declared on the element, never inferred from a type or a name containing "AI".
+#
+# `aiRiskClass`, `aiRole` and `aiOversight` are the fields the Act's questions want.
+# Anything missing is named in the inventory's own gap section, and AIR001/AIR002 say
+# so at the gate. The credit-scoring service is additionally in DORA scope
+# (`ai-act dora`): a bought high-risk system is ICT third-party risk and an AI Act
+# system at once, and the tests assert both registers see it.
+
+elements:
+  - id: app-credit-scoring
+    type: ApplicationComponent
+    name: Credit Scoring Service
+    documentation: Creditworthiness scoring for loan decisions, bought as a managed service.
+    owner: lending-eng@borealis.example
+    lastReviewed: 2026-07-01
+    properties:
+      lifecycle: active
+      regulatoryScope: ai-act dora
+      aiRiskClass: high
+      aiRole: deployer
+      aiOversight: Credit risk committee reviews every declined application (proc-ai-oversight-01)
+      doraCriticality: critical
+      provider: Scorewell GmbH
+      contractRef: ctr-2025-scorewell
+    assumed: true
+    rationale: Fixture content authored for the AIR rules, not extracted from a source.
+
+  - id: app-support-chatbot
+    type: ApplicationComponent
+    name: Customer Support Chatbot
+    documentation: Conversational assistant on the support channel; discloses it is a machine.
+    owner: service-eng@borealis.example
+    lastReviewed: 2026-07-01
+    properties:
+      lifecycle: active
+      regulatoryScope: ai-act
+      aiRiskClass: limited
+      aiRole: deployer
+      provider: Dialogue Labs OY
+      contractRef: ctr-2024-dialogue
+    standards: [std-ai-transparency]
+    assumed: true
+    rationale: Fixture content authored for the AIR rules, not extracted from a source.
+
+  - id: app-mail-triage
+    type: ApplicationComponent
+    name: Mail Triage Classifier
+    documentation: Routes inbound customer mail to the right queue. Built in house.
+    owner: service-eng@borealis.example
+    lastReviewed: 2026-07-01
+    properties:
+      lifecycle: active
+      regulatoryScope: ai-act
+      aiRiskClass: minimal
+      aiRole: provider
+    assumed: true
+    rationale: >
+      Fixture content authored for the AIR rules. Deliberately carries no relationship
+      to a business function, so the clean inventory has a real row in its gap section.
+
+  - id: app-loan-origination
+    type: ApplicationComponent
+    name: Loan Origination Portal
+    documentation: The loan application workflow. Not an AI system; out of scope on purpose.
+    owner: lending-eng@borealis.example
+    lastReviewed: 2026-07-01
+    assumed: true
+    rationale: Fixture content authored for the AIR rules, not extracted from a source.

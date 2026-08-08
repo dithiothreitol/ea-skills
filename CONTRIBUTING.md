@@ -66,6 +66,7 @@ python -m easkills coverage       --root eval/example --min-coverage 100
 python -m easkills readiness      --root eval/example --strict
 python -m easkills align          --root eval/example --strict
 python -m easkills dora-register  --root eval/fixtures/finco --as-of 2026-07-30 --strict
+python -m easkills ai-act-register --root eval/fixtures/aico --as-of 2026-07-30 --strict
 python -m easkills compile        --root eval/example
 python -m easkills docs           --root eval/example && git diff --exit-code eval/example/docs
 python -m easkills conformance    --root eval/example --strict --as-of 2026-07-30
@@ -84,6 +85,7 @@ python -m easkills validate-facts --root eval/fixtures/broken   # must FAIL (exi
 python -m easkills validate-gov   --root eval/fixtures/broken   # must FAIL (exit 1)
 python -m easkills align          --root eval/fixtures/broken   # must FAIL (exit 1)
 python -m easkills dora-register  --root eval/fixtures/finco-broken --as-of 2026-07-30   # must FAIL (exit 1)
+python -m easkills ai-act-register --root eval/fixtures/aico-broken --as-of 2026-07-30   # must FAIL (exit 1)
 ```
 
 ## The conventions that are actually load-bearing

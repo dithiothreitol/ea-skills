@@ -46,7 +46,8 @@ capability standard that three business units already argue in terms of is worth
 them. Order of preference:
 
 1. A reference the organisation already uses in planning (even a spreadsheet).
-2. An openly licensed one that fits the domain (NIST CSF 2.0 for security governance).
+2. An openly licensed one that fits the domain (NIST CSF 2.0 for security governance,
+   NIST AI RMF 1.0 for AI risk, KNF Rekomendacja D for IT governance in Polish banks).
 3. A licensed industry model the organisation holds, exported from its own copy.
 4. Nothing. Say the model has no reference yardstick, and that `coverage` is the only one
    available. This is a legitimate answer, and it is the right one more often than an

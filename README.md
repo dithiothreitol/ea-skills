@@ -10,7 +10,7 @@ and living governance out. All of it in git.
 [![CI](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Validation rules](https://img.shields.io/badge/validation%20rules-141-brightgreen.svg)](docs/RULES.md)
+[![Validation rules](https://img.shields.io/badge/validation%20rules-146-brightgreen.svg)](docs/RULES.md)
 [![ArchiMate 3.2](https://img.shields.io/badge/ArchiMate-3.2-orange.svg)](oracle/NOTICE.md)
 [![ISO/IEC/IEEE 42010](https://img.shields.io/badge/ISO%2FIEC%2FIEEE-42010%3A2022-lightgrey.svg)](docs/RULES.md)
 
@@ -132,7 +132,7 @@ flowchart LR
 ```
 
 Every arrow is a deterministic command with an exit-code contract, and every stage is
-driven by one of the **24 [agent skills](skills/)** — from `ea-intake` through
+driven by one of the **25 [agent skills](skills/)** — from `ea-intake` through
 `ea-approve` to `ea-board`. The orchestrator (`ea-run`) routes requests catalog-first
 and keeps the stage order honest.
 
@@ -146,7 +146,7 @@ and keeps the stage order honest.
 | Maintain | `ea-health`, `ea-change-triage`, `ea-board`, `ea-context` | `kpi`, `debt`, `staleness`, `conformance`, `correspondences`, `roadmap`, `delta`, `context`, `impact` |
 | Assess | `ea-model`, `ea-capability-map`, `ea-align` | `readiness` — the per-layer definition of done, every checkpoint naming its elements; `align --strict` — the model against a hash-pinned reference architecture, every unmapped node a named gap and every exclusion a recorded decision |
 | Propose | `ea-align`, `ea-adr` | `propose --from align\|readiness\|overlap\|time` — findings become staging skeletons with derived ids; the prose, the owner and the review date stay human, and the gate enforces it. Refuses rather than emitting anything the gate would reject |
-| Comply | `ea-regulatory` | `dora-register` — the Register of Information from the approved model, with the fields it could not fill named; control gaps ride `align` as `ALN004` |
+| Comply | `ea-regulatory`, `ea-ai-governance` | `dora-register` and `ai-act-register` — the Register of Information and the AI system inventory from the approved model, each naming the fields it could not fill; control gaps ride `align` as `ALN004` |
 | Consume | `ea-check` | `check --scope` inside a product repo — standards lifecycle vs declared dependencies |
 | Evaluate | `ea-eval` | `score --min-f1` against the [golden set](eval/golden/); the score names every unmatched item, and relationships the model only *implies* count as half a match via ArchiMate's derivation rules |
 
@@ -367,7 +367,7 @@ oracle/          vendored, hash-pinned rule data + NOTICE.md
 references/      the open reference-model library adopters copy from (public domain /
                  public law only -- licensed models live in the adopter's repository)
 schema/          JSON Schemas -- all generated, never hand-edited
-skills/          the 24 agent skills (this is the product)
+skills/          the 25 agent skills (this is the product)
 template/        scaffold to copy for a new enterprise
 eval/example/    worked example, clean (doubles as the largest golden case)
 eval/golden/     golden-set cases for the regression harness
@@ -384,7 +384,7 @@ docs/            GETTING-STARTED, CLI reference, RULES catalogue, BLUEPRINT (des
 |---|---|
 | [Getting started](docs/GETTING-STARTED.md) | Tutorial: from a raw interview to a validated, documented architecture |
 | [CLI reference](docs/CLI.md) | Every command, flag and exit-code contract |
-| [Rule catalogue](docs/RULES.md) | All 141 validation rules with severities and rationale |
+| [Rule catalogue](docs/RULES.md) | All 146 validation rules with severities and rationale |
 | [Blueprint](docs/BLUEPRINT.md) | The research-verified design: decisions, evidence, per-phase log |
 | [Golden set](eval/golden/README.md) | How pipeline quality is measured |
 | [Skill coverage](docs/SKILL-COVERAGE.md) | Which instrument measures which skill — including where nothing does |

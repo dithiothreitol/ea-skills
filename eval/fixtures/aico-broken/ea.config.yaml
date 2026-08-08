@@ -1,0 +1,9 @@
+name: Borealis Credit (negative AIR fixture)
+documentation: >
+  Every element here is in AI Act scope and wrong about it on purpose. The test suite
+  asserts that each AIR code actually fires; CI asserts that `ai-act-register` exits 1
+  here, because an inventory generator that never refuses is a rubber stamp.
+stalenessDays: 365
+quoteMatchThreshold: 0.90
+factsRoot: .
+sourcesDir: facts/sources

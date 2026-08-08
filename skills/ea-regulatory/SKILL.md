@@ -1,6 +1,6 @@
 ---
 name: ea-regulatory
-description: Map regulatory controls onto the architecture and maintain the DORA Register of Information. Use for control-framework gap analysis (NIST CSF and similar), ICT third-party risk, DORA register upkeep, regulatory scope questions, or when asked which systems a regulation touches and what evidence exists.
+description: Map regulatory controls onto the architecture and maintain the DORA Register of Information. Use for control-framework gap analysis (NIST CSF, KNF Rekomendacja D and similar), ICT third-party risk, DORA register upkeep, regulatory scope questions, security-architecture coverage, or when asked which systems a regulation touches and what evidence exists. For the EU AI Act and AI risk, see ea-ai-governance.
 ---
 
 # Regulatory controls and the DORA register
@@ -10,6 +10,10 @@ python -m easkills align --root <repo> --reference nist-csf-2.0   # control gaps
 python -m easkills dora-register --root <repo> --as-of <date>     # the register + its own gaps
 python -m easkills dora-register --root <repo> --as-of <date> --out docs/dora-register.md
 ```
+
+The EU AI Act has its own register (`ai-act-register`) and its own skill —
+[`ea-ai-governance`](../ea-ai-governance/SKILL.md). One element can be in both scopes at
+once (`regulatoryScope: ai-act dora`); neither register drops it.
 
 ## Non-negotiables
 
@@ -36,12 +40,39 @@ stating: **a control gap is `ALN004`** — an unmapped control node, named. Out-
 needs its mandatory rationale, exactly as it does for capabilities, and "this control
 does not apply to us" is a sentence somebody has to sign.
 
-NIST CSF 2.0 ships in [`references/`](../../references/) (public domain). Licensed
-frameworks stay in the adopter's repository under the adopter's licence — see
-`template/reference/README.md`. Check the pack's `NOTICE.md` before you rely on it:
+NIST CSF 2.0 ships in [`references/`](../../references/) (public domain), and so does
+**KNF Rekomendacja D (2013)** — the Polish supervisor's expectations for IT governance
+and ICT security in banks, shipped as public law with each recommendation's statement
+verbatim. Licensed frameworks stay in the adopter's repository under the adopter's
+licence — see `template/reference/README.md`. Check the pack's `NOTICE.md` before you
+rely on it:
 verification state is stated there and in the library table, a pack labelled *structure not
 yet verified* is a working draft rather than an authority, and a verified one is verified
 against one dated edition — which a later edition of the framework silently invalidates.
+
+## Security architecture, in the existing layers
+
+There is no security layer in this model and none is missing: ArchiMate deliberately has
+none, and everything a security architecture consists of already has a governed home
+here. Use the homes; do not invent a parallel structure.
+
+* **Posture is measured by control packs.** NIST CSF 2.0 (verified) and KNF
+  Rekomendacja D for banks are the shipped yardsticks; an unexamined area is a named
+  `ALN004` gap, and an exclusion is a signed rationale. Two packs partition the world
+  differently on purpose — report each separately, never reconciled.
+* **Security principles and requirements are motivation-layer elements** (`Principle`,
+  `Requirement`, `Constraint`) bound to the elements they govern via `appliesTo` —
+  checked by `MOT001`/`MOT002`, not left as a policy PDF nobody can trace.
+* **Concrete security standards are SIB entries** — web-application security among them
+  (see `ea-standards-base` for the pattern, including OWASP ASVS-derived standards and
+  HA/failover tiers). Elements claim them with `standards:`, `ea-check` holds product
+  repositories to the detectable ones, and retiring one turns every laggard into a
+  named `STD002` failure.
+* **Accepted security risk is a dispensation** with a mandatory expiry and a named
+  grantor — never a deleted finding. It then surfaces by itself in the DORA register
+  (`REG003`) and the AI inventory (`AIR003`).
+* **The tooling's own security posture** is a different subject and lives in
+  `SECURITY.md` at the repository root.
 
 ## Scope: what puts an element in the register
 

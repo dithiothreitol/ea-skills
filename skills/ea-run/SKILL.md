@@ -41,6 +41,7 @@ Everything else routes by situation:
 | Standards, waivers, decisions, assessments | `ea-standards-base` / `ea-dispensation` / `ea-adr` / `ea-compliance` |
 | "Is this done / complete?" · gap analysis against a reference model or industry blueprint | `ea-align` (there is no answer without a yardstick) |
 | Regulation, control frameworks, ICT third-party risk, "the DORA register" | `ea-regulatory` — control gaps are `align` against a `kind: control` pack; the register is `dora-register`, and it generates rather than attests |
+| AI systems, "the AI Act", risk classification, the AI inventory, AI risk acceptance | `ea-ai-governance` — same mechanism one register over: gaps are `align` against `nist-ai-rmf-1.0`, the inventory is `ai-act-register`, and accepted AI risk is a dispensation with an expiry |
 | "Make a backlog out of these findings" · gaps into requirements or work packages | `propose --from align\|readiness\|overlap\|time` writes the skeletons; the words, owner and review date are the human half (`ea-align`, `ea-adr`) |
 | Downstream repo needs its constraints | `ea-context` |
 | Periodic health / board preparation | `ea-health` / `ea-board` |

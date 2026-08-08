@@ -1,0 +1,22 @@
+# The business functions the AI estate serves. The Act's obligations land on systems,
+# but the reason anyone cares which systems exist is what depends on them -- so the
+# functions have to exist in the model before the inventory can answer.
+
+elements:
+  - id: process-loan-decision
+    type: BusinessProcess
+    name: Loan Decision
+    documentation: Assesses a loan application and produces an approve/decline decision.
+    owner: lending-ops@borealis.example
+    lastReviewed: 2026-07-01
+    assumed: true
+    rationale: Fixture content authored for the AIR rules, not extracted from a source.
+
+  - id: cap-customer-service
+    type: Capability
+    name: Customer Service
+    documentation: Borealis's ability to answer, route and resolve customer contact.
+    owner: architecture@borealis.example
+    lastReviewed: 2026-07-01
+    assumed: true
+    rationale: Fixture content authored for the AIR rules, not extracted from a source.

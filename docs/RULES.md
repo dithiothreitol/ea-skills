@@ -434,6 +434,26 @@ Control-framework gaps are **not** a REG code: a control framework is a taxonomy
 unmapped control is `ALN004` against a `kind: control` reference pack. One mechanism,
 one rule family -- see [`ea-regulatory`](../skills/ea-regulatory/SKILL.md).
 
+## Regulatory register -- `ai-act-register` (the AIR family)
+
+`python -m easkills ai-act-register` generates the EU AI Act system inventory from the
+approved model. Scope is declared per element by `properties.regulatoryScope: ai-act`,
+never inferred from a type or from a name that sounds like AI -- and an element can be
+in both registers' scope at once (`regulatoryScope: ai-act dora`, a closed enum of
+alphabetical combinations; membership is read through one shared splitter so neither
+register drops the row). Everything the REG family established holds here too: the
+generated document says it is not a compliance record in its own header, its last
+section names every field the model could not fill, and with nothing in scope no
+document is produced at all.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `AIR001` | warning | An in-scope element carries no `aiRiskClass`. The inventory cannot say which of the Act's obligations attach, and an unclassified AI system is the one a supervisor asks about. |
+| `AIR002` | error | A `high`-risk element has no `aiRole` or no `aiOversight`. The obligations differ by operator role, and Art. 14 asks who oversees the system; a high-risk row with neither is not a partial answer, it is a blank. |
+| `AIR003` | info | A `high`- or `limited`-risk element is covered by an **open dispensation**. Accepted AI risk to disclose, not a violation to fix -- the mandatory expiry on a dispensation fits model-risk acceptance exactly, and closing the waiver to clear the report would lose the record of the exposure. |
+| `AIR004` | warning | An inventory section is empty while in-scope content exists. Silence in a regulatory document reads as "nothing to report". The provider section is only expected once some in-scope system was made by someone else (role `deployer`/`importer`/`distributor`) -- an estate that builds everything it runs owes no such section. |
+| `AIR005` | error | An approved element is classified as a **prohibited practice** (Art. 5). That is not a row to file but a decision the board must see: retire the practice or correct the classification, and record whichever happened. |
+
 ## Consuming repositories -- `ea-check` (AD-09)
 
 `python -m easkills check` runs in a *product* repository, not in the EA repository:

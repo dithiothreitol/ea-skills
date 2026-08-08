@@ -1,0 +1,10 @@
+id: std-ai-transparency
+name: AI transparency disclosures for customer-facing systems
+type: organisation
+lifecycle: active
+description: >
+  Customer-facing AI systems disclose that the user is interacting with a machine and
+  log the disclosure. Exists so the fixture's open dispensation has a real standard to
+  waive, the way REG003's does in the finco fixture.
+owner: architecture@borealis.example
+lastReviewed: 2026-07-01

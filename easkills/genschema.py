@@ -62,8 +62,48 @@ REFERENCE_MAPPING_STATUSES = ("covered", "partial", "out-of-scope")
 # the reason above, and one more: the failure mode of a *regulatory* register is
 # under-inclusion. `regulatoryScope: DORA` as free text would drop the element out of the
 # register silently, and nothing downstream would ever say so.
-REGULATORY_SCOPES = ("dora",)
+REGULATORY_SCOPES = ("dora", "ai-act")
 CRITICALITIES = ("critical", "important", "standard")
+
+# The EU AI Act vocabularies `ai-act-register` reads. Risk classes follow the Act's own
+# structure (Art. 5 prohibited practices, Art. 6 high-risk, Art. 50 transparency-risk,
+# everything else minimal); roles are the operators Art. 3 names. Closed for the same
+# under-inclusion reason as `regulatoryScope`.
+AI_RISK_CLASSES = ("prohibited", "high", "limited", "minimal")
+AI_ROLES = (
+    "provider",
+    "deployer",
+    "importer",
+    "distributor",
+    "product-manufacturer",
+    "authorised-representative",
+)
+
+
+def regulatory_scope_values() -> tuple[str, ...]:
+    """Every value ``regulatoryScope`` may carry: each scope alone, plus every
+    multi-scope combination space-joined in alphabetical order.
+
+    One element can genuinely sit in more than one register's scope -- an AI
+    credit-scoring service bought from a vendor is DORA's ICT third-party risk *and* the
+    AI Act's high-risk system. A single-valued enum would force a choice, and whichever
+    register lost would lose silently -- the exact under-inclusion this vocabulary is
+    closed against. The combinations stay enumerated (rather than free-ordered text) so
+    a typo or a reordering still fails schema validation instead of dropping a row.
+    """
+    from itertools import combinations
+
+    atoms = sorted(REGULATORY_SCOPES)
+    values: list[str] = []
+    for size in range(1, len(atoms) + 1):
+        values.extend(" ".join(combo) for combo in combinations(atoms, size))
+    return tuple(values)
+
+
+def split_regulatory_scopes(value: Any) -> frozenset[str]:
+    """The scopes a ``regulatoryScope`` value declares. Both registers read scope
+    through this one function, so they cannot disagree about what a value means."""
+    return frozenset(str(value or "").split())
 
 SLUG_PATTERN = "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$"
 DATE_PATTERN = "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
@@ -147,13 +187,16 @@ def build_schema() -> dict[str, Any]:
                     ),
                 },
                 "regulatoryScope": {
-                    "enum": list(REGULATORY_SCOPES),
+                    "enum": list(regulatory_scope_values()),
                     "description": (
-                        "Puts this element in a regulatory register's scope. An enum, not "
-                        "free text: 'DORA' or 'dora ' would silently drop the element out "
-                        "of the register, and under-inclusion is the failure mode that "
-                        "matters here. Use your own property key for scopes this tool does "
-                        "not generate a register for."
+                        "Puts this element in one or more regulatory registers' scope. An "
+                        "enum, not free text: 'DORA' or 'dora ' would silently drop the "
+                        "element out of the register, and under-inclusion is the failure "
+                        "mode that matters here. Multi-scope is declared as the "
+                        "space-joined combination in alphabetical order ('ai-act dora'); "
+                        "any other order or spelling is a schema error, never a silent "
+                        "drop. Use your own property key for scopes this tool does not "
+                        "generate a register for."
                     ),
                 },
                 "doraCriticality": {
@@ -175,6 +218,33 @@ def build_schema() -> dict[str, Any]:
                         "Reference to the contractual arrangement covering this element. "
                         "Required on critical elements (REG002); the register lists it, it "
                         "never reads the contract."
+                    ),
+                },
+                "aiRiskClass": {
+                    "enum": list(AI_RISK_CLASSES),
+                    "description": (
+                        "EU AI Act risk classification of this system. Read by "
+                        "'ai-act-register'; AIR001 reports an in-scope element without "
+                        "one, and 'prohibited' is AIR005 -- a decision to surface, never "
+                        "a row to file."
+                    ),
+                },
+                "aiRole": {
+                    "enum": list(AI_ROLES),
+                    "description": (
+                        "The operator role this organisation holds for the system, in the "
+                        "AI Act's Art. 3 vocabulary. Required on high-risk elements "
+                        "(AIR002) -- the obligations differ by role, so an inventory "
+                        "without it cannot say which apply."
+                    ),
+                },
+                "aiOversight": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": (
+                        "Who or what exercises human oversight over this system (Art. 14): "
+                        "a role, a committee, a named procedure. Required on high-risk "
+                        "elements (AIR002); the register lists it, it never audits it."
                     ),
                 },
             },

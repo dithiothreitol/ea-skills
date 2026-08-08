@@ -1,6 +1,6 @@
 # What measures which skill
 
-The core has a test per rule. The product is 24 files of prose, and prose cannot be
+The core has a test per rule. The product is 25 files of prose, and prose cannot be
 executed by pytest — so for a long time the honest answer to "how do you know the skills
 work?" was *an end-to-end run and my judgement*. This page is the answer that replaced it,
 including the parts where the answer is still "nothing does".
@@ -30,7 +30,7 @@ third is in every CI run. The fourth is a human sitting down and doing it.
 | `ea-dispensation` | contract | mandatory bounded expiry, a real standard waived, tight scope, a named grantor |
 | `ea-import` | path test | the adoption path: sliceable output, reference-closed element files, everything `assumed`, the gate refusing what the previous tool allowed |
 | `ea-approve` | path test | promotion of one vouched-for slice while the rest stays a proposal |
-| `ea-validate` | path test | the three-layer validator's own tests (141 rule codes in the catalogue) plus the gate steps of every harness run |
+| `ea-validate` | path test | the three-layer validator's own tests (146 rule codes in the catalogue) plus the gate steps of every harness run |
 | `ea-align` | path test | `align` on the worked example's reference pack (clean under `--strict`) and on `eval/fixtures/broken/reference/`, where every `ALN` rule has a provoking pack; plus `propose --from align`, including that it binds nothing and writes no prose |
 | `ea-docs` | path test | the architecture description generated from the approved zone only |
 | `ea-change-triage` | path test | `impact` in both zones, including the staging-versus-approved blast radius; the `debt` overlap queries it reads before classifying, including the three exclusions that keep them out of noise |
@@ -40,6 +40,7 @@ third is in every CI run. The fourth is a human sitting down and doing it.
 | `ea-standards-base` | path test | `validate-gov` SIB/STD rules and the dispensation interaction |
 | `ea-service` | path test | service-layer validation and the worked example's service records |
 | `ea-regulatory` | path test | `dora-register` on `eval/fixtures/finco` (clean, and carrying `REG003` on purpose) and on `eval/fixtures/finco-broken`, where every `REG` code has a provoking element; plus the register's own gap section, asserted field by field |
+| `ea-ai-governance` | path test | `ai-act-register` on `eval/fixtures/aico` (clean, and carrying `AIR003` on purpose) and on `eval/fixtures/aico-broken`, where every `AIR` code has a provoking element; the inventory's own gap section, asserted field by field; and the dual-scope element (`regulatoryScope: ai-act dora`) asserted present in both registers |
 | `ea-board` | path test | the reports it assembles (`kpi`, `staleness`, `conformance`, `debt`) |
 | `ea-health` | path test | the same reports, plus every debt kind — a test pins that each one this skill can print is explained here — and `maturity`, whose thresholds are pinned against the table in `docs/CLI.md` |
 | `ea-delta-ingest` | path test | `delta` — unmodelled entities and unused facts |

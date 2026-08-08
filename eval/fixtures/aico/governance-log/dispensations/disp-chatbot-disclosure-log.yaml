@@ -1,0 +1,14 @@
+# Open on the as-of dates the tests use, so AIR003 has something to report.
+id: disp-chatbot-disclosure-log
+title: The support chatbot may run without disclosure logging until the vendor ships it
+waives:
+  standard: std-ai-transparency
+appliesTo: [app-support-chatbot]
+rationale: >
+  Accepted AI risk with a date on it, granted so the clean fixture carries AIR003 the
+  way finco carries REG003 -- an open waiver on a transparency-risk system is exposure
+  to disclose, not a violation to fix.
+grantedBy: architecture@borealis.example
+granted: 2026-05-01
+expires: 2027-04-30
+status: open

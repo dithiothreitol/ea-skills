@@ -37,7 +37,7 @@ gold scores low on precision while being defensible architecture; read the categ
 not the headline. Since 0.11.0 the score also **names** what it did not match, so reading
 the categories no longer means diffing two YAML trees by hand.
 
-It measures the prose of **5 of the 24 skills**, declared in `MEASURED_SKILLS` in
+It measures the prose of **5 of the 25 skills**, declared in `MEASURED_SKILLS` in
 `run.py` and pinned to this file by a test:
 
 | Phase | Skills | Judged by |

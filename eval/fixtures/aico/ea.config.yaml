@@ -1,0 +1,14 @@
+name: Borealis Credit Enterprise Architecture
+documentation: >
+  Dedicated fixture for the EU AI Act system inventory. Borealis Credit is a fictional
+  consumer lender; the model exists only to exercise the AIR rules and the generated
+  inventory end to end. It is deliberately small and deliberately separate from the
+  worked example, which is a food wholesaler running no AI system the Act reaches --
+  pretending otherwise would have taught the wrong thing about scope. One element is in
+  DORA scope at the same time (`regulatoryScope: ai-act dora`), because a bought
+  credit-scoring service genuinely is both, and the tests assert neither register
+  drops it.
+stalenessDays: 365
+quoteMatchThreshold: 0.90
+factsRoot: .
+sourcesDir: facts/sources

@@ -28,10 +28,10 @@ parser; `python -m easkills <command> --help` is the same information, per comma
 |---|---|---|
 | `--root <path>` | Repository root (default: cwd) | all except `gen-schema`, `pin-oracle`, `oracle-info` |
 | `--zone approved\|staging` | Which zone to read; governance metadata is mandatory in `approved` | `validate`, `compile`, `render`, `impact`, `align`, `readiness` |
-| `--strict` | Warnings fail too (on `conformance`: any failed clause fails; on `align`: gaps fail; on `readiness`: any open checkpoint fails) | `validate`, `validate-facts`, `validate-gov`, `conformance`, `check`, `align`, `readiness`, `dora-register` |
-| `--as-of YYYY-MM-DD` | Evaluate date-dependent checks against a fixed date, for reproducibility | `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `roadmap`, `context`, `check`, `impact`, `dora-register`, `maturity`, `propose` (**required** there) |
-| `--json <file>` | Write the machine-readable report alongside the rendered one. On `chunk` it takes **no argument** and prints JSON to stdout instead | `validate`, `validate-facts`, `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `delta`, `roadmap`, `coverage`, `score`, `chunk`, `check`, `import`, `impact`, `intake-csv`, `align`, `readiness`, `dora-register`, `maturity`, `propose` |
-| `--out <path>` | Output file (or directory, for `render`) instead of the default location | `compile`, `render`, `docs`, `context`, `import`, `intake-csv`, `dora-register`, `propose` |
+| `--strict` | Warnings fail too (on `conformance`: any failed clause fails; on `align`: gaps fail; on `readiness`: any open checkpoint fails) | `validate`, `validate-facts`, `validate-gov`, `conformance`, `check`, `align`, `readiness`, `dora-register`, `ai-act-register` |
+| `--as-of YYYY-MM-DD` | Evaluate date-dependent checks against a fixed date, for reproducibility | `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `roadmap`, `context`, `check`, `impact`, `dora-register`, `ai-act-register`, `maturity`, `propose` (**required** there) |
+| `--json <file>` | Write the machine-readable report alongside the rendered one. On `chunk` it takes **no argument** and prints JSON to stdout instead | `validate`, `validate-facts`, `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `delta`, `roadmap`, `coverage`, `score`, `chunk`, `check`, `import`, `impact`, `intake-csv`, `align`, `readiness`, `dora-register`, `ai-act-register`, `maturity`, `propose` |
+| `--out <path>` | Output file (or directory, for `render`) instead of the default location | `compile`, `render`, `docs`, `context`, `import`, `intake-csv`, `dora-register`, `ai-act-register`, `propose` |
 | `--skip-validation` | Build from a model with validation errors (not recommended) | `compile`, `docs` |
 | `--scope <element-id>` | The element the command is about | `context`, `check`, `impact` |
 | `--repo <path>` | The *consuming* repository being checked (`--root` stays the EA repository) | `check` |
@@ -263,22 +263,26 @@ same repository produce a different file tomorrow.
 | Command | Does |
 |---|---|
 | `dora-register [--as-of] [--out] [--json] [--strict]` | Generates the DORA **Register of Information** from the approved model: ICT third-party providers, contractual arrangements, the services in scope with their criticality, the business functions depending on them, and the open dispensations covering any of it. Scope is `properties.regulatoryScope: dora` on the element — declared, never inferred from a type. Rules: `REG*`. |
+| `ai-act-register [--as-of] [--out] [--json] [--strict]` | Generates the EU AI Act **system inventory** from the approved model: the AI systems in scope with their risk class (`aiRiskClass`), the operator role held for each (`aiRole`), the human-oversight arrangement (`aiOversight`), third-party AI providers, the business functions the systems serve, and the open dispensations covering any of it. Scope is `properties.regulatoryScope: ai-act` — and an element can be in both registers at once (`regulatoryScope: ai-act dora`, a closed enum of alphabetical combinations; neither register drops it). Rules: `AIR*`. |
 
-**A generator, not an attestation.** The document's structure follows the shape the ESAs'
-implementing technical standards ask for; its content comes from the model and nowhere
-else; no legal review has happened and no completeness against the official templates is
-claimed. The generated file carries that paragraph in its own header, *above* the tables.
+**Generators, not attestations.** Each document's structure follows what its regulation
+asks about — the ESAs' implementing technical standards for DORA, the Act's risk classes,
+operator roles and oversight for AI; its content comes from the model and nowhere else;
+no legal review has happened and no completeness against the official templates or duties
+is claimed. The generated file carries that paragraph in its own header, *above* the
+tables.
 
-Its last section is the reason it is safe to hand over: **the register names its own
-gaps** — every field the template wants that the model does not carry, with the element
-ids missing it. A register that quietly omitted what it could not fill would be
+The last section is the reason either document is safe to hand over: **the register names
+its own gaps** — every field the template wants that the model does not carry, with the
+element ids missing it. A register that quietly omitted what it could not fill would be
 indistinguishable from a complete one.
 
 With **nothing in scope, no document is produced at all** and the command reports why.
 That is the right answer for an organisation the regulation does not apply to (the worked
-example is a food wholesaler, and is deliberately left out of scope) and the wrong one for
-an organisation that has simply not tagged its ICT services yet — the message says which
-question you are looking at. `--out` refuses rather than writing an empty page.
+example is a food wholesaler, and is deliberately left out of both scopes) and the wrong
+one for an organisation that has simply not tagged its ICT services or AI systems yet —
+the message says which question you are looking at. `--out` refuses rather than writing
+an empty page.
 
 Control-framework gaps are not part of this command. A control framework is a taxonomy,
 so it rides the reference mechanism: a pack with `kind: control` nodes, and an unmapped

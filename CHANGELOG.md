@@ -7,6 +7,67 @@ project's build phases (design log with per-decision rationale:
 
 ## [Unreleased]
 
+### Added — `ai-act-register`: the second register, and the AIR family
+
+`python -m easkills ai-act-register` generates the EU AI Act **system inventory** from
+the approved model, on the `dora-register` pattern it copies deliberately: scope is
+`regulatoryScope: ai-act` on the element (declared, never inferred from a type or an
+AI-sounding name), the generated document says **it is not a compliance record** in its
+own header, its last section names every field the model could not carry with element
+ids, and with nothing in scope no document is produced at all. New element properties
+`aiRiskClass` (the Act's own classes, `prohibited` included), `aiRole` (the Art. 3
+operators) and `aiOversight` (Art. 14) are closed vocabularies in the generated schema,
+for the same under-inclusion reason `regulatoryScope` always was.
+
+Five rules, each with a provoking fixture (`eval/fixtures/aico`, `aico-broken` — the
+`finco` convention): `AIR001` unclassified in-scope system (warning), `AIR002` high-risk
+with no role or no oversight (error), `AIR003` open dispensation on a high- or
+limited-risk system (info — accepted AI risk to disclose, and the mandatory expiry on a
+dispensation fits model-risk acceptance exactly), `AIR004` empty section with content in
+scope (warning; the provider section is only owed once some in-scope system was made by
+someone else), `AIR005` an approved element classified as an Art. 5 **prohibited
+practice** (error — not a row to file, a decision the board must see). 146 rules total.
+
+### Changed — `regulatoryScope` admits multi-scope combinations, and `dora-register` reads membership
+
+A bought credit-scoring service is DORA's ICT third-party risk *and* the AI Act's
+high-risk system at once. The single-valued enum would have forced a choice, and
+whichever register lost would have lost silently — the exact under-inclusion the closed
+vocabulary exists to prevent. `regulatoryScope` is now a closed enum of each scope alone
+plus every space-joined combination in alphabetical order (`ai-act dora`); a reordered
+or misspelled value is still a schema error, never a silent row-drop. Both registers
+read membership through one shared splitter, which also fixes a latent equality test in
+`dora-register` that would have dropped a multi-scope element; a test pins the
+dual-scope element into both registers.
+
+### Added — two reference packs: NIST AI RMF 1.0 and KNF Rekomendacja D (2013)
+
+Both ship in `references/` under the library's licence gate — the AI RMF as public
+domain (NIST AI 100-1), Rekomendacja D as public law (an official document of a Polish
+public authority, art. 4 of the Polish Copyright Act). The AI RMF pack carries the four
+Functions and nineteen Categories with each category's outcome statement **verbatim**,
+because the RMF publishes no short names; the KNF pack carries the four areas and
+twenty-two recommendations, each node named with the document's own section heading and
+carrying the recommendation's statement verbatim in Polish. **Both are labelled
+`structure not yet verified`** — transcribed from the published texts, not from memory,
+but the human reading against the cited editions that `references/README.md` requires
+has not happened yet, and the tests that keep the caveat in both the NOTICE and the
+library table cover them from day one.
+
+### Added — `ea-ai-governance`, and security architecture written into the existing skills
+
+The 25th skill owns the AI Act inventory, the AI RMF alignment, and the discipline
+around both (risk classes are facts about the system, gaps are disclosed rather than
+edited closed, an AI system is not a new element type — the evidence around an ordinary
+element is what is AI-specific). `ea-regulatory` gains the routing to it and a
+**"Security architecture, in the existing layers"** section: posture measured by control
+packs, principles in the motivation layer, concrete standards in the SIB, accepted risk
+as dispensations — no parallel structure, because ArchiMate has no security layer on
+purpose. `ea-standards-base` gains the security-and-resilience standards pattern
+(ASVS-derived web-application baselines, HA/failover tiers), including the
+derive-don't-transcribe rule for licensed checklists and the line between manifest-
+detectable standards (`ea-check`) and exercise-record ones (`ea-compliance`).
+
 ### Changed — the NIST CSF 2.0 pack is verified
 
 The pack shipped in 0.13.0 labelled **structure not yet verified** — written from working

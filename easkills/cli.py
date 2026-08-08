@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 from . import (
+    airegister,
     alignment,
     aoef,
     check as check_mod,
@@ -306,6 +307,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_dora.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
     p_dora.add_argument("--as-of", dest="as_of", metavar="YYYY-MM-DD", help="evaluate waiver expiry against this date")
     p_dora.add_argument("--strict", action="store_true", help="treat warnings as failures too")
+
+    p_ai_act = sub.add_parser(
+        "ai-act-register", help="generate the EU AI Act system inventory from the approved model"
+    )
+    p_ai_act.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_ai_act.add_argument(
+        "--out", type=Path, help="write the inventory document here (default: print the findings)"
+    )
+    p_ai_act.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+    p_ai_act.add_argument(
+        "--as-of", dest="as_of", metavar="YYYY-MM-DD", help="evaluate waiver expiry against this date"
+    )
+    p_ai_act.add_argument("--strict", action="store_true", help="treat warnings as failures too")
 
     p_maturity = sub.add_parser(
         "maturity", help="level 1-5 per dimension from measured signals, with the items blocking the next"
@@ -758,6 +772,31 @@ def cmd_dora_register(args: argparse.Namespace) -> int:
     return 1 if args.strict and register.warnings else 0
 
 
+def cmd_ai_act_register(args: argparse.Namespace) -> int:
+    register = airegister.build(args.root.resolve(), today=_parse_as_of(args.as_of))
+    print(airegister.render(register))
+    if args.json_out:
+        args.json_out.parent.mkdir(parents=True, exist_ok=True)
+        args.json_out.write_text(
+            json.dumps(register.as_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
+        )
+        print(f"\nJSON report written to {args.json_out}")
+    if args.out:
+        # Same refusal as dora-register: an empty page that looks like a compliance
+        # record is the worst artifact this command could produce.
+        try:
+            document = airegister.markdown(register)
+        except airegister.AiActError as exc:
+            print(_error(str(exc)))
+            return 1
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(document, encoding="utf-8", newline="\n")
+        print(_ok(f"Inventory written to {args.out}"))
+    if not register.ok:
+        return 1
+    return 1 if args.strict and register.warnings else 0
+
+
 def cmd_maturity(args: argparse.Namespace) -> int:
     report = maturity_mod.assess(args.root.resolve(), today=_parse_as_of(args.as_of))
     _emit_report(args, report.as_dict(), report.render())
@@ -912,6 +951,7 @@ HANDLERS = {
     "readiness": cmd_readiness,
     "align": cmd_align,
     "dora-register": cmd_dora_register,
+    "ai-act-register": cmd_ai_act_register,
     "propose": cmd_propose,
     "maturity": cmd_maturity,
     "pin-reference": cmd_pin_reference,

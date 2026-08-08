@@ -1,0 +1,249 @@
+# Rekomendacja D Komisji Nadzoru Finansowego (styczeń 2013) -- obszary i rekomendacje.
+#
+# Public law (an official document of a Polish public authority; see NOTICE.md).
+# Transcribed at the *structural* level: the four areas (obszary) and the twenty-two
+# recommendations. Each node's name is the document's own section heading for that
+# recommendation (from its table of contents); the `description` is the recommendation's
+# statement **verbatim**, in Polish -- not a paraphrase, because the document's own
+# wording is the normative text. The heading-to-recommendation correspondence follows
+# the document's order; see the NOTICE's verification status before leaning on it.
+# The detailed numbered guidance under each recommendation (1.1, 1.2, ...) is not
+# included -- it is the level at which implementation is argued, and a taxonomy this
+# tooling only measures coverage against does not need it. Add it locally if your
+# organisation maps at that grain, and re-pin (`pin-reference`).
+
+name: KNF Rekomendacja D (2013)
+version: "2013"
+source: Uchwala Nr 7/2013 KNF z dnia 8 stycznia 2013 r. (Dz. Urz. KNF z 2013 r. poz. 5)
+
+nodes:
+  - id: strategia-i-organizacja
+    name: >-
+      Strategia i organizacja obszarów technologii informacyjnej i bezpieczeństwa
+      środowiska teleinformatycznego
+    kind: domain
+  - id: rek-1
+    name: Rola zarządu i rady nadzorczej
+    kind: control
+    parent: strategia-i-organizacja
+    externalId: Rekomendacja 1
+    description: >-
+      Rada nadzorcza banku powinna nadzorować funkcjonowanie obszarów technologii
+      informacyjnej i bezpieczeństwa środowiska teleinformatycznego, natomiast zarząd
+      banku powinien zapewnić, aby powyższe obszary zarządzane były w sposób poprawny
+      i efektywny.
+  - id: rek-2
+    name: System informacji zarządczej
+    kind: control
+    parent: strategia-i-organizacja
+    externalId: Rekomendacja 2
+    description: >-
+      W banku powinien funkcjonować sformalizowany system informacji zarządczej w
+      zakresie obszarów technologii informacyjnej oraz bezpieczeństwa środowiska
+      teleinformatycznego, zapewniający każdemu z odbiorców informacji właściwy poziom
+      wiedzy o tych obszarach.
+  - id: rek-3
+    name: Planowanie strategiczne
+    kind: control
+    parent: strategia-i-organizacja
+    externalId: Rekomendacja 3
+    description: >-
+      Bank powinien opracować i wdrożyć strategię w zakresie obszarów technologii
+      informacyjnej oraz bezpieczeństwa środowiska teleinformatycznego, zgodną ze
+      strategią działania banku.
+  - id: rek-4
+    name: Zasady współpracy obszarów biznesowych i technicznych
+    kind: control
+    parent: strategia-i-organizacja
+    externalId: Rekomendacja 4
+    description: >-
+      Bank powinien określić zasady współpracy oraz zakresy odpowiedzialności obszaru
+      biznesowego, technologii informacyjnej i bezpieczeństwa środowiska
+      teleinformatycznego, pozwalające na efektywne i bezpieczne wykorzystanie
+      potencjału środowiska teleinformatycznego w działalności banku.
+  - id: rek-5
+    name: >-
+      Organizacja obszarów technologii informacyjnej i bezpieczeństwa środowiska
+      teleinformatycznego
+    kind: control
+    parent: strategia-i-organizacja
+    externalId: Rekomendacja 5
+    description: >-
+      Rozwiązania organizacyjne oraz zasoby ludzkie w obszarach technologii
+      informacyjnej i bezpieczeństwa środowiska teleinformatycznego banku powinny być
+      adekwatne do jego profilu ryzyka i specyfiki działalności oraz pozwalać na
+      efektywną realizację działań w tych obszarach.
+
+  - id: rozwoj
+    name: Rozwój środowiska teleinformatycznego
+    kind: domain
+  - id: rek-6
+    name: Projekty w zakresie środowiska teleinformatycznego
+    kind: control
+    parent: rozwoj
+    externalId: Rekomendacja 6
+    description: >-
+      Bank powinien posiadać sformalizowane zasady prowadzenia projektów w zakresie
+      środowiska teleinformatycznego, adekwatne do skali i specyfiki realizowanych
+      projektów.
+  - id: rek-7
+    name: Rozwój systemów informatycznych
+    kind: control
+    parent: rozwoj
+    externalId: Rekomendacja 7
+    description: >-
+      Systemy informatyczne banku powinny być rozwijane w sposób zapewniający wsparcie
+      jego działalności oraz uwzględniający wymogi bezpieczeństwa środowiska
+      teleinformatycznego.
+
+  - id: utrzymanie-i-eksploatacja
+    name: Utrzymanie i eksploatacja środowiska teleinformatycznego
+    kind: domain
+  - id: rek-8
+    name: Zarządzanie danymi
+    kind: control
+    parent: utrzymanie-i-eksploatacja
+    externalId: Rekomendacja 8
+    description: >-
+      Bank powinien posiadać sformalizowane zasady zarządzania danymi wykorzystywanymi
+      w ramach prowadzonej działalności, obejmujące w szczególności zarządzanie
+      architekturą oraz jakością danych i zapewniające właściwe wsparcie działalności
+      banku.
+  - id: rek-9
+    name: Zarządzanie infrastrukturą teleinformatyczną
+    kind: control
+    parent: utrzymanie-i-eksploatacja
+    externalId: Rekomendacja 9
+    description: >-
+      Bank powinien posiadać sformalizowane zasady dotyczące zarządzania infrastrukturą
+      teleinformatyczną, w tym jej architekturą, poszczególnymi komponentami,
+      wydajnością i pojemnością oraz dokumentacją, zapewniające właściwe wsparcie
+      działalności banku oraz bezpieczeństwo przetwarzanych danych.
+  - id: rek-10
+    name: Współpraca z zewnętrznymi dostawcami usług
+    kind: control
+    parent: utrzymanie-i-eksploatacja
+    externalId: Rekomendacja 10
+    description: >-
+      Bank powinien posiadać sformalizowane zasady współpracy z zewnętrznymi dostawcami
+      usług informatycznych, zapewniające bezpieczeństwo danych i poprawność działania
+      środowiska teleinformatycznego, uwzględniające również usługi świadczone przez
+      podmioty należące do grupy kapitałowej banku.
+  - id: rek-11
+    name: Kontrola dostępu
+    kind: control
+    parent: utrzymanie-i-eksploatacja
+    externalId: Rekomendacja 11
+    description: >-
+      Bank powinien posiadać sformalizowane zasady oraz mechanizmy techniczne
+      zapewniające właściwy poziom kontroli dostępu logicznego do danych i informacji
+      oraz dostępu fizycznego do kluczowych elementów infrastruktury
+      teleinformatycznej.
+  - id: rek-12
+    name: Ochrona przed szkodliwym oprogramowaniem
+    kind: control
+    parent: utrzymanie-i-eksploatacja
+    externalId: Rekomendacja 12
+    description: >-
+      Bank powinien zapewnić odpowiednią ochronę środowiska teleinformatycznego przed
+      szkodliwym oprogramowaniem.
+  - id: rek-13
+    name: Wsparcie dla użytkowników
+    kind: control
+    parent: utrzymanie-i-eksploatacja
+    externalId: Rekomendacja 13
+    description: >-
+      Bank powinien zapewniać wewnętrznym użytkownikom systemów informatycznych
+      wsparcie w zakresie rozwiązywania problemów związanych z ich eksploatacją, w tym
+      wynikających z wystąpienia awarii i innych niestandardowych zdarzeń zakłócających
+      ich użytkowanie.
+  - id: rek-14
+    name: Edukacja pracowników
+    kind: control
+    parent: utrzymanie-i-eksploatacja
+    externalId: Rekomendacja 14
+    description: >-
+      Bank powinien podejmować skuteczne działania mające na celu osiągnięcie i
+      utrzymanie odpowiedniego poziomu kwalifikacji pracowników w zakresie środowiska
+      teleinformatycznego i bezpieczeństwa informacji przetwarzanych w tym środowisku.
+  - id: rek-15
+    name: Ciągłość działania środowiska teleinformatycznego
+    kind: control
+    parent: utrzymanie-i-eksploatacja
+    externalId: Rekomendacja 15
+    description: >-
+      System zarządzania ciągłością działania banku powinien uwzględniać szczególne
+      uwarunkowania związane z jego środowiskiem teleinformatycznym oraz przetwarzanymi
+      w nim danymi.
+  - id: rek-16
+    name: Zarządzanie elektronicznymi kanałami dostępu
+    kind: control
+    parent: utrzymanie-i-eksploatacja
+    externalId: Rekomendacja 16
+    description: >-
+      Bank świadczący usługi z wykorzystaniem elektronicznych kanałów dostępu powinien
+      posiadać skuteczne rozwiązania techniczne i organizacyjne zapewniające
+      weryfikację tożsamości i bezpieczeństwo danych oraz środków klientów, jak również
+      edukować klientów w zakresie zasad bezpiecznego korzystania z tych kanałów.
+  - id: rek-17
+    name: Zarządzanie oprogramowaniem użytkownika końcowego
+    kind: control
+    parent: utrzymanie-i-eksploatacja
+    externalId: Rekomendacja 17
+    description: >-
+      Bank powinien posiadać sformalizowane zasady zarządzania tzw. oprogramowaniem
+      użytkownika końcowego, skutecznie ograniczające ryzyko związane z eksploatacją
+      tego oprogramowania.
+
+  - id: zarzadzanie-bezpieczenstwem
+    name: Zarządzanie bezpieczeństwem środowiska teleinformatycznego
+    kind: domain
+  - id: rek-18
+    name: System zarządzania bezpieczeństwem środowiska teleinformatycznego
+    kind: control
+    parent: zarzadzanie-bezpieczenstwem
+    externalId: Rekomendacja 18
+    description: >-
+      W banku powinien funkcjonować sformalizowany, skuteczny system zarządzania
+      bezpieczeństwem środowiska teleinformatycznego, obejmujący działania związane z
+      identyfikacją, szacowaniem, kontrolą, przeciwdziałaniem, monitorowaniem i
+      raportowaniem ryzyka w tym zakresie, zintegrowany z całościowym systemem
+      zarządzania ryzykiem i bezpieczeństwem informacji w banku.
+  - id: rek-19
+    name: Klasyfikacja informacji i systemów informatycznych
+    kind: control
+    parent: zarzadzanie-bezpieczenstwem
+    externalId: Rekomendacja 19
+    description: >-
+      Bank powinien klasyfikować systemy informatyczne i przetwarzane w nich informacje
+      zgodnie z zasadami uwzględniającymi w szczególności wymagany dla tych systemów i
+      informacji poziom bezpieczeństwa.
+  - id: rek-20
+    name: >-
+      Zarządzanie incydentami naruszenia bezpieczeństwa środowiska teleinformatycznego
+    kind: control
+    parent: zarzadzanie-bezpieczenstwem
+    externalId: Rekomendacja 20
+    description: >-
+      Bank powinien posiadać sformalizowane zasady zarządzania incydentami naruszenia
+      bezpieczeństwa środowiska teleinformatycznego, obejmujące ich identyfikację,
+      rejestrowanie, analizę, priorytetyzację, wyszukiwanie powiązań, podejmowanie
+      działań naprawczych oraz usuwanie przyczyn.
+  - id: rek-21
+    name: Bezpieczeństwo formalno-prawne
+    kind: control
+    parent: zarzadzanie-bezpieczenstwem
+    externalId: Rekomendacja 21
+    description: >-
+      Bank powinien zapewnić zgodność funkcjonowania obszarów technologii informacyjnej
+      i bezpieczeństwa środowiska teleinformatycznego z wymaganiami prawnymi,
+      regulacjami wewnętrznymi i zewnętrznymi, zawartymi umowami i przyjętymi w banku
+      standardami.
+  - id: rek-22
+    name: Rola audytu wewnętrznego i zewnętrznego
+    kind: control
+    parent: zarzadzanie-bezpieczenstwem
+    externalId: Rekomendacja 22
+    description: >-
+      Obszary technologii informacyjnej i bezpieczeństwa środowiska teleinformatycznego
+      banku powinny być przedmiotem systematycznych, niezależnych audytów.

@@ -81,9 +81,18 @@ python -m easkills dora-register --root . --as-of <date>                      # 
 python -m easkills dora-register --root . --as-of <date> --out docs/dora-register.md
 ```
 
-A generator, not an attestation: read its last section first, and remember that the
-legal judgement belongs to whoever signs the filing. Untagged repositories get no
-document, which is the right answer when the regulation does not apply to you.
+**If you run AI systems the AI Act reaches** — tag them with `regulatoryScope: ai-act`
+plus `aiRiskClass`, `aiRole` and (for high-risk) `aiOversight`; an element in both
+scopes declares `regulatoryScope: ai-act dora` and appears in both registers:
+
+```bash
+python -m easkills ai-act-register --root . --as-of <date>
+python -m easkills ai-act-register --root . --as-of <date> --out docs/ai-act-register.md
+```
+
+Generators, not attestations: read each document's last section first, and remember
+that the legal judgement belongs to whoever signs the filing. Untagged repositories get
+no document, which is the right answer when the regulation does not apply to you.
 
 ## Layout
 

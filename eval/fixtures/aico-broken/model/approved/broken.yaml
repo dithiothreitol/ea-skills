@@ -1,0 +1,63 @@
+# Negative fixture for the AIR family. One element per failure mode, annotated with the
+# code it provokes -- the convention every rule in this repository ships with.
+#
+# Nothing here has a relationship to a business function, and one system is deployed
+# from a vendor nobody recorded -- so the "functions supported" and "third-party AI
+# providers" sections both come out empty while four systems sit in scope. That is
+# AIR004: an empty section in a regulatory document reads as "nothing to report",
+# which is a different statement from "we did not record it".
+
+elements:
+  # --- AIR001: in scope, no risk class. The inventory cannot say which obligations attach.
+  - id: app-scope-without-risk-class
+    type: ApplicationComponent
+    name: Unclassified AI Service
+    documentation: In AI Act scope with no risk classification recorded.
+    owner: nobody@borealis.example
+    lastReviewed: 2026-07-01
+    properties:
+      regulatoryScope: ai-act
+      aiRole: deployer
+    assumed: true
+    rationale: Negative fixture element; wrong on purpose.
+
+  # --- AIR002: high-risk, and the two fields the Act asks about first are both absent.
+  - id: app-high-without-role
+    type: ApplicationComponent
+    name: High-Risk System With No Operator Role
+    documentation: High-risk, and the inventory has neither role nor oversight for it.
+    owner: nobody@borealis.example
+    lastReviewed: 2026-07-01
+    properties:
+      regulatoryScope: ai-act
+      aiRiskClass: high
+    assumed: true
+    rationale: Negative fixture element; wrong on purpose.
+
+  # --- AIR002 again, half-filled: a role with no oversight behind it is still a gap.
+  - id: app-high-without-oversight
+    type: ApplicationComponent
+    name: High-Risk System With No Oversight
+    documentation: Role recorded, human-oversight arrangement not.
+    owner: nobody@borealis.example
+    lastReviewed: 2026-07-01
+    properties:
+      regulatoryScope: ai-act
+      aiRiskClass: high
+      aiRole: deployer
+    assumed: true
+    rationale: Negative fixture element; wrong on purpose.
+
+  # --- AIR005: an approved element classifying itself as a prohibited practice.
+  - id: app-prohibited-practice
+    type: ApplicationComponent
+    name: Workplace Emotion Scoring
+    documentation: Emotion inference on employees -- an Art. 5 prohibited practice.
+    owner: nobody@borealis.example
+    lastReviewed: 2026-07-01
+    properties:
+      regulatoryScope: ai-act
+      aiRiskClass: prohibited
+      aiRole: deployer
+    assumed: true
+    rationale: Negative fixture element; wrong on purpose.

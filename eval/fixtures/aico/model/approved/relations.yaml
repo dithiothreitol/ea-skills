@@ -1,0 +1,18 @@
+# Which AI system serves which business function. The mail-triage classifier has no
+# relationship on purpose: the clean inventory carries a real "functions supported"
+# gap row without any rule firing, which is the difference between a gap and a defect.
+
+relationships:
+  - id: rel-scoring-serves-loan-decision
+    type: Serving
+    source: app-credit-scoring
+    target: process-loan-decision
+    assumed: true
+    rationale: Fixture content authored for the AIR rules, not extracted from a source.
+
+  - id: rel-chatbot-serves-customer-service
+    type: Serving
+    source: app-support-chatbot
+    target: cap-customer-service
+    assumed: true
+    rationale: Fixture content authored for the AIR rules, not extracted from a source.

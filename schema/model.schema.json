@@ -143,9 +143,11 @@
             },
             "regulatoryScope": {
               "enum": [
-                "dora"
+                "ai-act",
+                "dora",
+                "ai-act dora"
               ],
-              "description": "Puts this element in a regulatory register's scope. An enum, not free text: 'DORA' or 'dora ' would silently drop the element out of the register, and under-inclusion is the failure mode that matters here. Use your own property key for scopes this tool does not generate a register for."
+              "description": "Puts this element in one or more regulatory registers' scope. An enum, not free text: 'DORA' or 'dora ' would silently drop the element out of the register, and under-inclusion is the failure mode that matters here. Multi-scope is declared as the space-joined combination in alphabetical order ('ai-act dora'); any other order or spelling is a schema error, never a silent drop. Use your own property key for scopes this tool does not generate a register for."
             },
             "doraCriticality": {
               "enum": [
@@ -164,6 +166,31 @@
               "type": "string",
               "minLength": 1,
               "description": "Reference to the contractual arrangement covering this element. Required on critical elements (REG002); the register lists it, it never reads the contract."
+            },
+            "aiRiskClass": {
+              "enum": [
+                "prohibited",
+                "high",
+                "limited",
+                "minimal"
+              ],
+              "description": "EU AI Act risk classification of this system. Read by 'ai-act-register'; AIR001 reports an in-scope element without one, and 'prohibited' is AIR005 -- a decision to surface, never a row to file."
+            },
+            "aiRole": {
+              "enum": [
+                "provider",
+                "deployer",
+                "importer",
+                "distributor",
+                "product-manufacturer",
+                "authorised-representative"
+              ],
+              "description": "The operator role this organisation holds for the system, in the AI Act's Art. 3 vocabulary. Required on high-risk elements (AIR002) -- the obligations differ by role, so an inventory without it cannot say which apply."
+            },
+            "aiOversight": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Who or what exercises human oversight over this system (Art. 14): a role, a committee, a named procedure. Required on high-risk elements (AIR002); the register lists it, it never audits it."
             }
           },
           "additionalProperties": {
@@ -320,9 +347,11 @@
             },
             "regulatoryScope": {
               "enum": [
-                "dora"
+                "ai-act",
+                "dora",
+                "ai-act dora"
               ],
-              "description": "Puts this element in a regulatory register's scope. An enum, not free text: 'DORA' or 'dora ' would silently drop the element out of the register, and under-inclusion is the failure mode that matters here. Use your own property key for scopes this tool does not generate a register for."
+              "description": "Puts this element in one or more regulatory registers' scope. An enum, not free text: 'DORA' or 'dora ' would silently drop the element out of the register, and under-inclusion is the failure mode that matters here. Multi-scope is declared as the space-joined combination in alphabetical order ('ai-act dora'); any other order or spelling is a schema error, never a silent drop. Use your own property key for scopes this tool does not generate a register for."
             },
             "doraCriticality": {
               "enum": [
@@ -341,6 +370,31 @@
               "type": "string",
               "minLength": 1,
               "description": "Reference to the contractual arrangement covering this element. Required on critical elements (REG002); the register lists it, it never reads the contract."
+            },
+            "aiRiskClass": {
+              "enum": [
+                "prohibited",
+                "high",
+                "limited",
+                "minimal"
+              ],
+              "description": "EU AI Act risk classification of this system. Read by 'ai-act-register'; AIR001 reports an in-scope element without one, and 'prohibited' is AIR005 -- a decision to surface, never a row to file."
+            },
+            "aiRole": {
+              "enum": [
+                "provider",
+                "deployer",
+                "importer",
+                "distributor",
+                "product-manufacturer",
+                "authorised-representative"
+              ],
+              "description": "The operator role this organisation holds for the system, in the AI Act's Art. 3 vocabulary. Required on high-risk elements (AIR002) -- the obligations differ by role, so an inventory without it cannot say which apply."
+            },
+            "aiOversight": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Who or what exercises human oversight over this system (Art. 14): a role, a committee, a named procedure. Required on high-risk elements (AIR002); the register lists it, it never audits it."
             }
           },
           "additionalProperties": {

@@ -258,7 +258,9 @@ python -m easkills align --root . --min-coverage 80    # or a floor, while you f
 ```
 
 The tooling ships only openly licensed packs (`references/` in this repository — NIST CSF
-2.0 is public domain). BIAN, APQC PCF, eTOM and the rest are **licensed**: export them
+2.0 and NIST AI RMF 1.0 are public domain, KNF Rekomendacja D is public law; check each
+pack's NOTICE for its verification status before leaning on it). BIAN, APQC PCF, eTOM and
+the rest are **licensed**: export them
 from the copy your organisation holds. Never let a person or an agent type a licensed
 taxonomy from memory — it is a licence problem and a fabrication problem at once, and
 nobody can tell an accurate transcription from a plausible one. Judgement calls (which
@@ -296,6 +298,20 @@ wholesaler, deliberately out of scope), and a warning sign for one that has simp
 tagged its estate yet. Control-framework gaps ride the reference mechanism from §5c
 instead: a pack of `kind: control` nodes, an unmapped control is `ALN004`. Both are
 [`ea-regulatory`](../skills/ea-regulatory/SKILL.md)'s subject.
+
+The EU AI Act works the same way, one register over. Tag AI systems with
+`regulatoryScope: ai-act` plus `aiRiskClass`, `aiRole` and (for high-risk)
+`aiOversight`, then:
+
+```bash
+python -m easkills ai-act-register --root . --as-of 2026-07-30
+python -m easkills ai-act-register --root . --as-of 2026-07-30 --out docs/ai-act-register.md
+```
+
+An element in both scopes declares `regulatoryScope: ai-act dora` — the space-joined
+combination in alphabetical order, still a closed enum — and appears in both registers.
+AI-risk gaps ride `align --reference nist-ai-rmf-1.0`; all of it is
+[`ea-ai-governance`](../skills/ea-ai-governance/SKILL.md)'s subject.
 
 ## 5e. Turn the findings into work
 
@@ -373,7 +389,7 @@ someone asks EA for something → record it in `governance-log/requests/`
 
 ## Working with the agent skills
 
-Everything above is what the 24 [agent skills](../skills/) instruct an agent to do —
+Everything above is what the 25 [agent skills](../skills/) instruct an agent to do —
 with the judgement calls (what is a capability, which concern a view frames, when to
 decline a request) spelled out per skill. Point your agent at this repository, start
 with `ea-run` (it checks repo state and routes), and keep one rule in view: **the

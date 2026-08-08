@@ -1,0 +1,167 @@
+# NIST AI Risk Management Framework 1.0 -- Functions and Categories.
+#
+# Public domain (a work of the U.S. federal government); see NOTICE.md for the
+# citation. Transcribed at the *structural* level only: the four Functions and the
+# nineteen Categories. Subcategories are not included -- they are the level at which
+# implementation is argued, and a taxonomy this tooling only measures coverage against
+# does not need them. Add them locally if your organisation maps at that grain, and
+# re-pin (`pin-reference`).
+#
+# Unlike the CSF, the AI RMF gives its categories no short names -- the numbered
+# outcome statement *is* the category. Each node's name is therefore that statement,
+# verbatim; nothing here is a paraphrase, and the Framework's own text remains the
+# authority on what each category requires.
+
+name: NIST AI Risk Management Framework 1.0
+version: "1.0"
+source: NIST AI 100-1 (January 2023), Functions and Categories
+
+nodes:
+  - id: govern
+    name: Govern
+    kind: domain
+    externalId: GOVERN
+  - id: govern-1
+    name: >-
+      Policies, processes, procedures, and practices across the organization related
+      to the mapping, measuring, and managing of AI risks are in place, transparent,
+      and implemented effectively.
+    kind: control
+    parent: govern
+    externalId: GOVERN 1
+  - id: govern-2
+    name: >-
+      Accountability structures are in place so that the appropriate teams and
+      individuals are empowered, responsible, and trained for mapping, measuring, and
+      managing AI risks.
+    kind: control
+    parent: govern
+    externalId: GOVERN 2
+  - id: govern-3
+    name: >-
+      Workforce diversity, equity, inclusion, and accessibility processes are
+      prioritized in the mapping, measuring, and managing of AI risks throughout the
+      lifecycle.
+    kind: control
+    parent: govern
+    externalId: GOVERN 3
+  - id: govern-4
+    name: >-
+      Organizational teams are committed to a culture that considers and communicates
+      AI risk.
+    kind: control
+    parent: govern
+    externalId: GOVERN 4
+  - id: govern-5
+    name: >-
+      Processes are in place for robust engagement with relevant AI actors.
+    kind: control
+    parent: govern
+    externalId: GOVERN 5
+  - id: govern-6
+    name: >-
+      Policies and procedures are in place to address AI risks and benefits arising
+      from third-party software and data and other supply chain issues.
+    kind: control
+    parent: govern
+    externalId: GOVERN 6
+
+  - id: map
+    name: Map
+    kind: domain
+    externalId: MAP
+  - id: map-1
+    name: >-
+      Context is established and understood.
+    kind: control
+    parent: map
+    externalId: MAP 1
+  - id: map-2
+    name: >-
+      Categorization of the AI system is performed.
+    kind: control
+    parent: map
+    externalId: MAP 2
+  - id: map-3
+    name: >-
+      AI capabilities, targeted usage, goals, and expected benefits and costs compared
+      with appropriate benchmarks are understood.
+    kind: control
+    parent: map
+    externalId: MAP 3
+  - id: map-4
+    name: >-
+      Risks and benefits are mapped for all components of the AI system including
+      third-party software and data.
+    kind: control
+    parent: map
+    externalId: MAP 4
+  - id: map-5
+    name: >-
+      Impacts to individuals, groups, communities, organizations, and society are
+      characterized.
+    kind: control
+    parent: map
+    externalId: MAP 5
+
+  - id: measure
+    name: Measure
+    kind: domain
+    externalId: MEASURE
+  - id: measure-1
+    name: >-
+      Appropriate methods and metrics are identified and applied.
+    kind: control
+    parent: measure
+    externalId: MEASURE 1
+  - id: measure-2
+    name: >-
+      AI systems are evaluated for trustworthy characteristics.
+    kind: control
+    parent: measure
+    externalId: MEASURE 2
+  - id: measure-3
+    name: >-
+      Mechanisms for tracking identified AI risks over time are in place.
+    kind: control
+    parent: measure
+    externalId: MEASURE 3
+  - id: measure-4
+    name: >-
+      Feedback about efficacy of measurement is gathered and assessed.
+    kind: control
+    parent: measure
+    externalId: MEASURE 4
+
+  - id: manage
+    name: Manage
+    kind: domain
+    externalId: MANAGE
+  - id: manage-1
+    name: >-
+      AI risks based on assessments and other analytical output from the MAP and
+      MEASURE functions are prioritized, responded to, and managed.
+    kind: control
+    parent: manage
+    externalId: MANAGE 1
+  - id: manage-2
+    name: >-
+      Strategies to maximize AI benefits and minimize negative impacts are planned,
+      prepared, implemented, documented, and informed by input from relevant AI
+      actors.
+    kind: control
+    parent: manage
+    externalId: MANAGE 2
+  - id: manage-3
+    name: >-
+      AI risks and benefits from third-party entities are managed.
+    kind: control
+    parent: manage
+    externalId: MANAGE 3
+  - id: manage-4
+    name: >-
+      Risk treatments, including response and recovery, and communication plans for
+      the identified and measured AI risks are documented and monitored regularly.
+    kind: control
+    parent: manage
+    externalId: MANAGE 4
