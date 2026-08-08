@@ -14,7 +14,7 @@ Stan tabeli: **2026-08-08**.
 | 02 | widok wygenerowany, nie rysowany | `eval/example/docs/views/layered-overview.svg` | `python -m easkills render --root eval/example` |
 | 02 | opis architektury w kształcie ISO 42010 | rodzina reguł `ISO` w `docs/RULES.md` | `python -m easkills conformance --root eval/example` |
 | 03 | 11 569 dopuszczalnych par | `oracle/NOTICE.md`, wiersz `relationships.xml` | `python -m easkills oracle-info` |
-| 03, 06 | 146 reguł walidacji | `docs/RULES.md` (katalog jest źródłem prawdy) | `pytest tests/test_repo_docs.py -k rule_count` |
+| 03, 05, 06 | 146 reguł walidacji | `docs/RULES.md` (katalog jest źródłem prawdy) | `pytest tests/test_repo_docs.py -k rule_count` |
 | 04 | kod `PROV003`, cytat nieodnaleziony w źródle | `docs/RULES.md`, rodzina `PROV` | `grep PROV003 docs/RULES.md` |
 | 04 | fabrykowanie cytatów jako udokumentowana słabość modeli | `docs/BLUEPRINT.md` §2, przypis do badań | `grep -n "fabricate citations" README.md` |
 | 06 | kod `REL001`, relacja niedozwolona przez macierz | `docs/RULES.md`, rodzina `REL` | `grep REL001 docs/RULES.md` |
