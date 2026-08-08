@@ -5,7 +5,7 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
-## [Unreleased]
+## [0.15.0] — 2026-08-08 — the AI governance release
 
 ### Added — `ai-act-register`: the second register, and the AIR family
 
