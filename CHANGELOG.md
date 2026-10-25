@@ -5,7 +5,7 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
-## [Unreleased]
+## [0.21.0] — 2026-10-25 — the measurement release
 
 Phase 8.6 — the measurement, retaken once against the final text of Phase 8. 163 rules,
 26 skills, 42 commands, 14 schemas — unchanged; this release changes the instrument and
