@@ -1,6 +1,10 @@
 ---
 name: ea-service
 description: Operate the architecture-service layer (Architecture-as-a-Service / on-demand) - maintain the service catalog, intake and fulfil service requests, keep SLA hygiene. Use when someone requests something from EA ("we need a review / context / an exception"), when defining or changing EA's offerings, or when REQ006-REQ008 findings (SLA breaches, retired offerings) need working.
+argument-hint: "[offering-id]"
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # The architecture service layer
@@ -17,7 +21,7 @@ instead of asserted -- and maintenance follows demand instead of ambition.
 id: svc-context-pack
 name: Agent context pack
 description: What the consumer gets, phrased from the consumer's side.
-fulfilledBy: ea-context / python -m easkills context --scope <element>
+fulfilledBy: ea-context / easkills context --scope <element>
 owner: ea@example.test
 slaDays: 2
 lifecycle: active          # proposed | active | retired
@@ -59,9 +63,9 @@ status: open               # open | fulfilled | declined
 
 ## What demand buys you
 
-* `python -m easkills kpi` -- the Service line: offerings, open/fulfilled/declined,
+* `easkills kpi` -- the Service line: offerings, open/fulfilled/declined,
   SLA breaches, average fulfilment time. This is the AaaS value evidence.
-* `python -m easkills staleness` -- every element carries its demand count; review
+* `easkills staleness` -- every element carries its demand count; review
   what people ask about first, and treat never-requested content as a candidate for
   de-scoping rather than eternal upkeep.
 

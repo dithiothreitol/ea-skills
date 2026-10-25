@@ -1,6 +1,10 @@
 ---
 name: ea-dispensation
 description: File, renew or close a time-bounded dispensation (waiver) from a standard or rule. Use when a system cannot comply yet (STD002 blocking), when a compliance assessment is non-conformant, when DISP003/DISP006 findings appear (expired or expiring waivers), or when asked for an exception, waiver or dispensation.
+argument-hint: "[standard-id] [element-id]"
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # Dispensations: exceptions with an expiry

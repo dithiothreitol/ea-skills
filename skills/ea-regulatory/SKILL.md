@@ -1,14 +1,18 @@
 ---
 name: ea-regulatory
 description: Map regulatory controls onto the architecture and maintain the DORA Register of Information. Use for control-framework gap analysis (NIST CSF, KNF Rekomendacja D and similar), ICT third-party risk, DORA register upkeep, regulatory scope questions, security-architecture coverage, or when asked which systems a regulation touches and what evidence exists. For the EU AI Act and AI risk, see ea-ai-governance.
+argument-hint: "[as-of YYYY-MM-DD]"
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # Regulatory controls and the DORA register
 
 ```bash
-python -m easkills align --root <repo> --reference nist-csf-2.0   # control gaps, named
-python -m easkills dora-register --root <repo> --as-of <date>     # the register + its own gaps
-python -m easkills dora-register --root <repo> --as-of <date> --out docs/dora-register.md
+easkills align --root <repo> --reference nist-csf-2.0   # control gaps, named
+easkills dora-register --root <repo> --as-of <date>     # the register + its own gaps
+easkills dora-register --root <repo> --as-of <date> --out docs/dora-register.md
 ```
 
 The EU AI Act has its own register (`ai-act-register`) and its own skill —

@@ -12,6 +12,12 @@ Throughout, `python -m easkills <cmd> --help` shows every flag, and
 [CLI.md](CLI.md) is the full reference. Exit code 0 means the gate passed; 1 means
 error-severity findings — the same commands are your CI.
 
+If you work with Claude Code, install the plugin as well (`/plugin marketplace add
+dithiothreitol/ea-skills`, then `/plugin install ea-skills@ea-skills`). It gives every
+session the skills, an `easkills` command — the same CLI as `python -m easkills`, usable
+from inside your architecture repository rather than from the clone — and a hook that
+refuses writes into `model/approved/` by any route but `promote` (step 3).
+
 ## 0. Scaffold a repository
 
 Copy [`template/`](../template/) somewhere and make it yours:
@@ -126,6 +132,10 @@ python -m easkills promote --root . --dry-run   # the gate + the plan
 python -m easkills promote --root .             # move staging -> approved
 git add -A && git commit -m "Approve initial capability map and application layer"
 ```
+
+With the plugin enabled, this is also the only route the host allows: its hook refuses
+an agent's direct edit of an approved file, and the `ea-approve` skill runs only when you
+invoke it.
 
 The gate judges approved+staging merged **by approved-zone standards**: missing
 owners or review dates block here. The commit is the approval record — promotion is

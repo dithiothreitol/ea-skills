@@ -50,6 +50,35 @@ Their *logic* is in the gate even though their runs are not:
 and fails the mutation it exists to catch, and `tests/test_harness_quarantine.py` pins the
 measured-skill list to the README and keeps the network out of `easkills/`.
 
+A third instrument measures the *host*: `evals/` holds cases for `claude plugin eval`, which
+runs each one as a real Claude Code session with only this plugin loaded and again with no
+plugin, and reports the difference. Dispatch it from the Actions tab
+(`.github/workflows/plugin-eval.yml`); it needs a Linux runner, because shell-granting runs
+need an OS sandbox native Windows does not have. `tests/test_plugin.py` keeps the cases
+loadable and proves the one judgement-bearing grader against both answers.
+
+## Changing the plugin surface
+
+The repository root is a Claude Code plugin (`.claude-plugin/`, `bin/`, `hooks/`). Two
+things the host will not tell you, so the tests do:
+
+- **Skill frontmatter keys are a closed vocabulary here.** The host ignores an unknown key
+  without a word -- `allowed-tool` for `allowed-tools` would leave every invocation
+  prompting and nothing would say why -- so `tests/test_plugin.py` rejects anything outside
+  the documented set.
+- **Skills say `easkills`, never `python -m easkills`.** An installed plugin is not
+  importable from the architecture repository the skills run in; `bin/easkills` is what the
+  plugin puts on the Bash tool's PATH. Commit both scripts the host runs executable
+  (`git update-index --chmod=+x`); a test checks the mode.
+
+Validate the manifests with the host's own validator before pushing (CI runs the same, on a
+pinned version):
+
+```bash
+claude plugin validate --strict .
+claude plugin validate --strict .claude-plugin/plugin.json
+```
+
 ## Run the full gate before pushing
 
 Every `easkills` invocation CI runs is in this block, and a test

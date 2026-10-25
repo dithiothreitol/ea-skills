@@ -1,12 +1,15 @@
 ---
 name: ea-docs
 description: Generate and review the architecture description (ISO 42010 structure) and audience outputs from the approved model. Use when asked for architecture documentation, an architecture description, a portfolio report, TIME quadrants, or a stakeholder-facing summary of the model. Reads only the approved zone.
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # The architecture description
 
 ```bash
-python -m easkills docs --root <repo>
+easkills docs --root <repo>
 ```
 
 One command produces `docs/architecture-description.md` plus one SVG per view in

@@ -1,0 +1,17 @@
+{
+  "description": "ea-skills guard rail: model/approved/ changes only through `easkills promote` (AD-02). Exact for file-editing tools, best-effort for shell commands.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/guard-approved",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

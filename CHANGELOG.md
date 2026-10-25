@@ -5,6 +5,104 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
+## [Unreleased]
+
+Phase 8.1 — the plan for the whole phase is [`docs/PHASE8-PLAN.md`](docs/PHASE8-PLAN.md),
+written from an audit of 0.15.0 verified against its own code.
+
+### Added — the repository is a Claude Code plugin
+
+The skills never reached a host on their own: `skills/` at the repository root is not a
+location Claude Code discovers, and nothing else was there to install. Now
+`.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` make the repository root
+the plugin root — no file moved — and two commands install it:
+
+```
+/plugin marketplace add dithiothreitol/ea-skills
+/plugin install ea-skills@ea-skills
+```
+
+Both manifests pass `claude plugin validate --strict`, and a new CI job runs that validator
+on a pinned Claude Code version, so a stricter future release arrives as a deliberate
+upgrade rather than a red build. A test keeps the manifest version equal to the package's,
+because a plugin version pins its users to that release.
+
+### Added — `easkills`, because an installed plugin is not importable
+
+A plugin lives outside every architecture repository, so `python -m easkills` fails from
+where the skills actually run. `bin/easkills` — on the Bash tool's PATH while the plugin is
+enabled — runs the plugin's own copy of the package with the first interpreter that really
+runs Python 3.11+ (probed, not found: on Windows `python3` can be the Store stub), and says
+exactly which dependency is missing and how to install it into *that* interpreter. It puts
+the plugin root on the import path of one process only: a global `PYTHONPATH` would let the
+plugin's `tests/` package shadow a project's own. Every skill now says `easkills`; from a
+clone, `python -m easkills` is the same command and every document keeps using it.
+
+### Added — the approved zone is guarded by a hook, not by a sentence (AD-02)
+
+`model/approved/` changing only through `promote` was an instruction in `ea-approve`. A
+rule that has to hold every time belongs in a mechanism, so `hooks/hooks.json` runs
+`hooks/guard_approved.py` before every file-editing and shell tool call and refuses —
+exit 2, with the reason and the way forward — any write under an architecture
+repository's approved zone that is not `easkills promote`.
+
+- **Exact for Write, Edit, MultiEdit and NotebookEdit**, whose target is a field.
+- **Best-effort for Bash and PowerShell**, whose target is read out of a command line:
+  redirections, `cp`/`mv` *destinations* (copying out of `approved/` to propose an update
+  is legitimate and passes), `rm`, `sed -i`, `git mv`/`git rm`, and the writing cmdlets.
+  SECURITY.md says plainly that this is a guard rail against accidents, not a boundary.
+- **Scoped so it never fires where it should not:** only where the repository root holds an
+  `ea.config.yaml`, and never inside the ea-skills checkout itself, whose golden cases and
+  fixtures are architecture repositories by shape and are maintained on purpose.
+- **Fails open on input it cannot parse**, because a hook that blocked everything it could
+  not read would make the host unusable.
+
+Twenty-two refusal/allowance cases are pinned in `tests/test_plugin.py`, including the
+promote-then-delete chain that a whole-command exemption would have let through.
+
+### Changed — every skill carries the frontmatter its role needs
+
+Each `SKILL.md` had `name` and `description` and nothing else. Now: `allowed-tools`
+pre-approves the deterministic CLI (`easkills`, `python -m easkills`) **and nothing else** —
+in particular nothing that spends money, which is why `ea-eval` does not pre-approve the
+harness; `argument-hint` where a skill takes a scope, a file or a date; and **`ea-approve`
+carries `disable-model-invocation: true`**, so the one skill whose act is a human sign-off
+runs only when the human invokes it.
+
+The host ignores an unknown frontmatter key without a word — verified against its own
+validator while writing this: `allowed-tool` for `allowed-tools` passes `claude plugin
+validate --strict`. So the vocabulary is closed by `tests/test_plugin.py` instead.
+
+**Not adopted, on purpose: `context: fork`.** The plan proposed it for `ea-intake` and
+`ea-import`, whose loops are long. A forked skill runs without the conversation, which is
+where a user's scoping instructions live ("only the 2026 interviews"), and by default in the
+background, which would let modelling start before intake finished. Neither effect can be
+measured until the host eval below has run, so the change waits for evidence.
+
+### Added — `evals/`: host behaviour, measured with and without the plugin
+
+Four cases for `claude plugin eval`, each run as a real Claude Code session with only this
+plugin loaded and again with none: intake from a raw interview (the register is written and
+`validate-facts` is run), **no promotion when asked whether a model is ready** (the gate may
+be dry-run; `approved/` must stay untouched), proposals that **stay skeletons** (a regex
+grader catches prose written over a `PROPOSED --` placeholder, and a test proves it against
+both answers), and modelling into staging with the gate run. Scaffolds copy the committed
+golden cases, so the fixtures cannot drift from them.
+
+`.github/workflows/plugin-eval.yml` runs the suite on dispatch only, on Linux (shell grants
+need an OS sandbox native Windows lacks), with the narrowest tool grants that let the skills
+work and a cost ceiling. **It has not run yet**: the command is gated behind a newer Claude
+Code build than the one this was written on. `docs/SKILL-COVERAGE.md` lists the instrument
+and claims nothing for it until it has numbers.
+
+### Changed — housekeeping the audit found
+
+- The comparison re-check moves to a **quarterly** cadence. Two monthly reminders went
+  unanswered in a row; a cadence somebody keeps beats a stricter one nobody does.
+- `eval.yml` uses the action versions `ci.yml` uses.
+- `.gitignore` covers `.claude/settings.local.json` (it was ignored only by one maintainer's
+  global configuration) and `evals/results/`.
+
 ## [0.15.0] — 2026-08-08 — the AI governance release
 
 ### Added — `ai-act-register`: the second register, and the AIR family

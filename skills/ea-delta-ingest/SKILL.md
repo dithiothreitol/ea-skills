@@ -1,6 +1,10 @@
 ---
 name: ea-delta-ingest
 description: Ingest new or changed source material and propose model updates as a diff against the approved model - continuous ingestion, not one-shot generation. Use when new interviews, CMDB exports or drift reports land in facts/sources, when the delta report shows unmodelled entities or unused facts, or when asked to "update the model from" new information.
+argument-hint: "[source-file]"
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # Delta ingestion
@@ -19,7 +23,7 @@ precisely so a re-run produces a reviewable diff.
 2. **Ask the tooling what is new:**
 
 ```bash
-python -m easkills delta --root <repo>
+easkills delta --root <repo>
 ```
 
 Two mechanical lists: entities with no model counterpart (candidate additions) and

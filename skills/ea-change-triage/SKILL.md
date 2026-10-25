@@ -1,6 +1,10 @@
 ---
 name: ea-change-triage
 description: Classify an incoming architecture change request (TOGAF Phase H) and route it - simplification, incremental, or re-architecting. Use when a change request, new demand or drift report arrives and someone asks what to do with it, or whether a change "needs architecture".
+argument-hint: "[element-id]"
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # Change triage (Phase H)
@@ -18,7 +22,7 @@ The stakeholder-impact test is the load-bearing one, and **the tooling counts it
 you** -- do not eyeball it:
 
 ```bash
-python -m easkills impact --root <repo> --scope <element-id>
+easkills impact --root <repo> --scope <element-id>
 ```
 
 The report gives the blast radius (transitive, nearest-first, with the relationship
@@ -44,7 +48,7 @@ A change request that adds a system, or that lands on one of two systems doing t
 job, needs one more read before it is classified:
 
 ```bash
-python -m easkills debt --root <repo>   # rationalization-candidate, overlapping-applications, duplicate-service
+easkills debt --root <repo>   # rationalization-candidate, overlapping-applications, duplicate-service
 ```
 
 * **`rationalization-candidate`** -- a capability realized by two or more application

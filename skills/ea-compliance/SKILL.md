@@ -1,6 +1,10 @@
 ---
 name: ea-compliance
 description: Assess a project or system against the approved architecture and record the verdict with TOGAF's six compliance levels. Use when asked to review a solution against the architecture, run a compliance check or architecture review, or when a non-conformant assessment needs recording and follow-up.
+argument-hint: "[element-id]"
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # Compliance assessment
@@ -34,7 +38,7 @@ relatedElements: [app-order-portal]
 ## Method
 
 1. **Scope from the model, not from memory.** Generate the checklist inputs with
-   `python -m easkills context --scope <element>`: the binding requirements and
+   `easkills context --scope <element>`: the binding requirements and
    constraints (`appliesTo`), the standards with their lifecycle, and the decisions
    that apply. That *is* the tailored checklist -- assess against those, item by
    item, and put the per-item outcomes in `findings`.
@@ -56,5 +60,5 @@ that goes nowhere is theatre. The three honest exits:
 
 `followUp.dispensation` / `followUp.decision` must reference real records (`COMP004`).
 
-Validate with `python -m easkills validate-gov`. Report the verdict, the findings
+Validate with `easkills validate-gov`. Report the verdict, the findings
 that drove it, and the follow-up path -- in that order.

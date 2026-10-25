@@ -1,6 +1,9 @@
 ---
 name: ea-run
 description: Orchestrate the EA pipeline - route a request to the right ea-* skill and keep the stage order honest. Use when a request spans multiple stages ("model our architecture from these documents"), when unsure which ea-* skill applies, or when resuming work in an EA repository whose state you have not inspected yet.
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # Routing the pipeline
@@ -8,15 +11,21 @@ description: Orchestrate the EA pipeline - route a request to the right ea-* ski
 The stages depend on each other; the most common failure is starting downstream of
 missing input. Establish the repository's state first, then route.
 
+Every command in these skills is `easkills <command>`. With the ea-skills plugin
+enabled, `easkills` is on the Bash tool's PATH; from a clone of ea-skills,
+`python -m easkills` is the same command with the same arguments and exit codes. If
+neither resolves, the tooling is not installed -- say so; do not reason your way to a
+verdict the tooling exists to compute.
+
 ## State check (one minute, always)
 
 ```bash
-python -m easkills validate-facts --root .   # is there a verified fact register?
-python -m easkills validate --root . --zone approved
-python -m easkills validate --root . --zone staging
-python -m easkills validate-gov --root .     # governance records healthy?
-python -m easkills delta --root .            # unmodelled entities / unused facts
-python -m easkills align --root .            # is there a reference yardstick, and where does it stand?
+easkills validate-facts --root .   # is there a verified fact register?
+easkills validate --root . --zone approved
+easkills validate --root . --zone staging
+easkills validate-gov --root .     # governance records healthy?
+easkills delta --root .            # unmodelled entities / unused facts
+easkills align --root .            # is there a reference yardstick, and where does it stand?
 ```
 
 ## Routing table
@@ -33,7 +42,7 @@ Everything else routes by situation:
 | New raw documents; empty or stale fact register | `ea-intake` |
 | Facts exist, no capability map | `ea-capability-map` (the spine comes first) |
 | Facts + capability map; elements/relations to add | `ea-model` |
-| Staging has content; human asks to publish | `ea-approve` (never on your own initiative) |
+| Staging has content; human asks to publish | `ea-approve` -- the human invokes it; it never loads on your initiative |
 | Who is this for / concerns unclear / ISO findings | `ea-stakeholders` |
 | Views needed or stale | `ea-views`; then `ea-docs` for the description |
 | New info against an existing model | `ea-delta-ingest` |

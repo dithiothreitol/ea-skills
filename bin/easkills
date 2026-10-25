@@ -1,0 +1,39 @@
+#!/bin/sh
+# easkills -- the ea-skills command line, on the Bash tool's PATH while the plugin is enabled.
+#
+# Identical to `python -m easkills` run from a clone of ea-skills: same arguments, same
+# exit codes, same output. It exists because an installed plugin lives outside every
+# architecture repository, so the package is not importable from where the skills run
+# their commands. This wrapper puts the plugin's own copy on the import path of one
+# process and nothing else: no global PYTHONPATH (the plugin root holds a `tests/`
+# package that would shadow a project's own), and no `pip install` into somebody's
+# environment on their behalf.
+#
+# The interpreter is the first of $EASKILLS_PYTHON, python3, python that actually runs
+# Python 3.11+ -- probed, not just found on PATH, because on Windows `python3` can be the
+# Microsoft Store stub, which exists and does nothing useful.
+
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd) || exit 1
+
+for py in ${EASKILLS_PYTHON:-} python3 python; do
+  if "$py" -c "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)" >/dev/null 2>&1; then
+    exec "$py" -c '
+import sys
+root = sys.argv.pop(1)
+sys.path.insert(0, root)
+try:
+    import yaml, jsonschema, lxml  # noqa: F401 -- the three runtime dependencies
+except ImportError as exc:
+    sys.exit(
+        f"easkills: missing runtime dependency {exc.name!r} in {sys.executable}. "
+        f"Install them into that interpreter: {sys.executable} -m pip install -r {root}/requirements.txt"
+    )
+from easkills.cli import main
+sys.argv[0] = "easkills"
+sys.exit(main())
+' "$root" "$@"
+  fi
+done
+
+echo "easkills: no Python 3.11+ found (tried ${EASKILLS_PYTHON:+$EASKILLS_PYTHON, }python3, python). Set EASKILLS_PYTHON to an interpreter that has pyyaml, jsonschema and lxml installed." >&2
+exit 127

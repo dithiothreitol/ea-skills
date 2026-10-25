@@ -1,6 +1,10 @@
 ---
 name: ea-intake
 description: Extract a verified fact register from raw source documents (interviews, notes, inventories, CMDB exports) as the first stage of the EA pipeline. Use when asked to ingest, read in, or extract facts from source material, when new documents land in facts/sources, or before any modelling work when the fact register is missing or stale. Produces facts with mechanically verified quotes, an entity alias table, a coverage report and clarification questions.
+argument-hint: "[source-file]"
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # Ingesting sources into the fact register
@@ -35,7 +39,7 @@ into them.
 ### 0. If the input is a spreadsheet, convert it first
 
 ```bash
-python -m easkills intake-csv --root <repo> --file inventory.csv
+easkills intake-csv --root <repo> --file inventory.csv
 ```
 
 An application inventory arrives as a spreadsheet more often than as prose, and a
@@ -56,8 +60,8 @@ header is ambiguous ("Status", "Type"), that is a clarification question, not a 
 ### 1. Chunk
 
 ```bash
-python -m easkills chunk --root <repo>                 # all of facts/sources
-python -m easkills chunk --root <repo> --file facts/sources/interview.md
+easkills chunk --root <repo>                 # all of facts/sources
+easkills chunk --root <repo> --file facts/sources/interview.md
 ```
 
 Work chunk by chunk, never the whole document in one pass -- small units roughly
@@ -133,7 +137,7 @@ because it means downstream modelling would silently merge two different things.
 ### 4. Validate, repair (three iterations, then stop)
 
 ```bash
-python -m easkills validate-facts --root <repo>
+easkills validate-facts --root <repo>
 ```
 
 Fix errors and re-run, **at most three times**. `FACT004` means the source does not
@@ -144,7 +148,7 @@ what is unresolved; do not grind.
 ### 5. Measure coverage, ask questions
 
 ```bash
-python -m easkills coverage --root <repo>
+easkills coverage --root <repo>
 ```
 
 The report lists every substantive source statement that no fact cites, with line

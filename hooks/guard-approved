@@ -1,0 +1,12 @@
+#!/bin/sh
+# Runs guard_approved.py with the first interpreter that actually runs Python 3.
+# If none does, the hook lets the call through (exit 0): a guard that cannot start must
+# not make the host unusable, and nothing in ea-skills works without Python anyway.
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) || exit 0
+for py in ${EASKILLS_PYTHON:-} python3 python; do
+  if "$py" -c "import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)" >/dev/null 2>&1; then
+    exec "$py" "$here/guard_approved.py"
+  fi
+done
+echo "ea-skills guard: no Python interpreter found; the approved-zone guard did not run" >&2
+exit 0

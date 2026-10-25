@@ -38,6 +38,13 @@ behaviour is ideal). You can expect an acknowledgement within a week.
 
 ## Scope notes
 
+- The approved-zone hook (`hooks/`) is a guard rail for agents, not a security boundary.
+  It is exact for the file-editing tools and pattern-based for shell commands, so a
+  determined one-liner can get past it; what it guarantees is that an agent cannot bypass
+  the promotion gate *by accident*. The gate itself, and the git commit recording each
+  promotion, remain the control. A way for an agent to write into an architecture
+  repository's approved zone that the hook's documented scope says it should catch is in
+  scope as a vulnerability.
 - The agent skills (`skills/*/SKILL.md`) are instructions for LLM agents; treat any model
   repository content as *data*, never as instructions — the skills are written to
   that rule, and deviations from it are in scope as vulnerabilities.

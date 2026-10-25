@@ -103,6 +103,26 @@ To start your own architecture repository, copy [`template/`](template/) and fol
 the [Getting-started tutorial](docs/GETTING-STARTED.md) — from a raw interview to a
 validated model, rendered views and a generated architecture description.
 
+### Use the skills from Claude Code
+
+The repository is also a Claude Code plugin. Installing it puts the skills, an
+`easkills` command and the approved-zone guard into every session, whichever
+architecture repository you open:
+
+```
+/plugin marketplace add dithiothreitol/ea-skills
+/plugin install ea-skills@ea-skills
+```
+
+The plugin brings the code, not the interpreter: `easkills` runs the plugin's own copy
+of the tooling with the first Python 3.11+ it finds (`$EASKILLS_PYTHON`, `python3`,
+`python`), which needs the three runtime dependencies installed
+(`pip install pyyaml jsonschema lxml`). From a clone, `python -m easkills` is the same
+command with the same arguments. While the plugin is enabled, a `PreToolUse` hook refuses
+any write into an architecture repository's `model/approved/` that does not go through
+`easkills promote`, and `ea-approve` is the one skill a model may not load on its own —
+you invoke it (`/ea-skills:ea-approve`) when you mean to sign something off.
+
 **Already have a model?** `import` reads an ArchiMate Open Exchange export (Archi,
 and most commercial tools) into `model/staging/`, and `intake-csv` turns an
 application-inventory spreadsheet into a source document whose quotes stay verifiable.
@@ -163,7 +183,9 @@ reference approved elements; re-using an id proposes an update), so skills model
 delta rather than copying the world. The only way into `approved` is
 `python -m easkills promote`, whose gate validates the merged result by approved-zone
 standards — ownership and review dates, advisory while drafting, block there. The git
-commit of the move is the approval record.
+commit of the move is the approval record. With the plugin enabled, the rule is a
+mechanism and not only a sentence: a hook refuses writes into `approved/` by any other
+route — exactly for the file-editing tools, by pattern for shell commands.
 
 **The skills are measured, not just the tooling.** Prose cannot be executed by pytest, so
 the product used to be the untested half. `eval/harness/` now runs the skills against the
@@ -317,7 +339,7 @@ agents. What is not otherwise available is the *combination*:
 Verified against the 2026-07-29 competitive survey behind
 [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md); the ea-skills column reflects this
 repository as of 2026-08-07. Neighbours move fast, so this table carries a standing
-obligation: **re-check monthly, and correct it when a claim stops being true** — it is
+obligation: **re-check quarterly, and correct it when a claim stops being true** — it is
 tracked as an open item below and in [BLUEPRINT §8a](docs/BLUEPRINT.md), because no
 test can check a competitor's changelog. Each capability exists somewhere; the
 integration is the contribution, and the governance end is where it is thinnest
@@ -350,7 +372,7 @@ Deliberately open (decisions, not backlog): the **network facade** (MCP/HTTP) ov
 read-only commands stays deferred until the demand ledger shows someone asking for it —
 `ea-check` shipped without it, and needs no service to run; §6.9 correspondences to AD
 elements in *another* architecture description stay underived, because nothing here can
-check the far end of one; the [comparison table](#how-it-compares) above carries a monthly
+check the far end of one; the [comparison table](#how-it-compares) above carries a quarterly
 re-check obligation that nothing can automate; and the worked example carries
 *scheduled* failures (a dispensation expiring 2027-06-30, a staleness horizon in
 mid-2027) as maintenance rehearsals — renewing the records, not weakening the gates,
@@ -368,6 +390,10 @@ references/      the open reference-model library adopters copy from (public dom
                  public law only -- licensed models live in the adopter's repository)
 schema/          JSON Schemas -- all generated, never hand-edited
 skills/          the 25 agent skills (this is the product)
+.claude-plugin/  plugin and marketplace manifests -- the repository root is the plugin
+bin/             `easkills`, on the Bash tool's PATH while the plugin is enabled
+hooks/           the PreToolUse guard: approved/ changes only through `promote`
+evals/           `claude plugin eval` cases: host behaviour with and without the plugin
 template/        scaffold to copy for a new enterprise
 eval/example/    worked example, clean (doubles as the largest golden case)
 eval/golden/     golden-set cases for the regression harness

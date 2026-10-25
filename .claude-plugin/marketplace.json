@@ -1,0 +1,14 @@
+{
+  "name": "ea-skills",
+  "owner": {
+    "name": "Dariusz Tyszka"
+  },
+  "description": "One plugin: ea-skills, the enterprise-architecture lifecycle as agent skills over a deterministic, offline core.",
+  "plugins": [
+    {
+      "name": "ea-skills",
+      "source": "./",
+      "description": "Agent skills, the easkills command and the approved-zone guard for an evidence-backed ArchiMate architecture repository."
+    }
+  ]
+}

@@ -1,21 +1,25 @@
 # What measures which skill
 
-The core has a test per rule. The product is 25 files of prose, and prose cannot be
+The core has a test per rule. The product is a directory of prose, and prose cannot be
 executed by pytest — so for a long time the honest answer to "how do you know the skills
 work?" was *an end-to-end run and my judgement*. This page is the answer that replaced it,
 including the parts where the answer is still "nothing does".
 
-Four instruments, in descending order of what they can catch:
+Five instruments, in descending order of what they can catch:
 
 | Instrument | What it measures | Where |
 |---|---|---|
 | **Score against gold** | agreement with a golden repository, per category, over N runs | `eval/harness/run.py` |
 | **Contract** | properties the skill's own text or the tooling states, on the artifact a run produced | `eval/harness/run.py` (apparatus), `eval/harness/contracts.py` (governance) |
 | **Deterministic path test** | the commands the skill prescribes, run in the order it prescribes, on committed fixtures | `tests/test_adoption_path.py` and the per-command tests |
+| **Host eval** | a real host (Claude Code) running a case with only this plugin loaded, and again with none -- the delta is what the skills contribute | `evals/`, run by `claude plugin eval` (`.github/workflows/plugin-eval.yml`) |
 | **Manual end-to-end run** | a real host (Claude Code) executing the skill with its own planning and tools | recorded in `docs/BLUEPRINT.md` §8a |
 
 The first two need an API key and cost tokens; they are never in the default gate. The
-third is in every CI run. The fourth is a human sitting down and doing it.
+third is in every CI run. The host eval needs a key too, plus a Linux runner (its shell
+sandbox has no native Windows backend); its cases are written and their logic is tested
+in the default gate (`tests/test_plugin.py`), and **its first run is still owed** -- until
+it happens, no row below claims it. The last is a human sitting down and doing it.
 
 ## Every skill, and what would catch a defect in it
 
@@ -29,7 +33,7 @@ third is in every CI run. The fourth is a human sitting down and doing it.
 | `ea-adr` | contract | MADR fields, rejected options with pros *and* cons, binding to real elements; and the three-move supersession contract (`CORR001`). The two ADR cases arriving from `propose` are prose only — nothing mechanical checks that a "keep both" decision got recorded |
 | `ea-dispensation` | contract | mandatory bounded expiry, a real standard waived, tight scope, a named grantor |
 | `ea-import` | path test | the adoption path: sliceable output, reference-closed element files, everything `assumed`, the gate refusing what the previous tool allowed |
-| `ea-approve` | path test | promotion of one vouched-for slice while the rest stays a proposal |
+| `ea-approve` | path test | promotion of one vouched-for slice while the rest stays a proposal; the approved-zone hook's refusals and exemptions (`tests/test_plugin.py`); and, once run, the host eval `no-unprompted-promotion` |
 | `ea-validate` | path test | the three-layer validator's own tests (146 rule codes in the catalogue) plus the gate steps of every harness run |
 | `ea-align` | path test | `align` on the worked example's reference pack (clean under `--strict`) and on `eval/fixtures/broken/reference/`, where every `ALN` rule has a provoking pack; plus `propose --from align`, including that it binds nothing and writes no prose |
 | `ea-docs` | path test | the architecture description generated from the approved zone only |
@@ -44,7 +48,7 @@ third is in every CI run. The fourth is a human sitting down and doing it.
 | `ea-board` | path test | the reports it assembles (`kpi`, `staleness`, `conformance`, `debt`) |
 | `ea-health` | path test | the same reports, plus every debt kind — a test pins that each one this skill can print is explained here — and `maturity`, whose thresholds are pinned against the table in `docs/CLI.md` |
 | `ea-delta-ingest` | path test | `delta` — unmodelled entities and unused facts |
-| `ea-run` | **manual only** | nothing mechanical. It routes between skills; its failure mode is choosing the wrong order, which only a real host exercises |
+| `ea-run` | **manual only** | nothing mechanical yet. It routes between skills; its failure mode is choosing the wrong order, which only a real host exercises -- the host-eval cases `intake-from-sources` and `model-into-staging` exist for exactly that, and move this row once they have run |
 | `ea-eval` | **manual only** | nothing mechanical. It describes how to use the harnesses; a defect here shows up as somebody drawing the wrong conclusion from a number |
 
 ## What "path test" does and does not claim

@@ -1,12 +1,16 @@
 ---
 name: ea-import
 description: Import an existing architecture model (ArchiMate Open Exchange XML from Archi, LeanIX, Bizzdesign or any conforming tool) into model/staging/ for brownfield adoption. Use when a repository does not start empty - when asked to "migrate our model", "import from Archi", or bring an existing landscape under this discipline.
+argument-hint: "[exchange-export.xml]"
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # Brownfield import: an existing model, brought under the rules
 
 ```bash
-python -m easkills import --root <repo> --file <export>.xml
+easkills import --root <repo> --file <export>.xml
 ```
 
 Reads an Open Group ArchiMate Model Exchange file and writes proposals into
@@ -36,7 +40,7 @@ commercial tools export the same format.
 
 ## Your job after the import
 
-Run `python -m easkills validate --root <repo> --zone staging`. The findings are not
+Run `easkills validate --root <repo> --zone staging`. The findings are not
 noise — **they are the adoption backlog**, already itemised:
 
 | Finding | Meaning | Work |
@@ -60,7 +64,7 @@ Leave the rest in staging as the visible backlog. An honest architecture reposit
 allowed to know less than the old tool claimed.
 
 While the model is half-promoted, ask impact questions against the proposal:
-`python -m easkills impact --scope <id> --zone staging`. Against the approved zone
+`easkills impact --scope <id> --zone staging`. Against the approved zone
 alone the radius is truthfully tiny and practically misleading — most of the model is
 still a proposal.
 

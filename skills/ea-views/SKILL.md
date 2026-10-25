@@ -1,6 +1,9 @@
 ---
 name: ea-views
 description: Author model views and render them to SVG. Use when asked to create a diagram, view or visualisation of the architecture, when a concern has no view framing it (ISO003), or after model changes that should be reflected in rendered output. Views declare content only; layout and rendering are computed.
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # Authoring and rendering views
@@ -43,9 +46,9 @@ Rules that keep views honest:
 ## Rendering
 
 ```bash
-python -m easkills render --root <repo>                 # approved -> docs/views/*.svg
-python -m easkills render --root <repo> --zone staging  # preview proposals
-python -m easkills docs   --root <repo>                 # views + architecture description
+easkills render --root <repo>                 # approved -> docs/views/*.svg
+easkills render --root <repo> --zone staging  # preview proposals
+easkills docs   --root <repo>                 # views + architecture description
 ```
 
 Rendering is dependency-free and byte-stable; re-render after any model change that

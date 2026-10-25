@@ -1,6 +1,9 @@
 ---
 name: ea-eval
 description: Regression-test the extraction and modelling skills against the golden set. Use after changing ea-intake, ea-model, ea-capability-map or their prompts/conventions, when asked how good the pipeline is, or before releasing skill changes. Scores a pipeline run against gold with precision/recall/F1.
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # Evaluating the pipeline against the golden set
@@ -26,7 +29,7 @@ model they *should* produce.
 3. **Score:**
 
 ```bash
-python -m easkills score --root <scratch> --gold eval/golden/clinic --json run.json
+easkills score --root <scratch> --gold eval/golden/clinic --json run.json
 ```
 
 Read the table with the failure modes in mind: **fact recall** falling means

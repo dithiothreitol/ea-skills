@@ -1,14 +1,18 @@
 ---
 name: ea-context
 description: Generate scoped EA context packs for development and coding agents working in downstream system repositories (AD-09). Use when asked what constraints, standards or decisions apply to a system, when preparing an AGENTS.md/CLAUDE.md governance section for a consuming repo, or before a compliance assessment needs its checklist inputs.
+argument-hint: "[element-id]"
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # Agent context packs
 
 ```bash
-python -m easkills context --root <ea-repo> --scope app-erp-core
-python -m easkills context --root <ea-repo> --scope cap-order-management   # expands to realizers
-python -m easkills context --root <ea-repo> --scope app-erp-core --out pack.md
+easkills context --root <ea-repo> --scope app-erp-core
+easkills context --root <ea-repo> --scope cap-order-management   # expands to realizers
+easkills context --root <ea-repo> --scope app-erp-core --out pack.md
 ```
 
 One command produces a scoped extract of the **approved** model for the agents (and

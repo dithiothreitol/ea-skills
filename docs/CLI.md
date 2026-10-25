@@ -1,8 +1,14 @@
 # CLI reference
 
 ```
-python -m easkills <command> [flags]
+python -m easkills <command> [flags]      # from a clone (or an editable install)
+easkills <command> [flags]                # with the Claude Code plugin enabled
 ```
+
+The two spellings are one command: `bin/easkills` runs the plugin's own copy of this
+package with the first Python 3.11+ it finds (`$EASKILLS_PYTHON`, `python3`, `python`), so
+the skills can call it from inside any architecture repository. Same arguments, same exit
+codes, same output.
 
 Every command is deterministic given the repository state (and, where relevant, an
 `--as-of` date). **Exit code 0** = gate passed; **1** = error-severity findings (or a

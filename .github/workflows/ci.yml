@@ -40,6 +40,24 @@ jobs:
       - name: Tests
         run: python -m pytest tests -q
 
+  # The plugin surface, checked by the host's own validator. Pinned to the version the
+  # manifests were validated with, so a new release's stricter warnings arrive as a
+  # deliberate upgrade rather than as a red build nobody changed anything for. Skill
+  # frontmatter is *not* covered here -- the validator ignores unknown keys, which is why
+  # tests/test_plugin.py closes that vocabulary itself.
+  plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Claude Code (validator only, no credentials)
+        run: npm install -g @anthropic-ai/claude-code@2.1.268
+
+      - name: Plugin and marketplace manifests validate strictly
+        run: |
+          claude plugin validate --strict .
+          claude plugin validate --strict .claude-plugin/plugin.json
+
   # The artifact gates run once: they check repository content, not the interpreter.
   gate:
     runs-on: ubuntu-latest

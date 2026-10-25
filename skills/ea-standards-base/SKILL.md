@@ -1,6 +1,9 @@
 ---
 name: ea-standards-base
 description: Maintain the standards information base (SIB) - technology and architecture standards with type and lifecycle. Use when asked to record, adopt, deprecate or retire a standard, when STD001-STD004 or SIB003/SIB004 findings appear, or when someone asks "what is our standard for X".
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # The standards information base
@@ -96,6 +99,6 @@ CMDB export or interview reveals actual usage, that arrives through `ea-intake` 
 ## Reporting back
 
 List what changed in the SIB, which elements are now exposed (`STD002`/`STD003`
-findings, also visible in `python -m easkills kpi` as obsolescence exposure), and
+findings, also visible in `easkills kpi` as obsolescence exposure), and
 which dispensations or migrations that implies. A retirement with no impact analysis
 is not finished work.

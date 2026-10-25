@@ -1,12 +1,14 @@
-# The README's capability comparison carries a standing obligation: re-check it monthly
-# and correct any claim that stopped being true. No test can check a competitor's
-# changelog -- but the *reminder* is automatable, and an obligation nobody is reminded of
-# is the exact failure mode this project criticises in other tools.
+# The README's capability comparison carries a standing obligation: re-check it quarterly
+# and correct any claim that stopped being true. (Monthly until 2026-10: two reminders went
+# unanswered in a row, and an obligation that is routinely missed teaches people to ignore
+# the reminder -- a cadence somebody keeps beats a stricter one nobody does.) No test can
+# check a competitor's changelog -- but the *reminder* is automatable, and an obligation
+# nobody is reminded of is the exact failure mode this project criticises in other tools.
 name: Comparison re-check
 
 on:
   schedule:
-    - cron: "0 9 1 * *" # 09:00 UTC on the first of every month
+    - cron: "0 9 1 1,4,7,10 *" # 09:00 UTC on the first day of each quarter
   workflow_dispatch:
 
 permissions:
@@ -18,12 +20,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Open the monthly re-check issue
+      - name: Open the quarterly re-check issue
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh issue create \
-            --title "Comparison table re-check — $(date -u +'%Y-%m')" \
+            --title "Comparison table re-check — $(date -u +'%Y')-Q$(( ($(date -u +%-m) + 2) / 3 ))" \
             --label "documentation" \
             --body "$(cat <<'BODY'
           The **How it compares** table in [README.md](../blob/main/README.md#how-it-compares)

@@ -1,15 +1,18 @@
 ---
 name: ea-validate
 description: Run and interpret the deterministic EA model validation gate. Use when asked to check, validate, review or lint an architecture model, when a model build fails, before promoting content from staging to approved, or when investigating ArchiMate relationship errors, provenance failures or model quality findings.
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # Validating the model
 
 ```bash
-python -m easkills validate --root <repo> --zone approved     # default zone
-python -m easkills validate --root <repo> --zone staging
-python -m easkills validate --root <repo> --json report.json  # machine-readable
-python -m easkills validate --root <repo> --strict            # warnings fail too
+easkills validate --root <repo> --zone approved     # default zone
+easkills validate --root <repo> --zone staging
+easkills validate --root <repo> --json report.json  # machine-readable
+easkills validate --root <repo> --strict            # warnings fail too
 ```
 
 Exit code 0 means no errors; 1 means errors (or, under `--strict`, warnings). The
@@ -18,7 +21,7 @@ proposal and a published model.
 
 Zone semantics: `staging` validates as an **overlay on approved** -- staging is a
 proposed delta, so its relationships may reference approved elements and a same-id
-concept is an update proposal. The promotion gate (`python -m easkills promote
+concept is an update proposal. The promotion gate (`easkills promote
 --dry-run`) validates the merged result by approved-zone standards instead; content
 that merely warns in staging can block there (ownership, review dates).
 
@@ -66,7 +69,7 @@ sentence.
 
 **`ORACLE001` -- oracle drift.** A vendored rule file no longer matches its pinned hash.
 Do not re-pin to make it green. Find out what changed: `git diff oracle/`. Re-pinning
-(`python -m easkills pin-oracle`) is correct only when the change is a deliberate,
+(`easkills pin-oracle`) is correct only when the change is a deliberate,
 reviewed oracle update -- for example moving to a newer Archi revision.
 
 **`GOV001` / `GOV002` in `approved`.** Ownership is not paperwork; unowned content is the
@@ -83,18 +86,19 @@ often serving, association or flow.
 
 ## Before promoting staging to approved
 
-Run `python -m easkills promote --root <repo> --dry-run` -- it validates the merged
+Run `easkills promote --root <repo> --dry-run` -- it validates the merged
 result by approved-zone standards, which is the actual bar. Confirm: zero errors,
 `GOV001`/`GOV002` resolved (warnings in staging, errors at the gate), every `PROV006`
 assumption either confirmed into evidence or consciously accepted, and every warning
 either fixed or explained. The promotion itself is the `ea-approve` skill's job and
-requires an explicit human decision.
+requires an explicit human decision -- which is why that skill is invoked by the human
+(`/ea-skills:ea-approve`) rather than loaded on your initiative.
 
 Then compile, because passing validation and producing an openable model are different
 claims:
 
 ```bash
-python -m easkills compile --root <repo> --zone approved
+easkills compile --root <repo> --zone approved
 ```
 
 ## Reporting back

@@ -1,6 +1,10 @@
 ---
 name: ea-align
 description: Measure the model against a reference architecture or industry blueprint and record the result. Use when asked whether a layer or the model is "complete" or "done", for a gap analysis against a reference model (BIAN, APQC PCF, eTOM, ACORD, NIST CSF, an internal capability standard), when asked what is missing compared to industry practice, or when maintaining reference/<name>/mappings.yaml. Also use before answering "is our capability map finished?" -- that question has no answer without a yardstick.
+argument-hint: "[reference-pack]"
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # Aligning the model to a reference architecture
@@ -8,9 +12,9 @@ description: Measure the model against a reference architecture or industry blue
 "Is this layer done?" is not answerable from inside the model. Two yardsticks exist here,
 and they answer different questions:
 
-* `python -m easkills coverage` -- **did we model what we were told**. Source statements
+* `easkills coverage` -- **did we model what we were told**. Source statements
   no fact cites. Complete against one conversation.
-* `python -m easkills align` -- **did we model what a business like this has**. Reference
+* `easkills align` -- **did we model what a business like this has**. Reference
   nodes no element answers. Complete against an industry blueprint.
 
 A model can score 100% on the first and still have no invoicing capability, because
@@ -118,7 +122,7 @@ a YAML comment does not.
 
 ## Method
 
-1. **Check what exists.** `python -m easkills align --root <repo>`. No packs? Go back to
+1. **Check what exists.** `easkills align --root <repo>`. No packs? Go back to
    *Choosing a reference*; this is the whole conversation until one exists.
 2. **Read the gaps before writing anything.** `ALN004` names each one. Sort them
    yourself into: covered but unmapped (mapping work), genuinely missing from the model
@@ -162,7 +166,7 @@ the binding, and puts `PROPOSED --` at the front of every documentation field pr
 that what it *cannot* supply is impossible to miss.
 
 ```bash
-python -m easkills propose --root <repo> --from align --as-of <date> --dry-run
+easkills propose --root <repo> --from align --as-of <date> --dry-run
 ```
 
 **Three things a requirement has to say, and none of them can be derived from a taxonomy

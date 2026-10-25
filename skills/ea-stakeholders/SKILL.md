@@ -1,6 +1,9 @@
 ---
 name: ea-stakeholders
 description: Identify stakeholders and their concerns from the fact register and plan which views will frame them (ISO 42010). Use when asked who the architecture is for, when starting documentation work, when views exist without declared concerns, or when ISO001-ISO006 findings need resolving. Produces the stakeholder/concern register and a view plan.
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # Stakeholders, concerns and the view plan
@@ -64,7 +67,7 @@ view -- propose it with an `include` list and hand the modelling to `ea-views`.
 ## Closing the loop
 
 ```bash
-python -m easkills validate --root <repo> --zone staging
+easkills validate --root <repo> --zone staging
 ```
 
 Work the ISO findings honestly: `ISO006` (concern nobody holds) means find the person

@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: proposals-stay-skeletons
+context:
+  scaffold_script: scaffold.sh

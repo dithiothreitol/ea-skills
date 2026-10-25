@@ -1,16 +1,20 @@
 ---
 name: ea-health
 description: Run and interpret the model-health reports - EA debt register, staleness report and KPIs. Use when asked how healthy, current or trustworthy the model is, for an EA debt review, portfolio metrics, obsolescence exposure, or a periodic (e.g. quarterly) model health check.
+argument-hint: "[as-of YYYY-MM-DD]"
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # Model health: debt, staleness, KPIs
 
 ```bash
-python -m easkills debt      --root <repo>   # EA-smell queries -> debt register
-python -m easkills staleness --root <repo>   # review-age per element
-python -m easkills kpi       --root <repo>   # one-screen metrics
-python -m easkills roadmap   --root <repo>   # plateaus, gaps, and decided-but-unscheduled
-python -m easkills maturity  --root <repo>   # level 1-5 per dimension, and what blocks the next
+easkills debt      --root <repo>   # EA-smell queries -> debt register
+easkills staleness --root <repo>   # review-age per element
+easkills kpi       --root <repo>   # one-screen metrics
+easkills roadmap   --root <repo>   # plateaus, gaps, and decided-but-unscheduled
+easkills maturity  --root <repo>   # level 1-5 per dimension, and what blocks the next
 # each takes --json for machine-readable output and --as-of for reproducible runs
 ```
 

@@ -1,6 +1,9 @@
 ---
 name: ea-capability-map
 description: Build or extend the business capability map, the spine of the EA model. Use when starting to model a new enterprise, when asked for a capability map, capability model or business capability assessment, or before any application/technology modelling when no capability layer exists yet. Everything else in the model attaches to capabilities, so this comes first.
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # Building the capability map
@@ -73,8 +76,8 @@ in your report as clarification questions.
 ## When is the capability map done
 
 ```bash
-python -m easkills readiness --root <repo> --zone staging   # the Strategy section
-python -m easkills align --root <repo>                      # if a reference model exists
+easkills readiness --root <repo> --zone staging   # the Strategy section
+easkills align --root <repo>                      # if a reference model exists
 ```
 
 `readiness` names every capability that **nothing realizes and nothing has assessed**
@@ -113,7 +116,7 @@ and the three questions answered. Not "the map reached six".
 ## Finish
 
 ```bash
-python -m easkills validate --root <repo> --zone staging
+easkills validate --root <repo> --zone staging
 ```
 
 Staging validates as an overlay on `approved`, so attaching new capabilities to

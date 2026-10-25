@@ -1,6 +1,11 @@
 ---
 name: ea-approve
 description: Promote reviewed model content from staging to approved -- the only write path into the approved zone. Use when a human asks to approve, promote, accept or publish staged model changes, or after a review session concludes staged content is ready. Never use on your own initiative; promotion asserts human sign-off.
+disable-model-invocation: true
+argument-hint: "[staging-file]"
+allowed-tools:
+  - Bash(easkills *)
+  - Bash(python -m easkills *)
 ---
 
 # Promoting staging to approved
@@ -17,12 +22,18 @@ perform it unprompted.
 work and staging is clean, report that it is ready and stop. When in doubt whether
 an instruction covers promotion, ask.
 
+Installed as a plugin, the host enforces both halves of this. This skill cannot be
+loaded on a model's own initiative -- the human invokes it (`/ea-skills:ea-approve`) --
+and a hook refuses any write into `model/approved/` that does not go through `easkills
+promote`. If the hook refuses one of your writes, you were about to bypass the gate:
+put the change in `model/staging/` and stop there.
+
 ## Procedure
 
 1. **Dry-run the gate:**
 
 ```bash
-python -m easkills promote --root <repo> --dry-run
+easkills promote --root <repo> --dry-run
 ```
 
 The gate validates approved + staging *as if already merged, by approved-zone
@@ -39,8 +50,8 @@ blocks here, by design.
 3. **On explicit confirmation, promote:**
 
 ```bash
-python -m easkills promote --root <repo>                          # everything
-python -m easkills promote --root <repo> --file model/staging/x.yaml  # selected files
+easkills promote --root <repo>                          # everything
+easkills promote --root <repo> --file model/staging/x.yaml  # selected files
 ```
 
 Partial promotion is normal: promote what was reviewed, leave the rest staged.
