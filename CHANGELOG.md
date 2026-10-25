@@ -5,7 +5,7 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
-## [Unreleased]
+## [0.16.0] — 2026-10-25 — the host release
 
 Phase 8.1 — the plan for the whole phase is [`docs/PHASE8-PLAN.md`](docs/PHASE8-PLAN.md),
 written from an audit of 0.15.0 verified against its own code.

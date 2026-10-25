@@ -353,7 +353,7 @@ argued with.
 
 ## Status and roadmap
 
-**Phases 0–7 are complete** — see
+**Phases 0–7 are complete; Phase 8 is under way** ([plan](docs/PHASE8-PLAN.md)) — see
 [CHANGELOG.md](CHANGELOG.md) for the full history and
 [BLUEPRINT §8a](docs/BLUEPRINT.md) for per-phase design decisions.
 
@@ -367,6 +367,7 @@ argued with.
 | 5 | Evaluation: golden-set regression harness, capability comparison | **done** |
 | 6 | Service layer: offering catalog with SLAs, demand ledger, demand-weighted maintenance | **done** |
 | 7 | Reference, regulation, proposal: alignment to reference architectures, per-layer readiness, rationalization, cost, regulatory reporting, generated proposals, maturity | **done** |
+| 8 | Host, analyst, security, registers, time, measurement: the plugin and its guard, document intake and question records, security vocabulary and exposure, further registers and Polish output, diff/query/serve, a host eval | 8.1 **done** |
 
 Deliberately open (decisions, not backlog): the **network facade** (MCP/HTTP) over the
 read-only commands stays deferred until the demand ledger shows someone asking for it —
