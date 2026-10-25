@@ -65,6 +65,9 @@ TOPIC_LAYERS: dict[str, str] = {
 }
 
 MOTIVATION_OBLIGATIONS = frozenset({"Requirement", "Constraint"})
+# The ends of the motivation chain: what the architecture is for. Outcomes realize goals;
+# capabilities, requirements and courses of action realize outcomes.
+MOTIVATION_ENDS = frozenset({"Goal", "Outcome"})
 ACTOR_TYPES = frozenset({"BusinessActor", "BusinessRole"})
 SERVICE_TYPES = frozenset({"ApplicationService"})
 PROCESS_TYPES = frozenset({"BusinessProcess", "BusinessFunction"})
@@ -273,7 +276,7 @@ def analyse(root: Path, zone: str = "approved") -> ReadinessReport:
     findings += _business(root, model, graph)
     findings += _application(root, model, graph)
     findings += _technology(root, model, graph)
-    findings += _motivation(root, model)
+    findings += _motivation(root, model, graph)
     cross = _cross_layer(root, model, by_layer)
 
     for finding in findings:
@@ -340,6 +343,59 @@ def _strategy(root: Path, model: dsl.Model, graph: _Graph, zone: str) -> list[Fi
                     capability,
                 )
             )
+    findings += _value_streams(root, model, graph)
+    return findings
+
+
+def _value_streams(root: Path, model: dsl.Model, graph: _Graph) -> list[Finding]:
+    """RDY011: a value stream no capability or behaviour enables.
+
+    A value stream is enabled when something serves or realizes it -- a capability serving
+    a stage is the idiom. Stages are value streams composed into the stream, so the check
+    walks the whole containment family: a stream whose stages are served is enabled
+    through them, and a stage of a served stream is not flagged on its own. Flagging each
+    of five stages of a stream somebody did connect would be the RDY008 lesson again.
+    """
+    streams = _sorted(model, {"ValueStream"})
+    if not streams:
+        return []
+    enabled = {
+        relationship.target
+        for relationship in model.relationships.values()
+        if relationship.type in REALIZING | {"Serving"} and relationship.source in model.elements
+    }
+    children: dict[str, set[str]] = {}
+    for child, parents in graph.contained_in.items():
+        for parent in parents:
+            children.setdefault(parent, set()).add(child)
+
+    def family(element_id: str) -> set[str]:
+        seen: set[str] = set()
+        frontier = [element_id]
+        while frontier:
+            current = frontier.pop()
+            if current in seen:
+                continue
+            seen.add(current)
+            frontier.extend(graph.contained_in.get(current, ()))
+            frontier.extend(children.get(current, ()))
+        return seen
+
+    findings: list[Finding] = []
+    for stream in streams:
+        if family(stream.id) & enabled:
+            continue
+        findings.append(
+            _finding(
+                "RDY011",
+                SEVERITY_WARNING,
+                f"value stream '{stream.name}' is enabled by nothing -- no capability serves it or "
+                "any of its stages, and nothing realizes it. A value stream nothing enables is a "
+                "drawing of how value flows with no claim about what makes it flow",
+                root,
+                stream,
+            )
+        )
     return findings
 
 
@@ -463,8 +519,22 @@ def _technology(root: Path, model: dsl.Model, graph: _Graph) -> list[Finding]:
     return findings
 
 
-def _motivation(root: Path, model: dsl.Model) -> list[Finding]:
+def _motivation(root: Path, model: dsl.Model, graph: _Graph) -> list[Finding]:
     findings: list[Finding] = []
+    for end in _sorted(model, MOTIVATION_ENDS):
+        if not graph.realized_by.get(end.id):
+            findings.append(
+                _finding(
+                    "RDY012",
+                    SEVERITY_WARNING,
+                    f"{end.type} '{end.name}' is realized by nothing -- an end no part of the "
+                    "architecture is claimed to produce. Either the realizing capability, outcome "
+                    "or requirement is unmodelled, or the aspiration has no plan behind it, and "
+                    "only the second is worth keeping as it is",
+                    root,
+                    end,
+                )
+            )
     for obligation in _sorted(model, MOTIVATION_OBLIGATIONS):
         if not obligation.applies_to:
             findings.append(

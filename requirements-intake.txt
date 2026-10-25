@@ -1,0 +1,7 @@
+# Document intake only (`easkills intake-doc`): PDF, Word, PowerPoint, Excel. Imported
+# lazily, never by the deterministic core, never needed by any gate -- a converter that is
+# not installed is a refusal naming this file. All permissively licensed (BSD/MIT).
+pypdf>=5.0
+python-docx>=1.1
+python-pptx>=1.0
+openpyxl>=3.1

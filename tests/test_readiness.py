@@ -100,8 +100,11 @@ def test_the_report_is_byte_stable(example_root):
 # RDY001/RDY002 need a Capability and RDY010 needs the Strategy layer to be *empty*, so
 # the fixture's proposed capability layer lives in staging and the two sides are read in
 # different zones. That split also exercises --zone (D8).
-EXPECTED_APPROVED_CODES = ["RDY003", "RDY004", "RDY005", "RDY006", "RDY007", "RDY008", "RDY009", "RDY010"]
-EXPECTED_STAGING_CODES = ["RDY001", "RDY002"]
+EXPECTED_APPROVED_CODES = [
+    "RDY003", "RDY004", "RDY005", "RDY006", "RDY007", "RDY008", "RDY009", "RDY010", "RDY012"
+]
+# RDY011 needs a ValueStream -- Strategy layer, so staging, for RDY010's sake.
+EXPECTED_STAGING_CODES = ["RDY001", "RDY002", "RDY011"]
 
 
 @pytest.mark.parametrize("code", EXPECTED_APPROVED_CODES)
@@ -120,7 +123,7 @@ def test_every_documented_rdy_code_has_a_case(broken_report, broken_staging_repo
     """The CONTRIBUTING triple, checked rather than trusted: a rule with no provoking
     fixture is decoration, and this is the assertion that says so for the whole family."""
     fired = {f.code for f in broken_report.findings} | {f.code for f in broken_staging_report.findings}
-    expected = {f"RDY{n:03d}" for n in range(1, 11)}
+    expected = {f"RDY{n:03d}" for n in range(1, 13)}
     assert expected <= fired, f"no fixture case for {sorted(expected - fired)}"
 
 
@@ -193,7 +196,7 @@ def test_findings_are_attributed_to_their_layer(broken_report):
     invisible to the person reviewing that layer."""
     assert {f.code for f in _layer(broken_report, "Application").findings} <= {"RDY005", "RDY006", "RDY007"}
     assert {f.code for f in _layer(broken_report, "Technology").findings} == {"RDY008"}
-    assert {f.code for f in _layer(broken_report, "Motivation").findings} == {"RDY009"}
+    assert {f.code for f in _layer(broken_report, "Motivation").findings} == {"RDY009", "RDY012"}
 
 
 def test_gold_is_deliberately_not_readiness_complete(repo_root):
@@ -252,3 +255,15 @@ def test_an_empty_repository_has_no_open_checkpoints(tmp_path):
 def test_an_unknown_zone_is_refused(example_root):
     with pytest.raises(ValueError):
         readiness.analyse(example_root, zone="wishful")
+
+
+def test_a_value_stream_enabled_through_a_stage_is_not_an_open_checkpoint(broken_staging_report):
+    """RDY011 walks the containment family: a served stage enables its stream, and the
+    stage itself is enabled -- flagging either would be the RDY008 lesson again."""
+    flagged = {f.concept for f in broken_staging_report.findings if f.code == "RDY011"}
+    assert flagged == {"vs-nothing-enables"}
+
+
+def test_an_end_something_realizes_is_not_an_open_checkpoint(example_report):
+    """The worked example's goal is realized by a capability, so RDY012 stays silent."""
+    assert not [f for f in example_report.findings if f.code == "RDY012"]

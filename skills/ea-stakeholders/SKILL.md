@@ -46,7 +46,9 @@ concerns:
 
 Keep it small and true: three stakeholders with confirmed concerns beat ten with
 guessed ones. If you are inferring a concern the sources never voice, that is a
-clarification question for the stakeholder, not an entry.
+clarification question for the stakeholder, not an entry -- record it in
+`facts/questions/` with the text that made you suspect it and the stakeholder as
+`addressedTo`, so it is asked rather than forgotten (`ea-intake` describes the record).
 
 ## The view plan
 

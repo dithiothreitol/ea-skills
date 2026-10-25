@@ -36,11 +36,20 @@ into them.
 
 ## The pipeline
 
-### 0. If the input is a spreadsheet, convert it first
+### 0. If the input is not plain text, convert it first
 
 ```bash
-easkills intake-csv --root <repo> --file inventory.csv
+easkills intake-csv --root <repo> --file inventory.csv      # CSV (and Excel saved as CSV)
+easkills intake-doc --root <repo> --file policy.pdf         # PDF, .docx, .pptx, .xlsx
 ```
+
+Never convert by hand -- a hand-made copy breaks the verbatim chain at the one point it
+exists to hold. `intake-doc` keeps headings, tables and body order, converts every page,
+slide (speaker notes included) and sheet, and records in its header what it could not
+read: a PDF page with no text layer (no OCR is done), a formula with no cached value.
+Read those notes before extracting -- an unread page is a gap in your evidence, and the
+honest response is a clarification question or a better copy of the document, never a
+fact reconstructed from what the page probably said.
 
 An application inventory arrives as a spreadsheet more often than as prose, and a
 spreadsheet is not a document a quote can be located in. The converter writes a
@@ -158,11 +167,24 @@ numbers. For each uncited span, decide honestly:
 * pleasantry, boilerplate, formatting -> say so in your report, do not force a fact;
 * something ambiguous or half-said -> a **clarification question**.
 
-Write the questions where the repository keeps its open questions (or in your report):
-each one names the source and line range it comes from, quotes the ambiguous text, and
-asks something a stakeholder can actually answer. Questions are a first-class output
-of intake -- a thin source produces few facts and many questions, and that is a good
-result, not a failure.
+Questions are records, in `facts/questions/`, not paragraphs in a report that the next
+report forgets. Start from the skeletons:
+
+```bash
+easkills propose --root <repo> --from coverage --as-of <date>
+```
+
+That writes one entry per uncited statement into `facts/questions/proposed-questions.yaml`,
+each pointing at the file, the lines and the statement's own text, with the question left
+as `PROPOSED --`. Work through them: a fact you missed -> extract it and delete the entry;
+boilerplate -> delete it; genuinely ambiguous -> write the question so a stakeholder can
+answer it, and set `addressedTo` to who should. `validate-facts` holds questions to the
+fact discipline (`QST*`): the quote is located in its source, an answered question names
+the fact the answer produced (`answeredBy`), a withdrawn one says why.
+
+Questions are a first-class output of intake -- a thin source produces few facts and many
+questions, and that is a good result, not a failure. When an answer arrives, it is a
+source like any other: ingest it, extract the fact, and close the question by naming it.
 
 ## Reporting back
 

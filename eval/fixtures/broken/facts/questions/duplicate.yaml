@@ -1,0 +1,9 @@
+# QST004 (second half): an id already used in questions.yaml.
+questions:
+  - id: q-duplicated
+    question: Is the customer portal the only consumer of the order records, asked twice?
+    source:
+      file: facts/sources/notes.md
+      quote: referenced by the customer portal
+    status: open
+    raised: "2026-07-22"

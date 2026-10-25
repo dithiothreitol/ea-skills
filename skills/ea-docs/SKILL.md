@@ -25,7 +25,8 @@ validation errors; do not override that to hit a deadline.
   properties -- nothing is re-judged at documentation time.
 * Capability support table, including capabilities *nothing realizes*.
 * Every declared assumption surfaced as an open question -- burying assumptions is the
-  failure mode this section exists to prevent.
+  failure mode this section exists to prevent -- and every open clarification question
+  from `facts/questions/`, with the text that raised it and who was asked.
 * Decisions with their rationale (§6.10) and correspondences with the rule each one is
   held to (§6.9), derived from the governance log and the register -- never authored a
   second time in the description, and never truncated. A violated correspondence is
@@ -51,6 +52,14 @@ a one-pager for the auditor), write it as a *separate* document next to the gene
 one (e.g. `docs/onepager-<audience>.md`), sourced from the description and the model
 -- and say which model state ("as of" date) it reflects. Do not fork the architecture
 description itself per audience; one description, many extracts.
+
+Two extracts are derived rather than written, and analysts ask for them by name:
+`easkills rtm --out rtm.csv` (every requirement, constraint, principle and goal with
+what it binds, what realizes it, its evidence and the decisions about it) and
+`easkills glossary --out glossary.md` (the entity table with aliases, the facts behind
+each term and the elements that answer to it). Hand them over as generated; a row that
+looks wrong is a record to fix, and the flags on a traceability row (`unbound`,
+`unrealized`, `assumed`) are the review agenda.
 
 ## Reporting back
 

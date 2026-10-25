@@ -12,7 +12,8 @@ Severity meanings:
 
 Three validators share this catalogue: `python -m easkills validate` covers the model
 zones (`ORACLE`/`SCHEMA`/`ID`/`REF`/`PROV`/`GOV`/`MOT`/`STD`/`ISO`/`REL`/`NAME`/`SMELL`/`PLAT`),
-`python -m easkills validate-facts` covers the fact register (`FACT`/`ENT`/`SRC`), and
+`python -m easkills validate-facts` covers the fact register and its clarification
+questions (`FACT`/`ENT`/`SRC`/`QST`), and
 `python -m easkills validate-gov` covers the standards base, governance log, the
 service layer and the correspondences that cross between them
 (`SIB`/`DEC`/`DISP`/`COMP`/`SVC`/`REQ`/`CORR`). Three further commands own a family each,
@@ -186,6 +187,25 @@ Portal" from becoming three different applications downstream.
 | `ENT003` | warning | The entity is never referenced by any fact. |
 | `SRC001` | warning | A file under `facts/sources/` is never cited by any fact -- it has not been ingested, or contains nothing extractable (which the intake report should say explicitly). |
 
+## Fact register -- clarification questions
+
+Questions are records (`facts/questions/*.yaml`), because a question written in a report is
+forgotten by the next report. A question points at the exact text that raised it -- located
+in the source the way a fact's quote is -- names who should answer, and is closed by
+pointing at the fact the answer produced, or withdrawn with a reason. `kpi` counts the open
+ones and their age, and the architecture description lists them as known unknowns.
+`python -m easkills propose --from coverage` writes skeletons for every source statement no
+fact cites; the question itself is always a human's to write.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `QST001` | error | A question file cannot be parsed, or violates `schema/question.schema.json` -- unknown key, missing field, a status outside open/answered/withdrawn. |
+| `QST002` | error | The question's source file does not exist, resolves outside the repository, or does not contain the quote. A question has to point at the text that raised it, or nobody can tell what was asked about. |
+| `QST003` | error | `status: answered` with no `answeredBy`, or `answeredBy` naming a fact that is not in the register. An answer that produced no fact is a conversation, not evidence. |
+| `QST004` | error | Duplicate question id, reported against the second definition with the file holding the first. |
+| `QST005` | warning | `status: withdrawn` with no `notes`. The next reader cannot tell a question that stopped mattering from one somebody gave up on. |
+| `QST006` | error | `raised` or `answered` passes the date pattern but is not a real calendar date, or `answered` is before `raised`. `kpi` reports open-question age from these, so an unreadable date silently drops a question from the arithmetic -- the `DISP008`/`REQ009` trap, closed before anyone fell into it here. |
+
 ## Governance log -- standards base
 
 | Code | Severity | Rule |
@@ -357,6 +377,8 @@ idiomatic modelling teaches people to ignore the report.
 | `RDY008` | warning | Technology | A `Node`/`Device`/`SystemSoftware` that serves and realizes nothing. Infrastructure nothing runs on cannot be costed, retired or impact-assessed. |
 | `RDY009` | warning | Motivation | A `Requirement`/`Constraint` with no `appliesTo` at all. Distinct from `MOT001`, where the selector exists and points at something absent: here the obligation has no bearer, so no context pack will ever serve it to the team it was written for. |
 | `RDY010` | warning | cross | The fact register covers a layer (via `topics:`) that the model leaves empty — evidence gathered and never modelled, the one kind of incompleteness the *sources* can prove. The facts carrying the topic are named. `topics:` is a free tag by schema, so only values that name a layer are read: `risk` and `integration` are real topics in the golden set and neither is a layer. |
+| `RDY011` | warning | Strategy | A `ValueStream` nothing enables: no capability serves it or any of its stages, and nothing realizes it. Stages are value streams composed into the stream, so the check walks the whole containment family -- a stream whose stage is served is enabled through it, and the stage of a served stream is not flagged on its own. |
+| `RDY012` | warning | Motivation | A `Goal` or `Outcome` nothing realizes: an end no part of the architecture is claimed to produce. Either the realizing capability, outcome or requirement is unmodelled, or the aspiration has no plan behind it -- and only the second is worth keeping as it is. |
 
 ## Reference alignment -- `align` (the ALN family)
 

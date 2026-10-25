@@ -8,6 +8,7 @@ else, with the import.
 
 ```bash
 python -m easkills intake-csv --root . --file inventory.csv       # spreadsheet -> citable source
+python -m easkills intake-doc --root . --file policy.pdf          # PDF/Word/PowerPoint/Excel -> citable source
 python -m easkills import     --root . --file export.xml          # Archi/Open Exchange -> staging
 ```
 
@@ -17,6 +18,7 @@ python -m easkills import     --root . --file export.xml          # Archi/Open E
 python -m easkills chunk          --root .            # split sources for extraction
 python -m easkills validate-facts --root .            # the fact register gate
 python -m easkills coverage       --root .            # what the facts do not cover yet
+python -m easkills propose --root . --from coverage --as-of <date>   # a question skeleton per uncited statement
 python -m easkills validate --root . --zone staging   # proposals, overlaid on approved
 python -m easkills promote  --root . --dry-run        # the promotion gate, no move
 python -m easkills promote  --root .                  # staging -> approved (on human sign-off)
@@ -30,6 +32,8 @@ python -m easkills compile  --root . --zone approved  # -> build/model.xml
 python -m easkills docs     --root .                  # -> docs/ (AD + SVG views)
 python -m easkills render   --root .                  # views only
 python -m easkills validate-gov --root .              # standards + governance log gate
+python -m easkills rtm      --root . --out rtm.csv    # requirement traceability, for a spreadsheet
+python -m easkills glossary --root . --out glossary.md   # the entity table as a glossary
 ```
 
 **Operate**
@@ -101,6 +105,7 @@ no document, which is the right answer when the regulation does not apply to you
 | `facts/sources/` | Raw input, unedited: interview notes, exports, documents. Provenance quotes must be findable here verbatim. |
 | `facts/register/` | The fact register produced by intake: atomic statements, each with a mechanically verified quote. |
 | `facts/entities.yaml` | Canonical names and aliases for the things the sources mention. |
+| `facts/questions/` | Clarification questions the sources raised: each points at the text that raised it and, once answered, at the fact the answer produced. |
 | `model/staging/` | Machine-proposed concepts awaiting human approval. Ownership metadata is advisory here. |
 | `model/approved/` | Human-signed model. Ownership and review dates are mandatory. Everything downstream reads only from here. |
 | `landscape/` | Architecture landscape partitioned by scope: `strategic/`, `segments/`, `capabilities/`. Baseline, transition and target states are modelled as ArchiMate plateaus inside the model, not as copies of it. |

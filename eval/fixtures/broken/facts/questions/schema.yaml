@@ -1,0 +1,10 @@
+# QST001: violates schema/question.schema.json -- an unknown key and an unknown status.
+questions:
+  - id: q-schema-violation
+    question: Who signs off a change to the order API contract?
+    source:
+      file: facts/sources/notes.md
+      quote: referenced by the customer portal
+    status: pending
+    priority: high
+    raised: "2026-07-20"

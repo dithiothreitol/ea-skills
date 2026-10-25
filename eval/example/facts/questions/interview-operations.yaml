@@ -1,0 +1,35 @@
+# Clarification questions the operations interview raised. Each points at the exact text
+# that raised it (QST002 locates the quote), names who should answer, and -- once answered
+# -- points at the fact the answer produced (QST003). One of each state the worked example
+# can honestly hold: an answer that became a fact, and a question still open.
+
+questions:
+  - id: q-manual-order-volume
+    question: >
+      How many orders a week arrive as e-mailed spreadsheets rather than through the
+      portal, and is that channel expected to stay?
+    source:
+      file: facts/sources/interview-operations-2026-07-15.md
+      lines: 13-14
+      quote: a handful of the largest accounts still send spreadsheets by e-mail
+    addressedTo: Head of Operations
+    status: answered
+    raised: 2026-07-15
+    answered: 2026-07-15
+    answeredBy: [fact-manual-order-entry]
+    notes: >
+      Answered in the same interview: "a handful of the largest accounts" -- a small,
+      persistent channel the service desk keys in by hand.
+
+  - id: q-erp-wms-release-mechanism
+    question: >
+      What carries released orders from the ERP to the warehouse system every few minutes
+      -- an interface somebody owns, or a scheduled export -- and who would notice if it
+      stopped?
+    source:
+      file: facts/sources/interview-operations-2026-07-15.md
+      lines: "36"
+      quote: It receives released orders from the ERP every few minutes.
+    addressedTo: logistics-it@aurorafoods.example
+    status: open
+    raised: 2026-07-15

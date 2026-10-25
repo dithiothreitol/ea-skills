@@ -29,6 +29,7 @@ is not, which is the same failure as a fabricated quote one layer up.
 
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass, field
 from datetime import date
@@ -48,13 +49,21 @@ from . import (
 )
 from .validate import SEVERITY_WARNING
 
-SOURCES = ("align", "readiness", "overlap", "time")
+SOURCES = ("align", "readiness", "overlap", "time", "coverage")
 
 STAGING_FILENAME = {
     "align": "proposed-requirements.yaml",
     "readiness": "proposed-constraints.yaml",
     "overlap": "proposed-work-packages.yaml",
     "time": "proposed-scheduling.yaml",
+    "coverage": "proposed-questions.yaml",
+}
+
+# Where each source's skeletons go. Model elements are proposals in staging; questions are
+# records of the fact register, which has no zones -- a question is not a claim about the
+# architecture, so there is nothing to promote.
+TARGET_DIR = {source: Path("model") / "staging" for source in STAGING_FILENAME} | {
+    "coverage": Path("facts") / "questions"
 }
 
 # The placeholder is loud on purpose. A half-finished stub must not be able to pass for an
@@ -83,6 +92,8 @@ class Proposal:
     applies_to: list[str] = field(default_factory=list)
     properties: dict[str, str] = field(default_factory=dict)
     origin: str = ""  # the finding this came from, for the report
+    # A record that is not a model element (a clarification question), written as-is.
+    record: dict[str, Any] | None = None
 
     def as_element(self) -> dict[str, Any]:
         item: dict[str, Any] = {
@@ -400,7 +411,102 @@ def _from_time(root: Path, today: date) -> list[Proposal]:
     return proposals
 
 
+def _verbatim(original: str, normalized: str) -> str | None:
+    """The source's own characters for a sentence the coverage report normalized.
+
+    Coverage works on casefolded, whitespace-collapsed text; a question's quote has to be
+    the source's text, or it reads as a misquotation even where the matcher would accept
+    it. Rebuilt word by word with flexible whitespace, case-insensitively.
+    """
+    words = normalized.split(" ")
+    if not words:
+        return None
+    pattern = re.compile(r"\s+".join(re.escape(word) for word in words), re.IGNORECASE)
+    match = pattern.search(original)
+    return " ".join(match.group(0).split()) if match else None
+
+
+def _from_coverage(root: Path, today: date) -> tuple[list[Proposal], list[dict[str, str]]]:
+    """One clarification-question skeleton per source statement no fact cites.
+
+    The question itself is the human's to write: an uncited sentence is either a fact
+    somebody missed, boilerplate, or something genuinely ambiguous, and only reading it
+    tells which. What the generator can supply is the pointer -- file, lines, the exact
+    text -- so the skeleton validates as a record (QST002 locates the quote) and the
+    placeholder names the decision. Ids carry the line and a short digest of the text, so
+    two statements on one line stay distinct and a re-run proposes the same ids.
+    """
+    from . import facts as facts_mod, intake  # local: only this source needs them
+
+    report = intake.coverage(root)
+    register, _documents, _entities = facts_mod.load(root)
+    facts_root = register.facts_root()
+    proposals: list[Proposal] = []
+    unrecoverable: list[dict[str, str]] = []
+    for file_coverage in report.files:
+        path = (root / file_coverage.file).resolve()
+        try:
+            reference = str(path.relative_to(facts_root)).replace("\\", "/")
+        except ValueError:
+            reference = file_coverage.file
+        original_lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+        stem = _slug(path.stem.lower())[:48].strip("-") or "source"
+        for sentence in file_coverage.uncovered:
+            region = "\n".join(original_lines[sentence.start_line - 1 : sentence.end_line])
+            quote = _verbatim(region, sentence.text)
+            lines = (
+                str(sentence.start_line)
+                if sentence.start_line == sentence.end_line
+                else f"{sentence.start_line}-{sentence.end_line}"
+            )
+            digest = hashlib.sha1(sentence.text.encode("utf-8")).hexdigest()[:6]
+            identifier = f"q-{stem}-l{sentence.start_line}-{digest}"
+            if quote is None or len(quote) < 8:
+                unrecoverable.append(
+                    {"id": identifier, "reason": f"could not recover the verbatim text at {reference}:{lines}",
+                     "origin": f"coverage:{reference}:{lines}"}
+                )
+                continue
+            proposals.append(
+                Proposal(
+                    id=identifier,
+                    type="Question",
+                    name=quote if len(quote) <= 60 else quote[:57] + "...",
+                    documentation="",
+                    rationale="",
+                    origin=f"coverage:{reference}:{lines}",
+                    record={
+                        "id": identifier,
+                        "question": (
+                            f"{PLACEHOLDER} write the question a stakeholder can answer about this "
+                            f"statement and set addressedTo -- or, if it is a fact somebody missed, "
+                            "extract it and delete this entry; if it is boilerplate, delete it."
+                        ),
+                        "source": {"file": reference, "lines": lines, "quote": quote},
+                        "status": "open",
+                        "raised": today.isoformat(),
+                    },
+                )
+            )
+    return proposals, unrecoverable
+
+
 # ---------------------------------------------------------------------------- writing
+
+
+QUESTION_HEADER = """\
+# Clarification questions proposed for source statements no fact cites, generated by
+# `python -m easkills propose --from coverage --as-of {as_of}`.
+#
+# Each entry points at the exact text that raised it -- file, lines, quote -- and that
+# pointer is the whole of what the generator can know. Whether the statement is a fact
+# somebody missed, boilerplate, or something genuinely ambiguous is a reading only a
+# person can do, so every question opens with `{placeholder}` until somebody writes it.
+#
+# The honest dispositions are: write the question and name who should answer it, extract
+# the fact and delete the entry, or delete it as boilerplate. Leaving it unchanged is none
+# of those, and the next reader cannot tell it from a question somebody actually asked.
+"""
 
 
 HEADER = """\
@@ -455,8 +561,14 @@ def _existing_ids(root: Path) -> dict[str, str]:
         except Exception:  # noqa: BLE001 -- an unreadable zone is the gate's problem, not ours
             continue
         for identifier in list(model.elements) + list(model.relationships):
-            known.setdefault(identifier, zone)
+            known.setdefault(identifier, f"model/{zone}/")
     return known
+
+
+def _existing_question_ids(root: Path) -> dict[str, str]:
+    from . import facts as facts_mod
+
+    return {identifier: "facts/questions/" for identifier in facts_mod.load_questions(root)}
 
 
 def propose(
@@ -470,15 +582,18 @@ def propose(
     if source not in SOURCES:
         raise ProposeRefusal(f"unknown source '{source}'; expected one of {', '.join(SOURCES)}")
 
-    target = out or (root / "model" / "staging" / STAGING_FILENAME[source])
+    target = out or (root / TARGET_DIR[source] / STAGING_FILENAME[source])
     report = ProposeReport(root=root, source=source, as_of=as_of.isoformat(), target=target)
 
+    unrecoverable: list[dict[str, str]] = []
     if source == "align":
         candidates = _from_align(root, references)
     elif source == "readiness":
         candidates = _from_readiness(root)
     elif source == "overlap":
         candidates = _from_overlap(root, as_of)
+    elif source == "coverage":
+        candidates, unrecoverable = _from_coverage(root, as_of)
     else:
         candidates = _from_time(root, as_of)
 
@@ -495,23 +610,26 @@ def propose(
             )
     _check_ids(candidates)
 
-    known = _existing_ids(root)
+    known = _existing_question_ids(root) if source == "coverage" else _existing_ids(root)
     # Source order, not id order. Every source enumerates deterministically (taxonomy
     # order, sorted findings, sorted items), and one of them enumerates *meaningfully*:
     # `--from time` sorts by blast radius so the widest change is proposed first. Sorting
     # by id here silently threw that away -- the ordering the plan asked for, defeated by
     # a line meant only to make the output stable.
     for candidate in candidates:
-        zone = known.get(candidate.id)
-        if zone is not None:
+        location = known.get(candidate.id)
+        if location is not None:
             # Not an error and not an overwrite: the id existing means somebody already
             # acted on this finding. Saying so by name is more useful than either
             # silently skipping it or refusing the whole run over it.
             report.skipped.append(
-                {"id": candidate.id, "reason": f"already exists in model/{zone}/", "origin": candidate.origin}
+                {"id": candidate.id, "reason": f"already exists in {location}", "origin": candidate.origin}
             )
             continue
         report.proposals.append(candidate)
+    # A statement whose own text could not be recovered is named, never quoted loosely: a
+    # question pointing at text the file does not contain would fail QST002 on arrival.
+    report.skipped += unrecoverable
 
     if not report.proposals:
         return report
@@ -524,16 +642,21 @@ def propose(
     if dry_run:
         return report
 
+    if source == "coverage":
+        payload = {"questions": [p.record for p in report.proposals]}
+        header = QUESTION_HEADER.format(as_of=as_of.isoformat(), placeholder=PLACEHOLDER)
+    else:
+        payload = {"elements": [p.as_element() for p in report.proposals]}
+        header = HEADER.format(
+            role=_ROLE[source], source=source, as_of=as_of.isoformat(), placeholder=PLACEHOLDER
+        )
     body = yaml.dump(
-        {"elements": [p.as_element() for p in report.proposals]},
+        payload,
         Dumper=_Dumper,
         sort_keys=False,
         allow_unicode=True,
         default_flow_style=False,
         width=98,
-    )
-    header = HEADER.format(
-        role=_ROLE[source], source=source, as_of=as_of.isoformat(), placeholder=PLACEHOLDER
     )
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(header + "\n" + body, encoding="utf-8", newline="\n")
@@ -546,6 +669,7 @@ _ROLE = {
     "readiness": "Constraints proposed for open readiness checkpoints",
     "overlap": "Work packages proposed for rationalization candidates",
     "time": "Work packages proposed for portfolio decisions nothing schedules",
+    "coverage": "Clarification questions proposed for source statements no fact cites",
 }
 
 
@@ -565,7 +689,9 @@ def render(report: ProposeReport) -> str:
         return "\n".join(lines)
 
     for proposal in report.proposals:
-        binding = ", ".join(proposal.applies_to) or ui.dim("binds nothing yet")
+        binding = ", ".join(proposal.applies_to) or ui.dim(
+            proposal.name if proposal.record is not None else "binds nothing yet"
+        )
         lines.append(f"  {ui.bold('{:<44}'.format(proposal.id))} {ui.cyan(proposal.type)}")
         lines.append(f"      {ui.dim('from ' + proposal.origin)}  ->  {binding}")
     if report.skipped:
@@ -590,12 +716,17 @@ def render(report: ProposeReport) -> str:
             if report.written
             else ui.yellow(f"{len(report.proposals)} skeleton(s) would be written to {report.target}")
         )
-        lines.append(
-            ui.dim(
+        if report.source == "coverage":
+            advice = (
+                f"Every question opens with `{PLACEHOLDER}`: write it and name who should answer, "
+                "extract the fact it points at and delete it, or delete it as boilerplate."
+            )
+        else:
+            advice = (
                 f"Every one is `assumed: true` and opens with `{PLACEHOLDER}`. Complete it or delete "
                 "it -- leaving it unchanged is neither, and promotion will not take it without an "
                 "owner and a review date."
             )
-        )
+        lines.append(ui.dim(advice))
     lines += ["", ui.verdict(True, 0, 0)]
     return "\n".join(lines)

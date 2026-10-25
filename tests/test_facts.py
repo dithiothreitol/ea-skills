@@ -28,6 +28,7 @@ def test_example_register_counts(example_report):
     assert example_report.counts["facts"] == 25
     assert example_report.counts["entities"] == 11
     assert example_report.counts["sources"] == 2
+    assert example_report.counts["questions"] == 2
 
 
 def test_example_demonstrates_multi_source_provenance(example_root):
@@ -57,6 +58,11 @@ EXPECTED_ERROR_CODES = [
     "FACT010",  # contests a fact that does not exist
     "ENT001",  # duplicate entity id
     "ENT002",  # alias collides with another entity's name
+    "QST001",  # question file violates its schema
+    "QST002",  # question's quote is not in its source
+    "QST003",  # answered without a fact, or by an unknown one
+    "QST004",  # duplicate question id across files
+    "QST006",  # impossible date, or answered before raised
 ]
 
 EXPECTED_WARNING_CODES = [
@@ -65,6 +71,7 @@ EXPECTED_WARNING_CODES = [
     "FACT007",  # duplicate statement
     "ENT003",  # entity never referenced
     "SRC001",  # source never cited
+    "QST005",  # withdrawn without a reason
 ]
 
 

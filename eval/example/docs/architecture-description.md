@@ -123,6 +123,10 @@ The following concepts are **declared assumptions** (`assumed: true`), not sourc
 - **Shorten Order-to-Delivery Lead Time** (Goal): Inferred from operational pain described in the interview, not stated as a goal by any stakeholder. Needs confirmation at the next architecture board.
 - **rel-order-management-realizes-goal** (Realization): Depends on the inferred goal; confirm together with goal-shorten-lead-time.
 
+The sources raised these **clarification questions**, and no fact answers them yet (`facts/questions/`):
+
+- What carries released orders from the ERP to the warehouse system every few minutes -- an interface somebody owns, or a scheduled export -- and who would notice if it stopped? — *"It receives released orders from the ERP every few minutes."* (facts/sources/interview-operations-2026-07-15.md, lines 36; raised 2026-07-15; asked of logistics-it@aurorafoods.example)
+
 ## 7. Decisions
 
 ISO 42010 §6.10: the decisions this architecture rests on, each with the rationale the record is required to carry.

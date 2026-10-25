@@ -5,6 +5,110 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
+## [Unreleased]
+
+Phase 8.2 — the analyst's inputs and tables. 154 rules (+8), 35 commands.
+
+### Added — `intake-doc`: PDF, Word, PowerPoint and Excel become citable
+
+An analyst's material is rarely markdown, and hand conversion breaks the verbatim chain at
+the one point it exists to hold. `python -m easkills intake-doc --file <doc>` converts a
+`.pdf`, `.docx`, `.pptx` or `.xlsx` into a markdown source in `facts/sources/`, on the
+`intake-csv` pattern: the header records the original's SHA-256 **and the library and
+version that read it**, so a library upgrade that reads a document differently arrives as a
+diff with its cause named. Body order is kept (a Word table stays between the paragraphs
+about it), headings stay headings, every page, slide — speaker notes included — and sheet is
+converted, and pipes inside cells are escaped so a row stays one quotable line.
+
+**What cannot be read is said, not skipped.** A PDF page with no text layer is a scanned
+image and this converter does no OCR, so the page is named in the header as unread rather
+than silently omitted — a source that skipped a page reads as complete. A workbook formula
+with no cached value (a file never recalculated) is named the same way. Nothing is
+interpreted: a slide titled "Target state" is a sentence to quote, not a plateau.
+
+The four libraries (`pypdf`, `python-docx`, `python-pptx`, `openpyxl`, all BSD/MIT) are an
+optional extras group — `requirements-intake.txt`, or `pip install -e .[intake]` — imported
+only when a file of their kind is converted. Without them the command refuses and names the
+install line. A test proves no core module imports any of them at module level; the core
+stays at three runtime dependencies.
+
+### Added — clarification questions are records (`QST001`–`QST006`)
+
+`ea-intake` has called questions "a first-class output" since Phase 1, and they had nowhere
+to live but a paragraph in a report the next report forgot. Now `facts/questions/*.yaml`
+holds them, schema-validated (the thirteenth generated schema): each points at the exact
+text that raised it, located in its source the way a fact's quote is; names who should
+answer (`addressedTo`); and is closed by naming the fact the answer produced
+(`answeredBy`), or withdrawn with a reason. Six rules in `validate-facts`:
+
+| Code | Severity | Catches |
+|---|---|---|
+| `QST001` | error | unreadable or schema-invalid question file |
+| `QST002` | error | the quote is not in its source (or the file is missing, or outside the repository) |
+| `QST003` | error | answered with no fact, or by a fact that does not exist |
+| `QST004` | error | duplicate question id across files |
+| `QST005` | warning | withdrawn without a reason |
+| `QST006` | error | an impossible date, or answered before raised |
+
+`QST005` and `QST006` go beyond the four the plan listed. `QST006` is the review lessons'
+first pattern applied before an incident rather than after one: `kpi` computes question age
+from `raised`, and a date the pattern accepts and the calendar does not would silently drop a
+question from the arithmetic — the `DISP008`/`REQ009` trap.
+
+Questions surface where they matter: `kpi` gains a **Questions** line (open, the oldest
+one's age, and open questions nobody is named to answer) — present only when a repository
+keeps question records, so every other repository's report is byte-identical — and the
+architecture description lists open questions as known unknowns in §6. The worked example
+carries one answered and one open question, and stays clean under `--strict`.
+
+### Added — `propose --from coverage`: a question skeleton per uncited statement
+
+The fifth `propose` source, and the first that writes outside the model:
+`facts/questions/proposed-questions.yaml`, one entry per source statement no fact cites.
+Each points at the file, the lines and **the statement's own text** — recovered from the
+source rather than taken from the coverage report's casefolded form, so the quote is the
+source's characters — and validates under `QST002` on arrival. The question opens with
+`PROPOSED --`: whether a statement is a fact somebody missed, boilerplate or genuinely
+ambiguous is a reading only a person can do. Ids carry the line and a short digest of the
+text, so two statements on one line stay distinct and a re-run skips every entry by name.
+
+### Added — `rtm` and `glossary`: the analyst's tables, derived
+
+Two tables an analyst used to keep by hand in a spreadsheet that went stale the day it was
+finished. Both are joins over what is already recorded, so they are as current as the
+model:
+
+- **`rtm`** — for every `Requirement`, `Constraint`, `Principle` and `Goal`: what it binds
+  (`appliesTo`), what realizes it, the facts and sources evidencing it, and the decisions
+  and compliance assessments about it or anything it binds. Rows carry the flags
+  `unbound`, `unrealized`, `assumed` where they hold.
+- **`glossary`** — the entity table with aliases and documentation, the facts that mention
+  each term, and the model elements that answer to it: by name or alias first, by citing
+  one of its facts only when no element carries the name (otherwise one fact naming three
+  systems would list all three under each).
+
+`--out` writes CSV for a `.csv` target — a spreadsheet is where these are read — and
+markdown otherwise. Neither is a gate.
+
+### Added — value streams and the ends of the motivation chain (`RDY011`, `RDY012`)
+
+`ValueStream`, `Goal` and `Outcome` have been valid since the schema was generated from the
+oracle, and nothing asked anything about them. `RDY011` reports a value stream nothing
+enables — no capability serves it or any of its stages, nothing realizes it — walking the
+containment family, so a stream whose stage is served is enabled through it and the stage
+of a served stream is not flagged on its own (the `RDY008` lesson, used as a design input).
+`RDY012` reports a goal or outcome nothing realizes. Both are warnings in a family that
+never gates unless asked; the worked example's goal is realized and stays silent.
+`ea-capability-map` gains a value-stream section.
+
+### Changed — skill prose
+
+`ea-intake` (converting documents; questions as records, from the skeletons),
+`ea-capability-map` (value streams), `ea-stakeholders` (an inferred concern is a recorded
+question), `ea-delta-ingest` (close the questions new material answers), `ea-model`,
+`ea-docs` (open questions in the description; `rtm`/`glossary` as extracts), `ea-health`
+(question age). Three of these are measured skills; their effect is measured once, at 8.6.
+
 ## [0.16.0] — 2026-10-25 — the host release
 
 Phase 8.1 — the plan for the whole phase is [`docs/PHASE8-PLAN.md`](docs/PHASE8-PLAN.md),

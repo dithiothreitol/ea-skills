@@ -28,3 +28,15 @@ elements:
     lastReviewed: 2026-07-20
     assumed: true
     rationale: A fixture element for RDY009, not a claim about any real requirement.
+
+  # --- RDY012: an end of the motivation chain nothing realizes -----------------------
+  - id: outcome-nobody-produces
+    type: Outcome
+    name: Outcome Nothing Produces
+    documentation: >
+      No capability, requirement or course of action realizes it -- an aspiration with no
+      claim about what in the architecture brings it about.
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    assumed: true
+    rationale: A fixture element for RDY012, not a claim about any real outcome.

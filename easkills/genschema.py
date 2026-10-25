@@ -31,6 +31,11 @@ REQUEST_SCHEMA_PATH = SCHEMA_DIR / "request.schema.json"
 REFERENCE_SCHEMA_PATH = SCHEMA_DIR / "reference.schema.json"
 REFERENCE_MAPPINGS_SCHEMA_PATH = SCHEMA_DIR / "reference-mappings.schema.json"
 CONFIG_SCHEMA_PATH = SCHEMA_DIR / "ea-config.schema.json"
+QUESTION_SCHEMA_PATH = SCHEMA_DIR / "question.schema.json"
+
+# A clarification question is open until a fact answers it or somebody withdraws it with
+# a reason. Closed, because `kpi` and the architecture description count by status.
+QUESTION_STATUSES = ("open", "answered", "withdrawn")
 
 STANDARD_TYPES = ["legal", "industry", "organisation"]
 STANDARD_LIFECYCLES = ["proposed", "trial", "active", "deprecated", "retired"]
@@ -513,6 +518,76 @@ def build_entities_schema() -> dict[str, Any]:
                         "uniqueItems": True,
                     },
                     "documentation": {"type": "string"},
+                },
+            },
+        },
+    }
+
+
+def build_question_schema() -> dict[str, Any]:
+    """Schema for facts/questions/*.yaml -- clarification questions as records.
+
+    `ea-intake` has always called questions "a first-class output", and they had nowhere
+    to live but a paragraph in a report. A question here points at the exact source text
+    that raised it (located mechanically, like a fact's quote), names who should answer,
+    and is closed by pointing at the fact the answer produced -- so "we asked" becomes as
+    checkable as "we were told".
+    """
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:ea-skills:schema:question",
+        "title": "EA Skills clarification-question file",
+        "description": (
+            "Questions a source raised and the sources could not answer. Each points at the "
+            "text that raised it and, once answered, at the fact the answer produced."
+        ),
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "questions": {"type": "array", "items": {"$ref": "#/$defs/question"}},
+        },
+        "$defs": {
+            "slug": _slug_def(),
+            "question": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["id", "question", "source", "status", "raised"],
+                "properties": {
+                    "id": {"$ref": "#/$defs/slug"},
+                    "question": {
+                        "type": "string",
+                        "minLength": 8,
+                        "description": "What a stakeholder is asked, phrased so they can answer it.",
+                    },
+                    "source": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "required": ["file", "quote"],
+                        "properties": {
+                            "file": {"type": "string", "minLength": 1},
+                            "quote": {
+                                "type": "string",
+                                "minLength": 8,
+                                "description": "The text that raised the question; located mechanically (QST002).",
+                            },
+                            "lines": {"type": "string", "pattern": "^[0-9]+(-[0-9]+)?$"},
+                        },
+                    },
+                    "addressedTo": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Who should answer: a role, a team, a named owner.",
+                    },
+                    "status": {"enum": list(QUESTION_STATUSES)},
+                    "raised": {"type": "string", "pattern": DATE_PATTERN},
+                    "answered": {"type": "string", "pattern": DATE_PATTERN},
+                    "answeredBy": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {"$ref": "#/$defs/slug"},
+                        "description": "Ids of the facts the answer produced (QST003).",
+                    },
+                    "notes": {"type": "string"},
                 },
             },
         },
@@ -1023,6 +1098,7 @@ SCHEMAS: tuple[tuple[Path, Callable[[], dict[str, Any]]], ...] = (
     (REFERENCE_SCHEMA_PATH, build_reference_schema),
     (REFERENCE_MAPPINGS_SCHEMA_PATH, build_reference_mappings_schema),
     (CONFIG_SCHEMA_PATH, build_config_schema),
+    (QUESTION_SCHEMA_PATH, build_question_schema),
 )
 
 
@@ -1082,3 +1158,7 @@ def load_reference_mappings_schema(path: Path | None = None) -> dict[str, Any]:
 
 def load_config_schema(path: Path | None = None) -> dict[str, Any]:
     return _load(path or CONFIG_SCHEMA_PATH, build_config_schema)
+
+
+def load_question_schema(path: Path | None = None) -> dict[str, Any]:
+    return _load(path or QUESTION_SCHEMA_PATH, build_question_schema)

@@ -106,7 +106,10 @@ Trends matter more than snapshots: run with `--json`, keep the outputs (e.g. in
 * **stale share rising** -- the review habit is decaying;
 * **obsolescence exposure growing** -- retirements outpacing migrations (check the
   matching dispensations exist and have credible expiry dates);
-* **unframed/unheld concerns** -- the documentation loop is reopening.
+* **unframed/unheld concerns** -- the documentation loop is reopening;
+* **open questions ageing** (the `Questions` line, present once `facts/questions/` holds
+  records) -- the oldest open question's age is how long the repository has known it does
+  not know something, and an open question nobody is named to answer is never asked.
 
 ## Reading the roadmap
 

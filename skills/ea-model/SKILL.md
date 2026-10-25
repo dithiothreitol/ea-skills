@@ -203,7 +203,8 @@ easkills readiness --root <repo> --zone staging
 ```
 
 Per layer, per checkpoint, **naming the elements**: capabilities nothing realizes and
-nothing has assessed, processes attached to neither a capability nor a service,
+nothing has assessed, value streams nothing enables, goals and outcomes nothing realizes,
+processes attached to neither a capability nor a service,
 components with no `lifecycle`/`timeDisposition` (invisible to every portfolio report),
 services with no consumer, infrastructure that serves nothing, obligations that bind
 nothing, and layers the fact register covers while the model does not. Nothing there is

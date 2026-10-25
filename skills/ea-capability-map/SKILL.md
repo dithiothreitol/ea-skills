@@ -73,6 +73,24 @@ full of invented capabilities is worse than a lopsided map the sources support -
 the lopsidedness *is information* about where interviewing should go next; list it
 in your report as clarification questions.
 
+## Value streams, when the sources describe one
+
+A value stream is the other half of the strategy layer: *how value flows* to a customer,
+stage by stage, where the capability map says *what the business can do*. Model one only
+when a source walks through it ("an order arrives, we check stock, we confirm the window,
+we release it to the warehouse") -- never because the layer looks empty without one.
+
+* Type it `ValueStream`, id `vs-<slug>`, named as the value delivered ("Fulfil Customer
+  Order"). Its stages are value streams too, composed into it (`Composition`), in the
+  order the source gives, connected by `Flow` or `Triggering`.
+* **Capabilities enable stages**: `Capability --Serving--> ValueStream`. That edge is what
+  turns two diagrams into one model -- the stage a weak capability serves is where the
+  customer feels the weakness.
+* `readiness` reports a value stream nothing enables (`RDY011`), walking the stages: a
+  stream whose stages are served is enabled through them. The honest fixes are the
+  capability that serves it, or a recorded gap -- never a capability invented to close the
+  line.
+
 ## When is the capability map done
 
 ```bash

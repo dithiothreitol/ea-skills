@@ -1,0 +1,72 @@
+# Clarification questions that break their rules on purpose -- one per QST code. The
+# schema-invalid entry lives in its own file (schema.yaml) so it cannot hide the others,
+# and the duplicate id is split across two files, which is the case that matters.
+
+questions:
+  # --- QST002: the quote is not in the source ------------------------------------------
+  - id: q-quote-missing
+    question: Which team owns the disaster-recovery runbook for the order portal?
+    source:
+      file: facts/sources/notes.md
+      quote: The order portal fails over to the secondary region within minutes.
+    status: open
+    raised: "2026-07-20"
+
+  # --- QST003: answered, but no fact produced -------------------------------------------
+  - id: q-answered-without-fact
+    question: Do the two application servers share one database?
+    source:
+      file: facts/sources/notes.md
+      quote: two application servers that mirror each other
+    status: answered
+    raised: "2026-07-20"
+    answered: "2026-07-21"
+
+  # --- QST003: answered by a fact that does not exist ------------------------------------
+  - id: q-answered-by-unknown-fact
+    question: Which system holds the order records of record?
+    source:
+      file: facts/sources/notes.md
+      quote: Order records are held by the finance system
+    status: answered
+    raised: "2026-07-20"
+    answered: "2026-07-21"
+    answeredBy: [fact-that-was-never-written]
+
+  # --- QST004 (first half): the same id appears again in duplicate.yaml -----------------
+  - id: q-duplicated
+    question: Is the customer portal the only consumer of the order records?
+    source:
+      file: facts/sources/notes.md
+      quote: referenced by the customer portal
+    status: open
+    raised: "2026-07-20"
+
+  # --- QST005: withdrawn without a reason -----------------------------------------------
+  - id: q-withdrawn-silently
+    question: Where is the primary data centre located?
+    source:
+      file: facts/sources/notes.md
+      quote: The primary data centre hosts two application servers
+    status: withdrawn
+    raised: "2026-07-20"
+
+  # --- QST006: a date shaped right and impossible on the calendar -----------------------
+  - id: q-impossible-date
+    question: When were the two application servers last failed over?
+    source:
+      file: facts/sources/notes.md
+      quote: two application servers that mirror each other
+    status: open
+    raised: "2027-13-45"
+
+  # --- QST006: answered before it was raised --------------------------------------------
+  - id: q-answered-before-raised
+    question: Does the finance system expose the order records through an API?
+    source:
+      file: facts/sources/notes.md
+      quote: Order records are held by the finance system
+    status: answered
+    raised: "2026-07-20"
+    answered: "2026-07-01"
+    answeredBy: [fact-dup]

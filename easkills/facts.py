@@ -31,6 +31,7 @@ from .validate import (
 
 REGISTER_DIR = Path("facts") / "register"
 ENTITIES_FILE = Path("facts") / "entities.yaml"
+QUESTIONS_DIR = Path("facts") / "questions"
 SOURCE_SUFFIXES = {".md", ".txt"}
 
 
@@ -115,6 +116,7 @@ class FactsReport:
                 f"{self.counts.get('facts', 0)} facts, "
                 f"{self.counts.get('entities', 0)} entities, "
                 f"{self.counts.get('sources', 0)} source file(s)"
+                + (f", {self.counts['questions']} question(s)" if self.counts.get("questions") else "")
             ),
             "",
         ]
@@ -526,6 +528,189 @@ def check_uncited_sources(register: Register) -> list[Finding]:
     return findings
 
 
+# ----------------------------------------------------------- clarification questions
+
+
+@dataclass
+class Question:
+    """A question a source raised and the sources could not answer (`facts/questions/`)."""
+
+    id: str
+    question: str
+    file: str = ""
+    quote: str = ""
+    lines: str = ""
+    addressed_to: str = ""
+    status: str = "open"
+    raised: str = ""
+    answered: str = ""
+    answered_by: list[str] = field(default_factory=list)
+    notes: str = ""
+    source_path: Path | None = None
+    locator: str = ""
+
+
+def _parse_day(value: str):
+    from datetime import datetime
+
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def load_question_documents(root: Path) -> list[dsl.Document]:
+    """Every YAML file under facts/questions, path-sorted for determinism."""
+    directory = root / QUESTIONS_DIR
+    documents: list[dsl.Document] = []
+    if not directory.is_dir():
+        return documents
+    for path in sorted(p for p in directory.rglob("*") if p.is_file() and p.suffix in {".yaml", ".yml"}):
+        try:
+            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except dsl.YAML_ERRORS as exc:
+            documents.append(dsl.Document(path=path, data=None, parse_error=str(exc)))
+            continue
+        if data is None:
+            data = {}
+        if not isinstance(data, dict):
+            documents.append(
+                dsl.Document(path=path, data=None, parse_error="top level of a question file must be a mapping")
+            )
+            continue
+        documents.append(dsl.Document(path=path, data=dsl._normalize_scalars(data)))
+    return documents
+
+
+def build_questions(documents: list[dsl.Document]) -> tuple[dict[str, Question], list[tuple[str, Path, Path]]]:
+    """Questions best-effort, plus duplicate ids; malformed items are the schema's to report."""
+    questions: dict[str, Question] = {}
+    duplicates: list[tuple[str, Path, Path]] = []
+    for doc in documents:
+        if doc.data is None:
+            continue
+        for index, item in enumerate(doc.data.get("questions") or []):
+            if not isinstance(item, dict) or not item.get("id"):
+                continue
+            source = item.get("source") if isinstance(item.get("source"), dict) else {}
+            question = Question(
+                id=str(item.get("id")),
+                question=str(item.get("question", "") or ""),
+                file=str(source.get("file", "") or ""),
+                quote=str(source.get("quote", "") or ""),
+                lines=str(source.get("lines", "") or ""),
+                addressed_to=str(item.get("addressedTo", "") or ""),
+                status=str(item.get("status", "open") or "open"),
+                raised=str(item.get("raised", "") or ""),
+                answered=str(item.get("answered", "") or ""),
+                answered_by=_str_list(item.get("answeredBy")),
+                notes=str(item.get("notes", "") or ""),
+                source_path=doc.path,
+                locator=f"questions[{index}]",
+            )
+            existing = questions.get(question.id)
+            if existing is not None:
+                duplicates.append((question.id, existing.source_path or doc.path, doc.path))
+                continue
+            questions[question.id] = question
+    return questions, duplicates
+
+
+def load_questions(root: Path) -> dict[str, Question]:
+    """The question records, for the reports that count them."""
+    questions, _duplicates = build_questions(load_question_documents(root))
+    return questions
+
+
+def check_questions(register: Register) -> tuple[list[Finding], int]:
+    """QST001-QST006: a question points at real text, and an answer points at a fact."""
+    root = register.root
+    documents = load_question_documents(root)
+    findings: list[Finding] = []
+    validator = Draft202012Validator(genschema.load_question_schema())
+    for doc in documents:
+        rel = _rel(root, doc.path)
+        if doc.parse_error:
+            findings.append(Finding("QST001", SEVERITY_ERROR, f"cannot read file: {doc.parse_error}", file=rel))
+            continue
+        for error in sorted(validator.iter_errors(doc.data), key=lambda e: list(e.absolute_path)):
+            locator = "/".join(str(p) for p in error.absolute_path) or "(root)"
+            findings.append(Finding("QST001", SEVERITY_ERROR, error.message, file=rel, locator=locator))
+
+    questions, duplicates = build_questions(documents)
+    for key, first, second in duplicates:
+        findings.append(
+            Finding(
+                "QST004",
+                SEVERITY_ERROR,
+                f"duplicate question id '{key}' also defined in {_rel(root, first)}",
+                file=_rel(root, second),
+                concept=key,
+            )
+        )
+
+    threshold, _problem = dsl.config_number(register.config, "quoteMatchThreshold", 0.90, minimum=0.0, maximum=1.0)
+    facts_root = register.facts_root()
+    for question in sorted(questions.values(), key=lambda q: q.id):
+        rel_file = _rel(root, question.source_path)
+
+        def finding(code: str, severity: str, message: str) -> Finding:
+            return Finding(code, severity, message, file=rel_file, locator=question.locator, concept=question.id)
+
+        if question.file:
+            source_path, problem = dsl.resolve_provenance_file(root, facts_root, question.file)
+            if source_path is None:
+                findings.append(finding("QST002", SEVERITY_ERROR, f"source file {question.file!r} {problem}"))
+            elif not source_path.is_file():
+                findings.append(finding("QST002", SEVERITY_ERROR, f"source file not found: {question.file}"))
+            elif question.quote:
+                text = source_path.read_text(encoding="utf-8", errors="replace")
+                if _quote_match(_normalize(text), _normalize(question.quote), threshold) == "missing":
+                    findings.append(
+                        finding(
+                            "QST002",
+                            SEVERITY_ERROR,
+                            f"the quote is not in {question.file}: {question.quote[:80]!r} -- a question "
+                            "has to point at the text that raised it, or nobody can tell what was asked about",
+                        )
+                    )
+
+        if question.status == "answered":
+            if not question.answered_by:
+                findings.append(
+                    finding(
+                        "QST003",
+                        SEVERITY_ERROR,
+                        "status is 'answered' but no fact is named in answeredBy -- an answer that "
+                        "produced no fact is a conversation, not evidence",
+                    )
+                )
+            for ref in question.answered_by:
+                if ref not in register.facts:
+                    findings.append(finding("QST003", SEVERITY_ERROR, f"answeredBy names unknown fact '{ref}'"))
+        if question.status == "withdrawn" and not question.notes.strip():
+            findings.append(
+                finding(
+                    "QST005",
+                    SEVERITY_WARNING,
+                    "withdrawn without notes -- the next reader cannot tell a question that stopped "
+                    "mattering from one somebody gave up on",
+                )
+            )
+
+        raised = _parse_day(question.raised) if question.raised else None
+        if question.raised and raised is None:
+            findings.append(finding("QST006", SEVERITY_ERROR, f"raised {question.raised!r} is not a real date"))
+        answered = _parse_day(question.answered) if question.answered else None
+        if question.answered and answered is None:
+            findings.append(finding("QST006", SEVERITY_ERROR, f"answered {question.answered!r} is not a real date"))
+        if raised and answered and answered < raised:
+            findings.append(
+                finding("QST006", SEVERITY_ERROR, f"answered {question.answered} is before raised {question.raised}")
+            )
+    return findings, len(questions)
+
+
 def validate_facts(root: Path) -> FactsReport:
     register, documents, entities_doc = load(root)
 
@@ -537,6 +722,8 @@ def validate_facts(root: Path) -> FactsReport:
     findings += check_contradictions(register)
     findings += check_duplicate_statements(register)
     findings += check_uncited_sources(register)
+    question_findings, question_count = check_questions(register)
+    findings += question_findings
 
     severity_rank = {SEVERITY_ERROR: 0, SEVERITY_WARNING: 1, SEVERITY_INFO: 2}
     findings.sort(key=lambda f: (severity_rank.get(f.severity, 3), f.code, f.file, f.concept))
@@ -547,5 +734,6 @@ def validate_facts(root: Path) -> FactsReport:
         "entities": len(register.entities),
         "sources": len(iter_source_files(register)),
         "files": len(documents),
+        "questions": question_count,
     }
     return report

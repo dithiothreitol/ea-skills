@@ -15,10 +15,12 @@ from pathlib import Path
 from . import (
     airegister,
     alignment,
+    analyst,
     aoef,
     check as check_mod,
     contextpack,
     docgen,
+    documents as documents_mod,
     dora,
     dsl,
     facts as facts_mod,
@@ -161,6 +163,32 @@ def build_parser() -> argparse.ArgumentParser:
         "--overwrite", action="store_true", help="replace an existing converted document"
     )
     p_csv.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+
+    p_doc = sub.add_parser(
+        "intake-doc",
+        help="convert a PDF, Word, PowerPoint or Excel file into a citable source document",
+    )
+    p_doc.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_doc.add_argument("--file", type=Path, required=True, help="the .pdf, .docx, .pptx or .xlsx to convert")
+    p_doc.add_argument("--out", type=Path, help="target markdown file (default: <sourcesDir>/<name>.md)")
+    p_doc.add_argument("--overwrite", action="store_true", help="replace an existing converted document")
+    p_doc.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+
+    p_rtm = sub.add_parser(
+        "rtm", help="requirement traceability: what each obligation binds, what meets it, what evidences it"
+    )
+    _add_common(p_rtm)
+    p_rtm.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+    p_rtm.add_argument("--out", type=Path, help="write the matrix as a table (.csv for a spreadsheet, else markdown)")
+
+    p_glossary = sub.add_parser(
+        "glossary", help="the entity table as a glossary, with the facts and model elements behind each term"
+    )
+    p_glossary.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_glossary.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+    p_glossary.add_argument(
+        "--out", type=Path, help="write the glossary as a table (.csv for a spreadsheet, else markdown)"
+    )
 
     p_promote = sub.add_parser(
         "promote", help="move staging files into approved after the promotion gate passes"
@@ -329,7 +357,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_maturity.add_argument("--as-of", dest="as_of", metavar="YYYY-MM-DD", help="evaluate against this date")
 
     p_propose = sub.add_parser(
-        "propose", help="turn findings into staged requirement / work-package skeletons"
+        "propose", help="turn findings into skeletons: staged requirements and work packages, or open questions"
     )
     p_propose.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
     p_propose.add_argument(
@@ -555,6 +583,52 @@ def cmd_intake_csv(args: argparse.Namespace) -> int:
         ),
     ]
     _emit_report(args, report.as_dict(), "\n".join(lines))
+    return 0
+
+
+def cmd_intake_doc(args: argparse.Namespace) -> int:
+    root = args.root.resolve()
+    config = dsl.load_config(root)
+    sources_dir = root / str(config.get("sourcesDir", "facts/sources"))
+    target = args.out or (sources_dir / f"{args.file.stem}.md")
+    try:
+        report = documents_mod.convert(args.file, target, overwrite=args.overwrite)
+    except documents_mod.DocumentError as exc:
+        print(_error(str(exc)))
+        return 1
+    lines = [
+        _ok(f"Converted a {report.kind} ({report.sections} section(s), {report.lines} line(s)) -> {ui.bold(report.target)}"),
+        ui.dim(f"source: {report.source} (sha256 {report.sha256[:16]}); read with {report.library}"),
+    ]
+    for note in report.notes:
+        lines.append(ui.yellow(f"note: {note}"))
+    lines += [
+        "",
+        ui.dim(
+            "Commit the original next to the converted document: the SHA-256 in the header is "
+            "what ties a verified quote back to the bytes it came from. Extract facts from it "
+            "with ea-intake; nothing here interpreted a single heading, table or slide."
+        ),
+    ]
+    _emit_report(args, report.as_dict(), "\n".join(lines))
+    return 0
+
+
+def cmd_rtm(args: argparse.Namespace) -> int:
+    matrix = analyst.rtm(args.root.resolve(), zone=args.zone)
+    _emit_report(args, matrix.as_dict(), analyst.render_rtm(matrix))
+    if args.out:
+        analyst.write_table(args.out, "Requirement traceability", analyst.rtm_table(matrix))
+        print(_ok(f"Matrix written to {args.out}"))
+    return 0
+
+
+def cmd_glossary(args: argparse.Namespace) -> int:
+    data = analyst.glossary(args.root.resolve())
+    _emit_report(args, data.as_dict(), analyst.render_glossary(data))
+    if args.out:
+        analyst.write_table(args.out, "Glossary", analyst.glossary_table(data))
+        print(_ok(f"Glossary written to {args.out}"))
     return 0
 
 
@@ -932,6 +1006,9 @@ HANDLERS = {
     "docs": cmd_docs,
     "import": cmd_import,
     "intake-csv": cmd_intake_csv,
+    "intake-doc": cmd_intake_doc,
+    "rtm": cmd_rtm,
+    "glossary": cmd_glossary,
     "promote": cmd_promote,
     "validate-gov": cmd_validate_gov,
     "staleness": cmd_staleness,

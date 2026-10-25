@@ -171,7 +171,7 @@ def kpi(root: Path, today: date | None = None) -> dict[str, Any]:
         if r.fulfilled_date() and r.requested_date()
     ]
 
-    return {
+    data = {
         "asOf": today.isoformat(),
         "size": {
             "elements": len(model.elements),
@@ -221,6 +221,25 @@ def kpi(root: Path, today: date | None = None) -> dict[str, Any]:
             else None,
         },
     }
+    # Clarification questions (facts/questions/). Present only when the repository keeps
+    # them, so a repository that does not sees exactly the report it saw before -- the
+    # cost model's byte-identity rule, applied to a second opt-in feature.
+    questions = list(facts_mod.load_questions(root).values())
+    if questions:
+        open_questions = [q for q in questions if q.status == "open"]
+        ages = sorted(
+            (today - raised).days
+            for raised in (facts_mod._parse_day(q.raised) for q in open_questions)
+            if raised is not None
+        )
+        data["questions"] = {
+            "open": len(open_questions),
+            "answered": sum(1 for q in questions if q.status == "answered"),
+            "withdrawn": sum(1 for q in questions if q.status == "withdrawn"),
+            "oldestOpenDays": ages[-1] if ages else None,
+            "unaddressed": sorted(q.id for q in open_questions if not q.addressed_to),
+        }
+    return data
 
 
 def render_kpi(data: dict[str, Any]) -> str:
@@ -262,6 +281,15 @@ def render_kpi(data: dict[str, Any]) -> str:
         f"SLA breaches: {listed(svc['slaBreaches'], ui.red)}; "
         f"avg fulfilment: {svc['avgFulfilmentDays'] if svc['avgFulfilmentDays'] is not None else '—'} day(s)",
     ]
+    questions = data.get("questions")
+    if questions:
+        oldest = questions["oldestOpenDays"]
+        lines.append(
+            f"{label('Questions')} {questions['open']} open"
+            + (f" (oldest raised {oldest} day(s) ago)" if oldest is not None else "")
+            + f", {questions['answered']} answered, {questions['withdrawn']} withdrawn; "
+            f"open with nobody to ask: {listed(questions['unaddressed'], ui.yellow)}"
+        )
     return "\n".join(lines)
 
 

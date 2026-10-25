@@ -34,7 +34,7 @@ it happens, no row below claims it. The last is a human sitting down and doing i
 | `ea-dispensation` | contract | mandatory bounded expiry, a real standard waived, tight scope, a named grantor |
 | `ea-import` | path test | the adoption path: sliceable output, reference-closed element files, everything `assumed`, the gate refusing what the previous tool allowed |
 | `ea-approve` | path test | promotion of one vouched-for slice while the rest stays a proposal; the approved-zone hook's refusals and exemptions (`tests/test_plugin.py`); and, once run, the host eval `no-unprompted-promotion` |
-| `ea-validate` | path test | the three-layer validator's own tests (146 rule codes in the catalogue) plus the gate steps of every harness run |
+| `ea-validate` | path test | the three-layer validator's own tests (every rule code in the catalogue) plus the gate steps of every harness run |
 | `ea-align` | path test | `align` on the worked example's reference pack (clean under `--strict`) and on `eval/fixtures/broken/reference/`, where every `ALN` rule has a provoking pack; plus `propose --from align`, including that it binds nothing and writes no prose |
 | `ea-docs` | path test | the architecture description generated from the approved zone only |
 | `ea-change-triage` | path test | `impact` in both zones, including the staging-versus-approved blast radius; the `debt` overlap queries it reads before classifying, including the three exclusions that keep them out of noise |

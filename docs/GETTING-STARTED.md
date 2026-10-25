@@ -70,7 +70,37 @@ python -m easkills coverage --root .          # uncited statements, with line nu
 
 A fabricated quote is an **error** (`FACT004`), not a nitpick — this stage is the
 quality ceiling of everything downstream. Uncited source statements are candidate
-clarification questions, not defects.
+clarification questions, not defects — and questions are records, so they do not get lost
+between one report and the next:
+
+```bash
+python -m easkills propose --root . --from coverage --as-of 2026-08-04   # a skeleton per uncited statement
+```
+
+Each skeleton lands in `facts/questions/proposed-questions.yaml`, pointing at the file, the
+lines and the statement's own text. Write the question and say who should answer it
+(`addressedTo`), or extract the fact you missed and delete the entry. When the answer
+comes, it becomes a fact like any other, and the question is closed by naming it:
+
+```yaml
+# facts/questions/interview.yaml
+questions:
+  - id: q-erp-release-mechanism
+    question: What carries released orders from the ERP to the warehouse system?
+    source:
+      file: facts/sources/interview.md
+      quote: It receives released orders from the ERP every few minutes.
+    addressedTo: logistics-it@yourco.example
+    status: answered            # open | answered | withdrawn
+    raised: 2026-08-04
+    answered: 2026-08-11
+    answeredBy: [fact-erp-wms-interface]
+```
+
+`validate-facts` holds questions to the same discipline as facts (`QST*`): the quote is
+located in its source, an answer names a real fact, a withdrawal gives a reason. `kpi`
+counts what is still open and how old it is, and the architecture description lists open
+questions as known unknowns.
 
 ## 2. Model — capability map first, everything as a delta
 
@@ -199,9 +229,16 @@ python -m easkills validate-gov --root .
 
 ```bash
 python -m easkills intake-csv --root . --file inventory.csv   # a spreadsheet becomes a citable source
+python -m easkills intake-doc --root . --file policy.pdf      # so do PDF, Word, PowerPoint and Excel files
 python -m easkills import --root . --file legacy-export.xml   # Archi: File > Export > Model To Open Exchange File
 python -m easkills validate --root . --zone staging           # the findings ARE the adoption backlog
 ```
+
+`intake-doc` needs the optional converters (`pip install -r requirements-intake.txt`). It
+keeps the document's order, headings and tables, converts every page, slide and sheet, and
+says in the header what it could not read — a scanned page with no text layer, a formula
+with no cached value — rather than leaving it out. Like `intake-csv`, it interprets
+nothing: a slide titled "Target state" is a sentence to quote, not a plateau.
 
 Everything lands in `model/staging/` marked `assumed` — the old tool's content is a
 claim, not evidence. Owners and review dates are lifted where the export carried
@@ -365,7 +402,15 @@ python -m easkills roadmap --root .      # plateaus, gaps, and intent nothing sc
 python -m easkills delta --root .        # what the facts know that the model doesn't
 python -m easkills maturity --root .     # level 1-5 per dimension, and what blocks the next
 python -m easkills context --root . --scope <element-id>   # pack for a dev team/agent
+python -m easkills rtm --root . --out rtm.csv     # requirement traceability, for a spreadsheet
+python -m easkills glossary --root . --out glossary.md     # the entity table as a glossary
 ```
+
+`rtm` and `glossary` are the two tables an analyst used to keep by hand. Both are joins over
+what the repository already records — `appliesTo`, `Realization` edges, provenance, the
+governance log, the entity table — so they are as current as the model, and the flags a
+traceability row carries (`unbound`, `unrealized`, `assumed`) show a gap without anyone
+having to notice an empty cell. Edit the records, never the table.
 
 `debt` will also cost its own findings, but only once you tell it what things are worth.
 Add a `costModel` block to `ea.config.yaml` (the scaffold ships it commented out) with a

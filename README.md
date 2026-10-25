@@ -10,7 +10,7 @@ and living governance out. All of it in git.
 [![CI](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Validation rules](https://img.shields.io/badge/validation%20rules-146-brightgreen.svg)](docs/RULES.md)
+[![Validation rules](https://img.shields.io/badge/validation%20rules-154-brightgreen.svg)](docs/RULES.md)
 [![ArchiMate 3.2](https://img.shields.io/badge/ArchiMate-3.2-orange.svg)](oracle/NOTICE.md)
 [![ISO/IEC/IEEE 42010](https://img.shields.io/badge/ISO%2FIEC%2FIEEE-42010%3A2022-lightgrey.svg)](docs/RULES.md)
 
@@ -158,14 +158,14 @@ and keeps the stage order honest.
 
 | Stage | Skills | Deterministic gate |
 |---|---|---|
-| Ingest | `ea-intake`, `ea-delta-ingest`, `ea-import` | `validate-facts`, `coverage --min-coverage`; `intake-csv` makes a spreadsheet citable; `import` lands in staging, all `assumed` |
+| Ingest | `ea-intake`, `ea-delta-ingest`, `ea-import` | `validate-facts`, `coverage --min-coverage`; `intake-csv` and `intake-doc` make a spreadsheet, PDF, Word, PowerPoint or Excel file citable; clarification questions are records (`QST*`); `import` lands in staging, all `assumed` |
 | Model | `ea-capability-map`, `ea-model`, `ea-validate` | `validate` (staging as overlay), 3-repair cap |
 | Publish | `ea-approve` | `promote` — the only write path into `approved/` |
-| Document | `ea-stakeholders`, `ea-views`, `ea-docs` | `docs`, `render`, ISO loop rules, freshness CI check |
+| Document | `ea-stakeholders`, `ea-views`, `ea-docs` | `docs`, `render`, ISO loop rules, freshness CI check; `rtm` and `glossary` derive the traceability matrix and the glossary, as CSV for a spreadsheet when asked |
 | Govern | `ea-standards-base`, `ea-dispensation`, `ea-adr`, `ea-compliance`, `ea-service` | `validate-gov` — expiry and SLA are enforced, not filed |
 | Maintain | `ea-health`, `ea-change-triage`, `ea-board`, `ea-context` | `kpi`, `debt`, `staleness`, `conformance`, `correspondences`, `roadmap`, `delta`, `context`, `impact` |
 | Assess | `ea-model`, `ea-capability-map`, `ea-align` | `readiness` — the per-layer definition of done, every checkpoint naming its elements; `align --strict` — the model against a hash-pinned reference architecture, every unmapped node a named gap and every exclusion a recorded decision |
-| Propose | `ea-align`, `ea-adr` | `propose --from align\|readiness\|overlap\|time` — findings become staging skeletons with derived ids; the prose, the owner and the review date stay human, and the gate enforces it. Refuses rather than emitting anything the gate would reject |
+| Propose | `ea-align`, `ea-adr` | `propose --from align\|readiness\|overlap\|time\|coverage` — findings become staging skeletons with derived ids; the prose, the owner and the review date stay human, and the gate enforces it. Refuses rather than emitting anything the gate would reject |
 | Comply | `ea-regulatory`, `ea-ai-governance` | `dora-register` and `ai-act-register` — the Register of Information and the AI system inventory from the approved model, each naming the fields it could not fill; control gaps ride `align` as `ALN004` |
 | Consume | `ea-check` | `check --scope` inside a product repo — standards lifecycle vs declared dependencies |
 | Evaluate | `ea-eval` | `score --min-f1` against the [golden set](eval/golden/); the score names every unmatched item, and relationships the model only *implies* count as half a match via ArchiMate's derivation rules |
@@ -411,7 +411,7 @@ docs/            GETTING-STARTED, CLI reference, RULES catalogue, BLUEPRINT (des
 |---|---|
 | [Getting started](docs/GETTING-STARTED.md) | Tutorial: from a raw interview to a validated, documented architecture |
 | [CLI reference](docs/CLI.md) | Every command, flag and exit-code contract |
-| [Rule catalogue](docs/RULES.md) | All 146 validation rules with severities and rationale |
+| [Rule catalogue](docs/RULES.md) | All 154 validation rules with severities and rationale |
 | [Blueprint](docs/BLUEPRINT.md) | The research-verified design: decisions, evidence, per-phase log |
 | [Golden set](eval/golden/README.md) | How pipeline quality is measured |
 | [Skill coverage](docs/SKILL-COVERAGE.md) | Which instrument measures which skill — including where nothing does |

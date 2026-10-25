@@ -39,3 +39,38 @@ elements:
       assessment: weak
     assumed: true
     rationale: The negative half of the RDY001 case -- it proves the rule stays silent.
+
+  # --- RDY011: a value stream nothing enables ------------------------------------------
+  - id: vs-nothing-enables
+    type: ValueStream
+    name: Value Stream Nothing Enables
+    documentation: No capability serves it or any stage of it, and nothing realizes it.
+    assumed: true
+    rationale: A fixture element for RDY011, not a claim about any real value stream.
+
+  # --- RDY011 must stay SILENT for both of these: a stage is served, so the stream is
+  # enabled through it, and the stage itself is enabled directly -------------------------
+  - id: vs-enabled-through-a-stage
+    type: ValueStream
+    name: Value Stream Enabled Through A Stage
+    assumed: true
+    rationale: The negative half of the RDY011 case -- enabled through its stage.
+  - id: vs-stage-served
+    type: ValueStream
+    name: Served Stage
+    assumed: true
+    rationale: The stage a capability serves, which enables its stream.
+
+relationships:
+  - id: rel-stream-composes-stage
+    type: Composition
+    source: vs-enabled-through-a-stage
+    target: vs-stage-served
+    assumed: true
+    rationale: Stages are value streams composed into the stream.
+  - id: rel-capability-serves-stage
+    type: Serving
+    source: cap-weakness-recorded
+    target: vs-stage-served
+    assumed: true
+    rationale: A capability serving a stage is the idiom that enables a value stream.

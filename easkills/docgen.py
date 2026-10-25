@@ -310,6 +310,28 @@ def build_markdown(model: dsl.Model) -> str:
         out.append("")
         for name, kind, detail in contested:
             out.append(f"- **{_md_escape(name)}** ({kind}): {_md_escape(detail)}")
+    from . import facts as facts_mod  # local, as in _contested_citations
+
+    open_questions = sorted(
+        (q for q in facts_mod.load_questions(model.root).values() if q.status == "open"), key=lambda q: q.id
+    )
+    if open_questions:
+        # Questions the sources raised and could not answer. They are not concepts and the
+        # model makes no claim about them -- which is exactly why a reader of the
+        # description needs to see them: an unanswered question is a known unknown.
+        out.append("")
+        out.append(
+            "The sources raised these **clarification questions**, and no fact answers them yet "
+            "(`facts/questions/`):"
+        )
+        out.append("")
+        for question in open_questions:
+            asked = f"; asked of {_md_escape(question.addressed_to)}" if question.addressed_to else "; nobody named to answer"
+            where = f"{question.file}" + (f", lines {question.lines}" if question.lines else "")
+            out.append(
+                f"- {_md_escape(question.question)} — *\"{_md_escape(question.quote)}\"* "
+                f"({_md_escape(where)}; raised {question.raised}{asked})"
+            )
 
     # ------------------------------------------------------------------- decisions
     decisions, correspondences = _governance_view(model)
