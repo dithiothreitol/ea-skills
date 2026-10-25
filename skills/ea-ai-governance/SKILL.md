@@ -13,7 +13,10 @@ allowed-tools:
 easkills align --root <repo> --reference nist-ai-rmf-1.0   # AI-risk gaps, named
 easkills ai-act-register --root <repo> --as-of <date>      # the inventory + its own gaps
 easkills ai-act-register --root <repo> --as-of <date> --out docs/ai-act-register.md
+easkills propose --root <repo> --from ai-act --as-of <date>   # FRIA skeletons, Art. 27
 ```
+
+`--lang pl` renders the inventory in Polish; the model's own text is not translated.
 
 ## Non-negotiables
 
@@ -40,7 +43,7 @@ that sounds like AI:
 properties:
   regulatoryScope: ai-act
   aiRiskClass: high            # prohibited | high | limited | minimal
-  aiRole: deployer             # provider | deployer | importer | distributor | ...
+  aiRole: deployer             # provider | deployer | importer | distributor | gpai-provider | ...
   aiOversight: Credit risk committee reviews every declined application
   provider: Scorewell GmbH     # who made it, when someone else did
   contractRef: ctr-2025-scorewell
@@ -72,6 +75,23 @@ layer), the standards it claims (`ea-standards-base`), and the accepted risk on 
 model-risk acceptance has a natural horizon, so the mandatory expiry fits AI risk
 unusually well — and it surfaces in the inventory without anyone having to remember to
 mention it. Do not close a dispensation to clear it, and do not leave it out.
+
+`gpai-provider` is the role of an organisation that provides the general-purpose AI
+model a system is built on (Chapter V). Those obligations differ from the system's own,
+and an inventory most often forgets to say the organisation holds them -- record the
+role when it is true, even when the system itself is minimal-risk.
+
+## Fundamental-rights impact assessments (Art. 27)
+
+`propose --from ai-act` writes an `Assessment` skeleton (`asm-fria-<element>`) into
+staging for each high-risk system the organisation **deploys** with no assessment bound
+to it. Art. 27 does not bind every deployer -- it binds bodies governed by public law,
+private entities providing public services, and deployers of the Annex III point 5(b)
+and 5(c) systems (creditworthiness, life and health insurance pricing) -- so the first
+placeholder asks whether it reaches the organisation at all. If it does not, delete the
+skeleton and record why as a decision (`ea-adr`); if it does, the assessment's prose,
+owner and review date stay human, exactly as for every other proposal, and `ea-approve`
+promotes it. A re-run skips the system by name while the skeleton sits in staging.
 
 ## The AI RMF is a reference overlay
 

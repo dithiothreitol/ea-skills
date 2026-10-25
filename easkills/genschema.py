@@ -95,7 +95,31 @@ AI_ROLES = (
     "distributor",
     "product-manufacturer",
     "authorised-representative",
+    # The provider of a general-purpose AI model (Chapter V) that this system is built on --
+    # a different set of obligations from the system's own, and the one an inventory most
+    # often forgets to say the organisation holds.
+    "gpai-provider",
 )
+
+# GDPR Art. 6(1)(a)-(f), in the Article's order. Closed, because `gdpr-register` prints
+# each with its paragraph reference and a free-text basis would read as recorded and say
+# nothing a supervisor can check.
+GDPR_LAWFUL_BASES = (
+    "consent",
+    "contract",
+    "legal-obligation",
+    "vital-interests",
+    "public-task",
+    "legitimate-interests",
+)
+GDPR_TEXT_PROPERTIES = {
+    "gdprPurpose": "The purposes of the processing (Art. 30(1)(b)).",
+    "gdprDataSubjects": "The categories of data subjects (Art. 30(1)(c)).",
+    "gdprDataCategories": "The categories of personal data, beyond `personalData` (Art. 30(1)(c)).",
+    "gdprRecipients": "The categories of recipients the data are disclosed to (Art. 30(1)(d)).",
+    "gdprTransfer": "Transfers to a third country or international organisation, with safeguards; 'none' when there are none (Art. 30(1)(e)).",
+    "gdprRetention": "The envisaged time limits for erasure (Art. 30(1)(f)).",
+}
 
 
 def regulatory_scope_values() -> tuple[str, ...]:
@@ -307,6 +331,26 @@ def build_schema() -> dict[str, Any]:
                         "relationship between two zones is a trust boundary (SEC002, "
                         "'propose --from threats')."
                     ),
+                },
+                "providerLei": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9]{18}[0-9]{2}$",
+                    "description": (
+                        "The Legal Entity Identifier of the ICT third-party provider (ISO 17442: "
+                        "eighteen characters and two check digits). Fills the provider code "
+                        "columns of the DORA ITS export (B_05.01.0010, B_02.02.0030)."
+                    ),
+                },
+                "gdprLawfulBasis": {
+                    "enum": list(GDPR_LAWFUL_BASES),
+                    "description": (
+                        "The Art. 6(1) lawful basis. Read by 'gdpr-register'; GDR002 asks for "
+                        "it on special-category data."
+                    ),
+                },
+                **{
+                    key: {"type": "string", "minLength": 1, "description": f"{text} Read by 'gdpr-register'."}
+                    for key, text in GDPR_TEXT_PROPERTIES.items()
                 },
             },
             "additionalProperties": {"type": ["string", "number", "boolean", "null"]},

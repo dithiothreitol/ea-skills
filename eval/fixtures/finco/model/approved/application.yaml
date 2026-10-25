@@ -65,10 +65,20 @@ elements:
     lastReviewed: 2026-07-01
     properties:
       lifecycle: active
-      regulatoryScope: dora
+      # In two registers at once: DORA's ICT third-party risk, and GDPR's record of
+      # processing -- identity screening is personal data processed by law.
+      regulatoryScope: dora gdpr
       doraCriticality: important
       provider: Sentinel Screening Ltd
       contractRef: ctr-2025-sentinel
+      personalData: personal
+      gdprPurpose: Customer due diligence and sanctions screening at onboarding
+      gdprLawfulBasis: legal-obligation
+      gdprDataSubjects: Prospective and existing customers
+      gdprDataCategories: Identity documents, date of birth, nationality, sanctions-list matches
+      gdprRecipients: Sentinel Screening Ltd as processor; the financial intelligence unit when reporting
+      gdprTransfer: none
+      gdprRetention: Five years after the business relationship ends
     assumed: true
     rationale: Fixture content authored for the REG rules, not extracted from a source.
 
@@ -82,10 +92,18 @@ elements:
     lastReviewed: 2026-07-01
     properties:
       lifecycle: active
-      regulatoryScope: dora
+      regulatoryScope: dora gdpr
       doraCriticality: standard
       provider: Helios CRM Ltd
       contractRef: ctr-2022-helios
+      personalData: personal
+      gdprPurpose: Customer service and the history of each customer's contacts
+      gdprLawfulBasis: contract
+      gdprDataSubjects: Customers
+      gdprDataCategories: Contact details, service cases, call notes
+      gdprRecipients: Helios CRM Ltd as processor
+      gdprTransfer: none
+      gdprRetention: Three years after the last contact
     assumed: true
     rationale: Fixture content authored for the REG rules, not extracted from a source.
 

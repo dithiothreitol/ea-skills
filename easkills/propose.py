@@ -49,7 +49,7 @@ from . import (
 )
 from .validate import SEVERITY_WARNING
 
-SOURCES = ("align", "readiness", "overlap", "time", "coverage", "threats")
+SOURCES = ("align", "readiness", "overlap", "time", "coverage", "threats", "ai-act")
 
 STAGING_FILENAME = {
     "align": "proposed-requirements.yaml",
@@ -58,6 +58,7 @@ STAGING_FILENAME = {
     "time": "proposed-scheduling.yaml",
     "coverage": "proposed-questions.yaml",
     "threats": "proposed-threat-assessments.yaml",
+    "ai-act": "proposed-fria.yaml",
 }
 
 # Where each source's skeletons go. Model elements are proposals in staging; questions are
@@ -467,6 +468,59 @@ def _from_threats(root: Path, today: date) -> list[Proposal]:
     return proposals
 
 
+def _from_ai_act(root: Path, today: date) -> list[Proposal]:
+    """A fundamental-rights impact assessment skeleton (Art. 27) per high-risk system a
+    deployer runs with no assessment bound to it.
+
+    Art. 27 does not bind every deployer: it binds bodies governed by public law, private
+    entities providing public services, and deployers of the credit-scoring and life and
+    health insurance systems of Annex III point 5. Whether this organisation is one of them
+    is a legal reading the model cannot make, so the placeholder asks it first -- a stub
+    for an organisation the Article does not reach is deleted with a sentence saying why,
+    which is itself the record worth keeping.
+    """
+    model, _documents, _config = dsl.load(root, "approved")
+    assessed = {
+        target
+        for element in model.elements.values()
+        if element.type == "Assessment"
+        for target in element.applies_to
+    }
+    proposals: list[Proposal] = []
+    for element in sorted(model.elements.values(), key=lambda e: e.id):
+        properties = element.properties
+        if "ai-act" not in genschema.split_regulatory_scopes(properties.get("regulatoryScope")):
+            continue
+        if properties.get("aiRiskClass") != "high" or properties.get("aiRole") != "deployer":
+            continue
+        if element.id in assessed:
+            continue
+        proposals.append(
+            Proposal(
+                id=f"asm-fria-{_slug(element.id)}",
+                type="Assessment",
+                name=f"Fundamental-rights impact assessment of {element.name}"[:120],
+                documentation=(
+                    f"{PLACEHOLDER} first establish whether Art. 27 of the AI Act reaches this "
+                    "organisation for this system (public bodies, private entities providing public "
+                    "services, and deployers of the Annex III point 5(b) and 5(c) systems); if it "
+                    "does not, delete this stub and record why. If it does, assess the elements "
+                    f"Art. 27(1) lists for '{element.name}' -- the Act's text is the authority on "
+                    "what each requires -- and bind the measures that follow as requirements."
+                ),
+                rationale=(
+                    f"Derived from '{element.id}': in the AI Act scope, risk class 'high', role "
+                    f"'deployer', and no Assessment bound to it, as of {today.isoformat()}. Complete "
+                    "or delete before promotion."
+                ),
+                applies_to=[element.id],
+                properties={"aiActArticle": "27"},
+                origin=f"ai-act:{element.id}",
+            )
+        )
+    return proposals
+
+
 def _verbatim(original: str, normalized: str) -> str | None:
     """The source's own characters for a sentence the coverage report normalized.
 
@@ -652,6 +706,8 @@ def propose(
         candidates, unrecoverable = _from_coverage(root, as_of)
     elif source == "threats":
         candidates = _from_threats(root, as_of)
+    elif source == "ai-act":
+        candidates = _from_ai_act(root, as_of)
     else:
         candidates = _from_time(root, as_of)
 
@@ -729,6 +785,7 @@ _ROLE = {
     "time": "Work packages proposed for portfolio decisions nothing schedules",
     "coverage": "Clarification questions proposed for source statements no fact cites",
     "threats": "Threat assessments proposed for relationships that cross a trust boundary",
+    "ai-act": "Fundamental-rights impact assessments proposed for high-risk systems a deployer runs",
 }
 
 

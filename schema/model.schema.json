@@ -187,7 +187,8 @@
                 "importer",
                 "distributor",
                 "product-manufacturer",
-                "authorised-representative"
+                "authorised-representative",
+                "gpai-provider"
               ],
               "description": "The operator role this organisation holds for the system, in the AI Act's Art. 3 vocabulary. Required on high-risk elements (AIR002) -- the obligations differ by role, so an inventory without it cannot say which apply."
             },
@@ -249,6 +250,52 @@
               "type": "string",
               "minLength": 1,
               "description": "The trust zone the element runs in -- a label of your own (dmz, internal, partner-net). Rules compare zones for equality only: a relationship between two zones is a trust boundary (SEC002, 'propose --from threats')."
+            },
+            "providerLei": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{18}[0-9]{2}$",
+              "description": "The Legal Entity Identifier of the ICT third-party provider (ISO 17442: eighteen characters and two check digits). Fills the provider code columns of the DORA ITS export (B_05.01.0010, B_02.02.0030)."
+            },
+            "gdprLawfulBasis": {
+              "enum": [
+                "consent",
+                "contract",
+                "legal-obligation",
+                "vital-interests",
+                "public-task",
+                "legitimate-interests"
+              ],
+              "description": "The Art. 6(1) lawful basis. Read by 'gdpr-register'; GDR002 asks for it on special-category data."
+            },
+            "gdprPurpose": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The purposes of the processing (Art. 30(1)(b)). Read by 'gdpr-register'."
+            },
+            "gdprDataSubjects": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The categories of data subjects (Art. 30(1)(c)). Read by 'gdpr-register'."
+            },
+            "gdprDataCategories": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The categories of personal data, beyond `personalData` (Art. 30(1)(c)). Read by 'gdpr-register'."
+            },
+            "gdprRecipients": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The categories of recipients the data are disclosed to (Art. 30(1)(d)). Read by 'gdpr-register'."
+            },
+            "gdprTransfer": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Transfers to a third country or international organisation, with safeguards; 'none' when there are none (Art. 30(1)(e)). Read by 'gdpr-register'."
+            },
+            "gdprRetention": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The envisaged time limits for erasure (Art. 30(1)(f)). Read by 'gdpr-register'."
             }
           },
           "additionalProperties": {
@@ -449,7 +496,8 @@
                 "importer",
                 "distributor",
                 "product-manufacturer",
-                "authorised-representative"
+                "authorised-representative",
+                "gpai-provider"
               ],
               "description": "The operator role this organisation holds for the system, in the AI Act's Art. 3 vocabulary. Required on high-risk elements (AIR002) -- the obligations differ by role, so an inventory without it cannot say which apply."
             },
@@ -511,6 +559,52 @@
               "type": "string",
               "minLength": 1,
               "description": "The trust zone the element runs in -- a label of your own (dmz, internal, partner-net). Rules compare zones for equality only: a relationship between two zones is a trust boundary (SEC002, 'propose --from threats')."
+            },
+            "providerLei": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{18}[0-9]{2}$",
+              "description": "The Legal Entity Identifier of the ICT third-party provider (ISO 17442: eighteen characters and two check digits). Fills the provider code columns of the DORA ITS export (B_05.01.0010, B_02.02.0030)."
+            },
+            "gdprLawfulBasis": {
+              "enum": [
+                "consent",
+                "contract",
+                "legal-obligation",
+                "vital-interests",
+                "public-task",
+                "legitimate-interests"
+              ],
+              "description": "The Art. 6(1) lawful basis. Read by 'gdpr-register'; GDR002 asks for it on special-category data."
+            },
+            "gdprPurpose": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The purposes of the processing (Art. 30(1)(b)). Read by 'gdpr-register'."
+            },
+            "gdprDataSubjects": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The categories of data subjects (Art. 30(1)(c)). Read by 'gdpr-register'."
+            },
+            "gdprDataCategories": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The categories of personal data, beyond `personalData` (Art. 30(1)(c)). Read by 'gdpr-register'."
+            },
+            "gdprRecipients": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The categories of recipients the data are disclosed to (Art. 30(1)(d)). Read by 'gdpr-register'."
+            },
+            "gdprTransfer": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Transfers to a third country or international organisation, with safeguards; 'none' when there are none (Art. 30(1)(e)). Read by 'gdpr-register'."
+            },
+            "gdprRetention": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The envisaged time limits for erasure (Art. 30(1)(f)). Read by 'gdpr-register'."
             }
           },
           "additionalProperties": {

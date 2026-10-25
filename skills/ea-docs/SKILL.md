@@ -10,12 +10,18 @@ allowed-tools:
 
 ```bash
 easkills docs --root <repo>
+easkills docs --root <repo> --lang pl   # also docs/architecture-description.pl.md
 ```
 
 One command produces `docs/architecture-description.md` plus one SVG per view in
 `docs/views/`, generated **only from `model/approved/`** -- staging content is a
 proposal and never appears in documentation. The command refuses a model with
 validation errors; do not override that to hit a deadline.
+
+`--lang pl` writes a Polish description beside the English one; commit both and
+regenerate both with every model change. Only the generator's own wording is translated -- element
+names, documentation and decision rationale stay in the language their authors wrote
+them in, which is a fact about the model rather than a defect of the translation.
 
 ## What the generator guarantees (so you do not re-do it)
 

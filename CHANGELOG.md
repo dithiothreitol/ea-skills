@@ -5,6 +5,89 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
+## [Unreleased]
+
+Phase 8.4 — the registers that were still missing, and the language they are read in. 163
+rules (+5), 26 skills, 37 commands.
+
+### Added — `gdpr-register`: the Art. 30 record of processing activities (`GDR001`–`GDR005`)
+
+The third register, built on the pattern the first two set (D7): scope is declared per
+element (`regulatoryScope` including `gdpr`, read through the shared splitter, so `dora gdpr`
+lands in both documents), the notice sits above the tables, the last section names every
+field the model could not fill, and nothing in scope produces no document. Seven `gdpr*`
+properties carry what Art. 30(1) asks — purpose, lawful basis (the six Art. 6(1) bases, a
+closed vocabulary printed with their paragraph references), data subjects, categories,
+recipients, transfers outside the EEA, retention.
+
+**The security-measures column is derived, never written.** Art. 30(1)(g) asks for a
+general description of the technical and organisational measures; the record lists the
+requirements, constraints and principles binding each element and the standards it claims,
+by the one definition of "governed" 0.18.0 introduced. An activity nothing governs is
+`GDR004`. **The Art. 9(2) condition is never carried by the model**, so every
+special-category row names it in the gap section — a blank column would read as "none
+needed".
+
+| Code | Severity | Catches |
+|---|---|---|
+| `GDR001` | warning | an in-scope activity with no purpose |
+| `GDR002` | error | special-category data with no lawful basis |
+| `GDR003` | warning | no retention |
+| `GDR004` | warning | nothing governs the activity, so its security-measures column is empty |
+| `GDR005` | info | an open dispensation on the activity, disclosed the way `REG003` discloses one |
+
+`GDR005` is beyond the plan: the other two registers disclose waivers, and a third that did
+not would have been the odd one out. `finco` gains two processing activities and a
+requirement binding both, and passes `gdpr-register --strict` in CI; `finco-broken` carries
+one case per code.
+
+### Added — `dora-register --format its-csv`: the ITS worksheets
+
+One CSV per implementing-technical-standard template the model can feed — B_02.01, B_02.02,
+B_05.01, B_06.01 of Commission Implementing Regulation (EU) 2024/2956 — every column present
+and headed by its code and name, only what the model carries filled, and a `README.md`
+naming every empty column and every template not exported. A new `providerLei` property
+(ISO 17442's twenty characters, pattern-checked) fills the provider-code columns; two LEIs
+under one provider name is a conflict and leaves the column empty. Byte-stable, and `--out`
+must name a directory.
+
+**The column codes come from a rendering of Annex I, not from the Official Journal.**
+EUR-Lex refused automated retrieval; the codes were read from springlex.eu's rendering of
+the regulation, and the generated README says to check them against the OJ before anyone
+relies on them. A pre-filled worksheet for whoever prepares the filing, never the filing:
+values stay in this repository's vocabulary, not the ITS code lists.
+
+### Added — `--lang en|pl` on `docs` and every register
+
+A message catalogue (`easkills/i18n.py`) with English and Polish for every string the
+architecture description and the three registers print. **English stays byte-identical** to
+0.18.0 — verified by comparing every generated document before and after the refactor —
+and is the default. `docs --lang pl` writes `architecture-description.pl.md` beside the
+English description; the worked example's is committed and held fresh by CI. Three tests
+hold the catalogue: every key exists in both languages, both carry the same placeholders,
+and every gap field a register can emit has wording. The model's own text — element names,
+documentation, rationale — is never translated, and rule messages on the terminal stay
+English.
+
+### Added — `propose --from ai-act`: fundamental-rights impact assessment skeletons
+
+The seventh source: an `Assessment` skeleton (`asm-fria-<element>`, Art. 27) for each
+high-risk system the organisation deploys with nothing bound to it. Art. 27 binds only some
+deployers, so the first placeholder asks whether it reaches the organisation at all. A
+re-run skips the system by name while the skeleton sits in staging. `aiRole` gains
+`gpai-provider` (Chapter V), the role an inventory most often forgets to say the
+organisation holds.
+
+### Fixed
+
+- **`eval/fixtures/aico` carried a latent `REL001`.** An application component *served* a
+  capability, which the 3.2 relationship matrix does not permit; it is now a `Realization`.
+  Nothing validated the register fixtures, so nothing saw it until the FRIA test ran the
+  gate over a copy. CI now runs `validate` over `finco` (strict) and `aico`.
+- **`tests/test_dora.py` counted DORA-tagged elements by equality.** The trap 0.15.0
+  removed from `dora.py` survived in the test that guards the fixture's shape; it surfaced
+  when two `finco` elements moved to `dora gdpr`. Membership, through the shared splitter.
+
 ## [0.18.0] — 2026-10-25 — the security release
 
 Phase 8.3 — security architecture in the existing homes. 158 rules (+4), 26 skills, 36

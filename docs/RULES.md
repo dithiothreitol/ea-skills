@@ -497,6 +497,31 @@ document is produced at all.
 | `AIR004` | warning | An inventory section is empty while in-scope content exists. Silence in a regulatory document reads as "nothing to report". The provider section is only expected once some in-scope system was made by someone else (role `deployer`/`importer`/`distributor`) -- an estate that builds everything it runs owes no such section. |
 | `AIR005` | error | An approved element is classified as a **prohibited practice** (Art. 5). That is not a row to file but a decision the board must see: retire the practice or correct the classification, and record whichever happened. |
 
+## Regulatory register -- `gdpr-register` (the GDR family)
+
+`python -m easkills gdpr-register` generates the GDPR Art. 30 record of processing
+activities from the approved model. Scope is `regulatoryScope` including `gdpr`, read
+through the same splitter as the other registers, so an element tagged `dora gdpr` is in
+both documents. The record reads `personalData` and the `gdpr*` properties
+(`gdprPurpose`, `gdprLawfulBasis` -- the six Art. 6(1) bases as a closed vocabulary --
+`gdprDataSubjects`, `gdprDataCategories`, `gdprRecipients`, `gdprTransfer`,
+`gdprRetention`). The security-measures column (Art. 30(1)(g)) is **derived**, never
+written: the requirements, constraints and principles that bind the element and the
+standards it claims, by the same definition of "governed" the SEC family uses. The Art. 9(2)
+condition for special-category data is never carried by the model, so every such row
+names it in the gap section rather than leaving a blank that reads as "none needed".
+Everything the REG family established holds: the notice sits above the tables, the last
+section names every field the model could not fill, and with nothing in scope no document
+is produced.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `GDR001` | warning | An in-scope processing activity has no `gdprPurpose`. The purpose is the first thing a record of processing states, and every other field is read against it. |
+| `GDR002` | error | An activity holds `special`-category data with no `gdprLawfulBasis`. Special-category processing with no recorded basis is not a partial row, it is the row a supervisor reads first. |
+| `GDR003` | warning | An in-scope activity has no `gdprRetention`. Storage limitation needs an envisaged time limit, and "we keep it" is not one. |
+| `GDR004` | warning | Nothing governs the activity: no requirement, constraint or principle binds it and it claims no standard, so its security-measures column is empty. An assessment does not govern -- the finding stays until an obligation does. |
+| `GDR005` | info | An activity is covered by an **open dispensation**. An exception on a processing activity is disclosed, not a violation to fix, for the same reason as `REG003`. |
+
 ## Consuming repositories -- `ea-check` (AD-09)
 
 `python -m easkills check` runs in a *product* repository, not in the EA repository:

@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from datetime import date as _date
 from pathlib import Path
 
-from . import correspond, dsl, genschema, render
+from . import correspond, dsl, genschema, i18n, render
 
 # One vocabulary, defined with the schema that enforces it (genschema.TIME_DISPOSITIONS).
 TIME_ORDER = genschema.TIME_DISPOSITIONS
@@ -31,8 +31,9 @@ def _md_escape(text: str) -> str:
     return text.replace("|", "\\|").replace("\n", " ").strip()
 
 
-def _contested_citations(model: dsl.Model) -> list[tuple[str, str, str]]:
-    """(name, type, explanation) for concepts whose evidence is a contested fact.
+def _contested_citations(model: dsl.Model) -> list[tuple[str, str, str, str]]:
+    """(name, type, statement followed, statements against) for concepts whose evidence
+    is a contested fact. Formatted by the caller, in the document's language.
 
     Read from the fact register rather than the model: the register is where a
     contradiction is recorded, and a description that quietly presented one side would
@@ -41,7 +42,7 @@ def _contested_citations(model: dsl.Model) -> list[tuple[str, str, str]]:
     from . import facts as facts_mod
 
     register, _documents, _entities = facts_mod.load(model.root)
-    rows: list[tuple[str, str, str]] = []
+    rows: list[tuple[str, str, str, str]] = []
     for concept in sorted(
         list(model.elements.values()) + list(model.relationships.values()), key=lambda c: c.id
     ):
@@ -51,15 +52,7 @@ def _contested_citations(model: dsl.Model) -> list[tuple[str, str, str]]:
                 continue
             others = [register.facts.get(ref) for ref in sorted(fact.contests)]
             against = "; ".join(other.statement for other in others if other is not None)
-            rows.append(
-                (
-                    concept.name or concept.id,
-                    concept.type,
-                    f"modelled on \"{fact.statement}\" -- another source says: {against}"
-                    if against
-                    else f"modelled on a contested statement: {fact.statement}",
-                )
-            )
+            rows.append((concept.name or concept.id, concept.type, fact.statement, against))
     return rows
 
 
@@ -100,29 +93,30 @@ def _table(headers: list[str], rows: list[list[str]]) -> list[str]:
     return lines
 
 
-def build_markdown(model: dsl.Model) -> str:
+def build_markdown(model: dsl.Model, lang: str = i18n.DEFAULT) -> str:
+    t = i18n.translator(lang)
     out: list[str] = []
-    out.append(f"# {model.name} — Architecture Description")
+    out.append(t("doc.title", name=model.name))
     out.append("")
     if model.documentation:
         out.append(model.documentation.strip())
         out.append("")
     out.append(
-        f"**As of:** {_as_of(model)} (newest `lastReviewed` in the approved model) · "
-        f"{len(model.elements)} elements, {len(model.relationships)} relationships, "
-        f"{len(model.views)} views."
+        t(
+            "doc.as_of",
+            as_of=_as_of(model),
+            elements=len(model.elements),
+            relationships=len(model.relationships),
+            views=len(model.views),
+        )
     )
     out.append("")
-    out.append(
-        "> Generated from `model/approved/` by `python -m easkills docs`. Do not edit; "
-        "change the model and regenerate. Structured after ISO/IEC/IEEE 42010:2022 "
-        "Clause 6 (stakeholders → concerns → viewpoints → views)."
-    )
+    out.append(t("doc.generated"))
 
     # ---------------------------------------------------------------- stakeholders
-    out += ["", "## 1. Stakeholders and concerns", ""]
+    out += ["", t("doc.h1"), ""]
     if not model.stakeholders:
-        out.append("*No stakeholders are recorded yet -- run the `ea-stakeholders` skill.*")
+        out.append(t("doc.no_stakeholders"))
     else:
         rows = []
         for stakeholder in sorted(model.stakeholders.values(), key=lambda s: s.id):
@@ -138,12 +132,12 @@ def build_markdown(model: dsl.Model) -> str:
                     "<br>".join(concern_texts) or "—",
                 ]
             )
-        out += _table(["Stakeholder", "Who they are", "Concerns"], rows)
+        out += _table([t("doc.col.stakeholder"), t("doc.col.who"), t("doc.col.concerns")], rows)
 
     # -------------------------------------------------------------------- concerns
-    out += ["", "## 2. Concern coverage", ""]
+    out += ["", t("doc.h2"), ""]
     if not model.concerns:
-        out.append("*No concerns are recorded yet.*")
+        out.append(t("doc.no_concerns"))
     else:
         held_by: dict[str, list[str]] = {}
         for stakeholder in sorted(model.stakeholders.values(), key=lambda s: s.id):
@@ -158,25 +152,25 @@ def build_markdown(model: dsl.Model) -> str:
             rows.append(
                 [
                     _md_escape(concern.statement),
-                    ", ".join(held_by.get(concern.id, [])) or "**nobody**",
-                    ", ".join(framed_in.get(concern.id, [])) or "**no view**",
+                    ", ".join(held_by.get(concern.id, [])) or t("doc.nobody"),
+                    ", ".join(framed_in.get(concern.id, [])) or t("doc.no_view"),
                 ]
             )
-        out += _table(["Concern", "Held by", "Framed in"], rows)
+        out += _table([t("doc.col.concern"), t("doc.col.held_by"), t("doc.col.framed_in")], rows)
 
     # ----------------------------------------------------------------------- views
-    out += ["", "## 3. Views", ""]
+    out += ["", t("doc.h3"), ""]
     for view in sorted(model.views.values(), key=lambda v: v.id):
         out.append(f"### {view.name}")
         out.append("")
         meta = []
         if view.viewpoint:
-            meta.append(f"**Viewpoint:** {view.viewpoint}")
+            meta.append(t("doc.viewpoint", value=view.viewpoint))
         concern_texts = [
             _md_escape(model.concerns[c].statement) for c in view.concerns if c in model.concerns
         ]
         if concern_texts:
-            meta.append("**Frames:** " + "; ".join(concern_texts))
+            meta.append(t("doc.frames") + "; ".join(concern_texts))
         if meta:
             out.append(" · ".join(meta))
             out.append("")
@@ -195,7 +189,7 @@ def build_markdown(model: dsl.Model) -> str:
                     _md_escape(element.owner) or "—",
                 ]
             )
-        out += _table(["Element", "Type", "Owner"], rows)
+        out += _table([t("doc.col.element"), t("doc.col.type"), t("doc.col.owner")], rows)
         out.append("")
 
     # ------------------------------------------------------------------- portfolio
@@ -204,9 +198,9 @@ def build_markdown(model: dsl.Model) -> str:
         for e in sorted(model.elements.values(), key=lambda e: e.id)
         if e.type == "ApplicationComponent"
     ]
-    out += ["## 4. Application portfolio", ""]
+    out += [t("doc.h4"), ""]
     if not applications:
-        out.append("*No application components in the model.*")
+        out.append(t("doc.no_apps"))
     else:
         rows = []
         for app in applications:
@@ -223,39 +217,49 @@ def build_markdown(model: dsl.Model) -> str:
                 ]
             )
         out += _table(
-            ["Application", "TIME", "Lifecycle", "Functional fit", "Technical fit", "Hosting", "Owner"],
+            [
+                t("doc.col.application"),
+                t("doc.col.time"),
+                t("doc.col.lifecycle"),
+                t("doc.col.functional_fit"),
+                t("doc.col.technical_fit"),
+                t("doc.col.hosting"),
+                t("doc.col.owner"),
+            ],
             rows,
         )
         out.append("")
         quadrants: dict[str, list[str]] = {}
+        unclassified = t("doc.unclassified")
         for app in applications:
-            quadrants.setdefault(app.properties.get("timeDisposition", "Unclassified"), []).append(app.name)
+            quadrants.setdefault(app.properties.get("timeDisposition", unclassified), []).append(app.name)
         # Print recognised quadrants in reading order, then anything left over. The
         # leftover bucket matters: iterating a fixed vocabulary silently dropped
         # applications whose disposition was mistyped, and a portfolio summary that
         # quietly omits systems is worse than one that admits it cannot classify them.
-        unrecognised = sorted(set(quadrants) - {*TIME_ORDER, "Unclassified"})
-        out.append("**TIME quadrants:** " + " · ".join(
+        unrecognised = sorted(set(quadrants) - {*TIME_ORDER, unclassified})
+        out.append(t("doc.time_quadrants") + " · ".join(
             f"{quadrant}: {', '.join(sorted(quadrants[quadrant]))}"
-            for quadrant in (*TIME_ORDER, "Unclassified", *unrecognised)
+            for quadrant in (*TIME_ORDER, unclassified, *unrecognised)
             if quadrant in quadrants
         ))
         if unrecognised:
             out.append("")
             out.append(
-                "> Not a TIME quadrant: "
-                + ", ".join(f"`{value}`" for value in unrecognised)
-                + f". Expected one of {', '.join(TIME_ORDER)} -- fix the model, "
-                "these applications are not portfolio-classified."
+                t(
+                    "doc.not_time",
+                    values=", ".join(f"`{value}`" for value in unrecognised),
+                    expected=", ".join(TIME_ORDER),
+                )
             )
 
     # ------------------------------------------------------------------ capability
-    out += ["", "## 5. Capability support", ""]
+    out += ["", t("doc.h5"), ""]
     capabilities = [
         e for e in sorted(model.elements.values(), key=lambda e: e.id) if e.type == "Capability"
     ]
     if not capabilities:
-        out.append("*No capabilities in the model.*")
+        out.append(t("doc.no_capabilities"))
     else:
         realizers: dict[str, list[str]] = {}
         for relationship in sorted(model.relationships.values(), key=lambda r: r.id):
@@ -273,13 +277,13 @@ def build_markdown(model: dsl.Model) -> str:
                 [
                     _md_escape(capability.name),
                     _md_escape(capability.properties.get("assessment", "")) or "—",
-                    support or "**nothing realizes this capability**",
+                    support or t("doc.nothing_realizes"),
                 ]
             )
-        out += _table(["Capability", "Assessment", "Realized by"], rows)
+        out += _table([t("doc.col.capability"), t("doc.col.assessment"), t("doc.col.realized_by")], rows)
 
     # ------------------------------------------------------------------ assumptions
-    out += ["", "## 6. Assumptions and open questions", ""]
+    out += ["", t("doc.h6"), ""]
     assumed = [
         c
         for c in sorted(
@@ -289,12 +293,9 @@ def build_markdown(model: dsl.Model) -> str:
     ]
     contested = _contested_citations(model)
     if not assumed and not contested:
-        out.append("*No declared assumptions -- every concept is source-evidenced.*")
+        out.append(t("doc.no_assumptions"))
     if assumed:
-        out.append(
-            "The following concepts are **declared assumptions** (`assumed: true`), not "
-            "source-evidenced facts. Each needs confirmation or removal:"
-        )
+        out.append(t("doc.assumed_lead"))
         out.append("")
         for concept in assumed:
             out.append(f"- **{_md_escape(concept.name or concept.id)}** ({concept.type}): {_md_escape(concept.rationale)}")
@@ -303,12 +304,14 @@ def build_markdown(model: dsl.Model) -> str:
         # but the model still had to pick one, and that choice belongs in the open where a
         # reader can overturn it.
         out.append("")
-        out.append(
-            "The sources **disagree** about the following, and this description follows one "
-            "side. Each needs confirming with the people who own the systems:"
-        )
+        out.append(t("doc.contested_lead"))
         out.append("")
-        for name, kind, detail in contested:
+        for name, kind, statement, against in contested:
+            detail = (
+                t("doc.contested_detail", statement=statement, against=against)
+                if against
+                else t("doc.contested_alone", statement=statement)
+            )
             out.append(f"- **{_md_escape(name)}** ({kind}): {_md_escape(detail)}")
     from . import facts as facts_mod  # local, as in _contested_citations
 
@@ -320,29 +323,33 @@ def build_markdown(model: dsl.Model) -> str:
         # model makes no claim about them -- which is exactly why a reader of the
         # description needs to see them: an unanswered question is a known unknown.
         out.append("")
-        out.append(
-            "The sources raised these **clarification questions**, and no fact answers them yet "
-            "(`facts/questions/`):"
-        )
+        out.append(t("doc.questions_lead"))
         out.append("")
         for question in open_questions:
-            asked = f"; asked of {_md_escape(question.addressed_to)}" if question.addressed_to else "; nobody named to answer"
-            where = f"{question.file}" + (f", lines {question.lines}" if question.lines else "")
+            asked = (
+                t("doc.asked_of", who=_md_escape(question.addressed_to))
+                if question.addressed_to
+                else t("doc.nobody_asked")
+            )
+            where = f"{question.file}" + (t("doc.lines", lines=question.lines) if question.lines else "")
             out.append(
-                f"- {_md_escape(question.question)} — *\"{_md_escape(question.quote)}\"* "
-                f"({_md_escape(where)}; raised {question.raised}{asked})"
+                t(
+                    "doc.question_line",
+                    question=_md_escape(question.question),
+                    quote=_md_escape(question.quote),
+                    where=_md_escape(where),
+                    raised=question.raised,
+                    asked=asked,
+                )
             )
 
     # ------------------------------------------------------------------- decisions
     decisions, correspondences = _governance_view(model)
-    out += ["", "## 7. Decisions", ""]
+    out += ["", t("doc.h7"), ""]
     if not decisions:
-        out.append("*No decision records -- `governance-log/decisions/` is empty.*")
+        out.append(t("doc.no_decisions"))
     else:
-        out.append(
-            "ISO 42010 §6.10: the decisions this architecture rests on, each with the "
-            "rationale the record is required to carry."
-        )
+        out.append(t("doc.decisions_lead"))
         out.append("")
         rows = []
         for decision in decisions:
@@ -357,19 +364,17 @@ def build_markdown(model: dsl.Model) -> str:
                     _md_escape(decision.rationale) or "—",
                 ]
             )
-        out += _table(["Record", "Decision", "Status", "Decided", "Rationale"], rows)
+        out += _table(
+            [t("doc.col.record"), t("doc.col.decision"), t("doc.col.status"), t("doc.col.decided"), t("doc.col.rationale")],
+            rows,
+        )
 
     # -------------------------------------------------------------- correspondences
-    out += ["", "## 8. Correspondences", ""]
-    out.append(
-        "ISO 42010 §6.9: relations between AD elements that no ArchiMate relationship "
-        "can express, because they cross out of the model -- into the governance log and "
-        "into the fact register. They are derived from what the records already declare, "
-        "so this table cannot drift from them, and each is held to a stated rule."
-    )
+    out += ["", t("doc.h8"), ""]
+    out.append(t("doc.corr_lead"))
     out.append("")
     if not correspondences:
-        out.append("*Nothing relates this model to decisions, standards or evidence yet.*")
+        out.append(t("doc.no_correspondences"))
     else:
         rows = []
         for rule in correspond.RULES:
@@ -377,24 +382,27 @@ def build_markdown(model: dsl.Model) -> str:
             if not of_kind:
                 continue
             violated = [c for c in of_kind if not c.satisfied]
+            # English reads the rule's own text; another language reads the catalogue,
+            # which a test holds to the same set of rules.
+            relates = f"{rule.source_kind} → {rule.target_kind}" if lang == "en" else t(f"corr.{rule.kind}.relates")
+            statement = rule.statement if lang == "en" else t(f"corr.{rule.kind}.statement")
             rows.append(
                 [
                     f"`{rule.kind}`",
-                    f"{rule.source_kind} → {rule.target_kind}",
+                    relates,
                     str(len(of_kind)),
                     f"**{len(violated)}**" if violated else "0",
-                    _md_escape(rule.statement),
+                    _md_escape(statement),
                 ]
             )
-        out += _table(["Rule", "Relates", "Count", "Violated", "What must hold"], rows)
+        out += _table(
+            [t("doc.col.rule"), t("doc.col.relates"), t("doc.col.count"), t("doc.col.violated"), t("doc.col.what_must_hold")],
+            rows,
+        )
         violations = [c for c in correspondences if not c.satisfied]
         if violations:
             out.append("")
-            out.append(
-                "The following correspondences are **violated**. ISO 42010 §6.8 asks for "
-                "known inconsistencies to be recorded, so they are recorded here rather "
-                "than left in a report nobody exports:"
-            )
+            out.append(t("doc.violations_lead"))
             out.append("")
             for violation in violations:
                 out.append(
@@ -403,20 +411,12 @@ def build_markdown(model: dsl.Model) -> str:
                 )
 
     # --------------------------------------------------------------------- roadmap
-    out += ["", "## 9. Roadmap", ""]
+    out += ["", t("doc.h9"), ""]
     plateaus = [e for e in model.elements.values() if e.type == "Plateau"]
     if not plateaus:
-        out.append(
-            "*No plateaus recorded. This description says what the architecture is, not "
-            "where it is going.*"
-        )
+        out.append(t("doc.no_plateaus"))
     else:
-        out.append(
-            "The Implementation & Migration layer, ordered by `plateauDate`. Plateaus "
-            "aggregate what the migration changes; an element carrying a Migrate or "
-            "Eliminate disposition that no plateau holds is listed as unscheduled, "
-            "because a portfolio decision nothing carries is an intention."
-        )
+        out.append(t("doc.roadmap_lead"))
         out.append("")
         membership: dict[str, list[str]] = {}
         plateau_ids = {p.id for p in plateaus}
@@ -429,18 +429,18 @@ def build_markdown(model: dsl.Model) -> str:
         for plateau in sorted(plateaus, key=lambda p: (p.properties.get("plateauDate", "9999"), p.id)):
             rows.append(
                 [
-                    plateau.properties.get("plateauDate", "**undated**"),
+                    plateau.properties.get("plateauDate", t("doc.undated")),
                     _md_escape(plateau.name),
                     ", ".join(sorted(membership.get(plateau.id, []))) or "—",
                     _md_escape(plateau.documentation),
                 ]
             )
-        out += _table(["Reached", "Plateau", "Holds", "What it is"], rows)
+        out += _table([t("doc.col.reached"), t("doc.col.plateau"), t("doc.col.holds"), t("doc.col.what_it_is")], rows)
 
         gaps = [e for e in sorted(model.elements.values(), key=lambda e: e.id) if e.type == "Gap"]
         if gaps:
             out.append("")
-            out.append("**Gaps:** " + "; ".join(
+            out.append(t("doc.gaps") + "; ".join(
                 f"**{_md_escape(gap.name)}** — {_md_escape(gap.documentation)}" for gap in gaps
             ))
 
@@ -458,22 +458,27 @@ def build_markdown(model: dsl.Model) -> str:
         if unscheduled:
             out.append("")
             out.append(
-                "**Decided but unscheduled:** "
-                + ", ".join(
-                    f"{_md_escape(e.name)} ({e.properties['timeDisposition']})" for e in unscheduled
+                t(
+                    "doc.unscheduled",
+                    items=", ".join(f"{_md_escape(e.name)} ({e.properties['timeDisposition']})" for e in unscheduled),
                 )
-                + ". The portfolio decision exists; no plateau carries it."
             )
 
     out += ["", ""]
     return "\n".join(out)
 
 
-def generate(root: Path, out: Path | None = None) -> DocsResult:
-    """Render all approved views and write the architecture description."""
+def generate(root: Path, out: Path | None = None, lang: str = i18n.DEFAULT) -> DocsResult:
+    """Render all approved views and write the architecture description in ``lang``.
+
+    The default file name stays the same for English; another language gets its own
+    (`architecture-description.pl.md`), so both can be committed side by side and neither
+    regeneration overwrites the other.
+    """
     model, _documents, _config = dsl.load(root, "approved")
     rendered = render.render_all(root, zone="approved")
-    target = out or (root / "docs" / "architecture-description.md")
+    name = "architecture-description.md" if lang == i18n.DEFAULT else f"architecture-description.{lang}.md"
+    target = out or (root / "docs" / name)
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(build_markdown(model), encoding="utf-8", newline="\n")
+    target.write_text(build_markdown(model, lang), encoding="utf-8", newline="\n")
     return DocsResult(path=target, views_rendered=[view_id for view_id, _path in rendered.views])

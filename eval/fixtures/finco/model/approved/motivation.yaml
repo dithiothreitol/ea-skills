@@ -1,0 +1,15 @@
+# The obligation that governs the two processing activities, so the GDPR record's
+# security-measures column (Art. 30(1)(g)) has something to say for each (GDR004).
+
+elements:
+  - id: req-customer-data-need-to-know
+    type: Requirement
+    name: Customer Personal Data Is Accessed On A Need-To-Know Basis
+    documentation: >
+      Access to customer personal data is role-based and logged; screening staff and service
+      agents see what their task needs.
+    owner: compliance-eng@kestrel.example
+    lastReviewed: 2026-07-01
+    appliesTo: [app-kyc-screening, app-crm]
+    assumed: true
+    rationale: Fixture content authored for the GDR rules, not extracted from a source.

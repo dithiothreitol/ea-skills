@@ -355,6 +355,34 @@ python -m easkills ai-act-register --root . --as-of 2026-07-30
 python -m easkills ai-act-register --root . --as-of 2026-07-30 --out docs/ai-act-register.md
 ```
 
+The GDPR's record of processing activities (Art. 30) works the same way. Tag each
+processing activity with `gdpr` in its scope and say what the record asks:
+
+```yaml
+properties:
+  regulatoryScope: dora gdpr      # alphabetical, space-joined, for more than one
+  personalData: personal
+  gdprPurpose: Customer due diligence at onboarding
+  gdprLawfulBasis: legal-obligation     # the six Art. 6(1) bases
+  gdprDataSubjects: Prospective and existing customers
+  gdprRecipients: Sentinel Screening Ltd as processor
+  gdprTransfer: none
+  gdprRetention: Five years after the relationship ends
+```
+
+```bash
+python -m easkills gdpr-register --root . --as-of 2026-07-30 --out docs/ropa.md
+python -m easkills dora-register --root . --as-of 2026-07-30 --format its-csv --out build/dora-its/
+python -m easkills dora-register --root . --as-of 2026-07-30 --out docs/dora-register.pl.md --lang pl
+```
+
+The record's security-measures column is derived — the requirements binding each element
+and the standards it claims — so an activity nothing governs is named (`GDR004`). The ITS
+export writes one pre-filled worksheet per template with every unfilled column named, for
+whoever prepares the filing. Every register, and the architecture description
+(`docs --lang pl`), renders in Polish; the model's own text stays in the language its
+authors wrote it in.
+
 An element in both scopes declares `regulatoryScope: ai-act dora` — the space-joined
 combination in alphabetical order, still a closed enum — and appears in both registers.
 AI-risk gaps ride `align --reference nist-ai-rmf-1.0`; all of it is
@@ -403,6 +431,7 @@ python -m easkills propose --root . --from align     --as-of 2026-08-07 --dry-ru
 python -m easkills propose --root . --from readiness --as-of 2026-08-07
 python -m easkills propose --root . --from overlap   --as-of 2026-08-07
 python -m easkills propose --root . --from time      --as-of 2026-08-07
+python -m easkills propose --root . --from ai-act    --as-of 2026-08-07   # FRIA skeletons, Art. 27
 ```
 
 A reference gap becomes a `Requirement`, an open checkpoint a `Constraint` bound to its

@@ -1,0 +1,64 @@
+# One element per GDR failure mode, in the GDPR scope only -- so nothing here changes what
+# the DORA register of this fixture reports. GDR005 rides the existing open waiver, whose
+# appliesTo names gdpr-waived below.
+
+elements:
+  # --- GDR001 + GDR003: no purpose and no retention --------------------------------------
+  - id: gdpr-no-purpose
+    type: ApplicationComponent
+    name: Marketing List Nobody Explained
+    owner: marketing@kestrel.example
+    lastReviewed: 2026-07-01
+    properties:
+      regulatoryScope: gdpr
+      personalData: personal
+      gdprLawfulBasis: consent
+    standards: [std-exit-plan]
+    assumed: true
+    rationale: A fixture element for GDR001 and GDR003.
+
+  # --- GDR002: special-category data with no lawful basis --------------------------------
+  - id: gdpr-special-no-basis
+    type: ApplicationComponent
+    name: Health Declarations Store
+    owner: insurance-ops@kestrel.example
+    lastReviewed: 2026-07-01
+    properties:
+      regulatoryScope: gdpr
+      personalData: special-category
+      gdprPurpose: Underwriting payment-protection insurance
+      gdprRetention: Ten years after the policy ends
+    standards: [std-exit-plan]
+    assumed: true
+    rationale: A fixture element for GDR002.
+
+  # --- GDR004: nothing governs it ------------------------------------------------------
+  - id: gdpr-ungoverned
+    type: ApplicationComponent
+    name: Call Recordings Archive
+    owner: service@kestrel.example
+    lastReviewed: 2026-07-01
+    properties:
+      regulatoryScope: gdpr
+      personalData: personal
+      gdprPurpose: Dispute resolution and quality assurance
+      gdprLawfulBasis: legitimate-interests
+      gdprRetention: Ninety days
+    assumed: true
+    rationale: A fixture element for GDR004.
+
+  # --- GDR005: an open waiver on a processing activity ---------------------------------
+  - id: gdpr-waived
+    type: ApplicationComponent
+    name: Legacy Statement Archive
+    owner: finance@kestrel.example
+    lastReviewed: 2026-07-01
+    properties:
+      regulatoryScope: gdpr
+      personalData: personal
+      gdprPurpose: Statement history for customers
+      gdprLawfulBasis: contract
+      gdprRetention: Ten years
+    standards: [std-exit-plan]
+    assumed: true
+    rationale: A fixture element for GDR005.

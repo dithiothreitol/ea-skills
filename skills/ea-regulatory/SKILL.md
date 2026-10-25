@@ -1,19 +1,25 @@
 ---
 name: ea-regulatory
-description: Map regulatory controls onto the architecture and maintain the DORA Register of Information. Use for control-framework gap analysis (NIST CSF, KNF Rekomendacja D and similar), ICT third-party risk, DORA register upkeep, regulatory scope questions, security-architecture coverage, or when asked which systems a regulation touches and what evidence exists. For the EU AI Act and AI risk, see ea-ai-governance.
+description: Map regulatory controls onto the architecture and maintain the DORA Register of Information and the GDPR record of processing activities. Use for control-framework gap analysis (NIST CSF, KNF Rekomendacja D and similar), ICT third-party risk, DORA register upkeep and the ITS worksheets, the GDPR Art. 30 record, regulatory scope questions, security-architecture coverage, or when asked which systems a regulation touches and what evidence exists. For the EU AI Act and AI risk, see ea-ai-governance.
 argument-hint: "[as-of YYYY-MM-DD]"
 allowed-tools:
   - Bash(easkills *)
   - Bash(python -m easkills *)
 ---
 
-# Regulatory controls and the DORA register
+# Regulatory controls, the DORA register and the GDPR record
 
 ```bash
 easkills align --root <repo> --reference nist-csf-2.0   # control gaps, named
 easkills dora-register --root <repo> --as-of <date>     # the register + its own gaps
 easkills dora-register --root <repo> --as-of <date> --out docs/dora-register.md
+easkills dora-register --root <repo> --as-of <date> --format its-csv --out build/dora-its/
+easkills gdpr-register --root <repo> --as-of <date> --out docs/ropa.md   # Art. 30
 ```
+
+Add `--lang pl` to any register for the Polish document. Only the document's own
+wording is translated; the model's text stays in the language its authors wrote it in,
+and rule messages on the terminal stay English.
 
 The EU AI Act has its own register (`ai-act-register`) and its own skill —
 [`ea-ai-governance`](../ea-ai-governance/SKILL.md). One element can be in both scopes at
@@ -133,6 +139,41 @@ without anyone having to remember to mention it.
   to, `dora-register` reports that no element is tagged and generates nothing. That is
   the correct output — and the wrong one for an organisation that simply has not tagged
   its ICT services yet. Know which of the two you are looking at.
+
+## The ITS worksheets
+
+`--format its-csv` writes one CSV per implementing-technical-standard template the model
+can feed (B_02.01, B_02.02, B_05.01, B_06.01), every column present and headed by its
+code and name, and a `README.md` that names every column left empty and every template
+not exported. It is a **pre-filled worksheet for whoever prepares the filing**, not the
+filing: values are in this repository's vocabulary rather than the ITS code lists, and
+most of a template's columns are facts the architecture model does not hold (contract
+dates, notice periods, entity identifiers). `providerLei` on an element fills the
+provider-code columns; two different LEIs under one provider name is a conflict, and
+the column stays empty rather than picking one. The column codes were taken from a
+rendering of Annex I because EUR-Lex refused automated retrieval; the README says to
+check them against the Official Journal, and that check is a human's.
+
+## The GDPR record of processing (Art. 30)
+
+The same pattern, a third time. `regulatoryScope` including `gdpr` puts a processing
+activity in the record; `personalData` and the `gdpr*` properties say what Art. 30
+asks: purpose, lawful basis (the six Art. 6(1) bases, a closed vocabulary), data
+subjects, categories, recipients, transfers outside the EEA, retention.
+
+* **The security-measures column is derived, never written** -- the requirements,
+  constraints and principles that bind the element and the standards it claims. An
+  activity nothing governs is `GDR004`, and the answer is an obligation, not a sentence
+  typed into a property. An assessment does not govern.
+* **The Art. 9(2) condition is the controller's to record.** The model never carries it,
+  so every special-category row names it in the gap section. Do not invent a property
+  to make that row disappear.
+* **`GDR002` is an error** -- special-category data with no lawful basis is the row a
+  supervisor reads first. `GDR001` (no purpose), `GDR003` (no retention) and `GDR004`
+  are warnings; `GDR005` discloses an open dispensation the way `REG003` does.
+* **`SEC003` is the bridge.** An element that holds personal data outside the GDPR scope
+  is flagged by the model gate, so the record cannot quietly miss an activity the model
+  already knows about.
 
 ## Reporting back
 

@@ -10,8 +10,11 @@ relationships:
     assumed: true
     rationale: Fixture content authored for the AIR rules, not extracted from a source.
 
-  - id: rel-chatbot-serves-customer-service
-    type: Serving
+  # Realization, not Serving: the 3.2 matrix permits only Association and Realization from
+  # an ApplicationComponent to a Capability. This edge was Serving until 0.19.0 -- REL001 on
+  # a fixture nothing validated, found when `propose --from ai-act` ran the gate over it.
+  - id: rel-chatbot-realizes-customer-service
+    type: Realization
     source: app-support-chatbot
     target: cap-customer-service
     assumed: true

@@ -3,10 +3,10 @@ id: disp-open-waiver
 title: Two in-scope services may run without a tested exit plan
 waives:
   standard: std-exit-plan
-appliesTo: [app-critical-without-provider, app-important-under-waiver]
+appliesTo: [app-critical-without-provider, app-important-under-waiver, gdpr-waived]
 rationale: >
   Negative fixture record. Exists so REG003 has a critical and an important element
-  under an open waiver to report.
+  under an open waiver to report, and GDR005 a processing activity.
 grantedBy: nobody@kestrel.example
 granted: 2026-04-01
 expires: 2027-03-31

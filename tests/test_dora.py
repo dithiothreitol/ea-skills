@@ -245,7 +245,12 @@ def test_a_scope_value_the_tool_cannot_act_on_is_a_schema_error(value, tmp_path)
 
 def test_the_fixtures_stay_the_shape_the_tests_assume(finco, finco_broken):
     """Both fixtures are hand-authored, and a later edit that quietly drops the scope
-    property would make half this module pass vacuously."""
+    property would make half this module pass vacuously.
+
+    Membership, not equality -- the trap 0.15.0 removed from `dora.py` survived here
+    until 0.19.0 gave finco two elements in the `dora gdpr` combination, and the count
+    dropped by two while the register itself (correctly) did not.
+    """
     for root, expected in ((finco, 6), (finco_broken, 4)):
         tagged = 0
         for path in (root / "model" / "approved").glob("*.yaml"):
@@ -253,6 +258,7 @@ def test_the_fixtures_stay_the_shape_the_tests_assume(finco, finco_broken):
             tagged += sum(
                 1
                 for element in data.get("elements", [])
-                if (element.get("properties") or {}).get(dora.SCOPE_PROPERTY) == dora.SCOPE_DORA
+                if dora.SCOPE_DORA
+                in genschema.split_regulatory_scopes((element.get("properties") or {}).get(dora.SCOPE_PROPERTY))
             )
         assert tagged == expected, f"{root.name} has {tagged} tagged elements, tests assume {expected}"

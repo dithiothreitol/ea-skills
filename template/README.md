@@ -96,6 +96,16 @@ python -m easkills ai-act-register --root . --as-of <date>
 python -m easkills ai-act-register --root . --as-of <date> --out docs/ai-act-register.md
 ```
 
+**If you process personal data** — tag processing activities with `gdpr` in
+`regulatoryScope` plus `personalData` and the `gdpr*` properties, then:
+
+```bash
+python -m easkills gdpr-register --root . --as-of <date> --out docs/ropa.md          # Art. 30 record
+python -m easkills dora-register --root . --as-of <date> --format its-csv --out build/dora-its/
+```
+
+Add `--lang pl` to any register, or to `docs`, for the Polish document.
+
 Generators, not attestations: read each document's last section first, and remember
 that the legal judgement belongs to whoever signs the filing. Untagged repositories get
 no document, which is the right answer when the regulation does not apply to you.

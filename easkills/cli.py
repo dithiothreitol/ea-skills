@@ -22,8 +22,10 @@ from . import (
     docgen,
     documents as documents_mod,
     dora,
+    dora_its,
     dsl,
     facts as facts_mod,
+    gdpr as gdpr_mod,
     genschema,
     govern,
     impact as impact_mod,
@@ -95,6 +97,17 @@ def _add_common(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_lang(parser: argparse.ArgumentParser) -> None:
+    from . import i18n
+
+    parser.add_argument(
+        "--lang",
+        choices=i18n.LANGUAGES,
+        default=i18n.DEFAULT,
+        help="language of the generated document (terminal output stays English)",
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="easkills", description="Deterministic tooling for the EA skills pipeline")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -131,6 +144,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="generate even if the validator reports errors (not recommended)",
     )
+    _add_lang(p_docs)
 
     p_import = sub.add_parser(
         "import", help="import an ArchiMate Open Exchange file into model/staging/ (brownfield adoption)"
@@ -350,6 +364,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_dora.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
     p_dora.add_argument("--as-of", dest="as_of", metavar="YYYY-MM-DD", help="evaluate waiver expiry against this date")
     p_dora.add_argument("--strict", action="store_true", help="treat warnings as failures too")
+    p_dora.add_argument(
+        "--format",
+        dest="format",
+        choices=("markdown", "its-csv"),
+        default="markdown",
+        help="markdown document (default), or one CSV per ITS template into the --out directory",
+    )
+    _add_lang(p_dora)
 
     p_ai_act = sub.add_parser(
         "ai-act-register", help="generate the EU AI Act system inventory from the approved model"
@@ -363,6 +385,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--as-of", dest="as_of", metavar="YYYY-MM-DD", help="evaluate waiver expiry against this date"
     )
     p_ai_act.add_argument("--strict", action="store_true", help="treat warnings as failures too")
+    _add_lang(p_ai_act)
+
+    p_gdpr = sub.add_parser(
+        "gdpr-register", help="generate the GDPR Art. 30 record of processing activities from the approved model"
+    )
+    p_gdpr.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_gdpr.add_argument("--out", type=Path, help="write the record here (default: print the findings)")
+    p_gdpr.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+    p_gdpr.add_argument("--as-of", dest="as_of", metavar="YYYY-MM-DD", help="evaluate waiver expiry against this date")
+    p_gdpr.add_argument("--strict", action="store_true", help="treat warnings as failures too")
+    _add_lang(p_gdpr)
 
     p_maturity = sub.add_parser(
         "maturity", help="level 1-5 per dimension from measured signals, with the items blocking the next"
@@ -489,7 +522,7 @@ def cmd_docs(args: argparse.Namespace) -> int:
             print("\nRefusing to document a model with validation errors (use --skip-validation to override).")
             return 1
     try:
-        result = docgen.generate(root, out=args.out)
+        result = docgen.generate(root, out=args.out, lang=args.lang)
     except render_mod.RenderError as exc:
         print(_error(str(exc)))
         return 1
@@ -856,17 +889,24 @@ def cmd_dora_register(args: argparse.Namespace) -> int:
             json.dumps(register.as_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
         )
         print(f"\nJSON report written to {args.json_out}")
+    if args.format == "its-csv" and not args.out:
+        print(_error("--format its-csv writes one CSV per template; pass --out <directory>"))
+        return 1
     if args.out:
         # Refusing to write an empty document is the point: a page that looks like a
         # filing and says nothing is the worst artifact this command could produce.
         try:
-            document = dora.markdown(register)
+            if args.format == "its-csv":
+                written = dora_its.export(register, args.out, dora_its.provider_leis(args.root.resolve()))
+                print(_ok(f"{len(written) - 1} ITS template worksheet(s) and README.md written to {args.out}"))
+            else:
+                document = dora.markdown(register, args.lang)
+                args.out.parent.mkdir(parents=True, exist_ok=True)
+                args.out.write_text(document, encoding="utf-8", newline="\n")
+                print(_ok(f"Register written to {args.out}"))
         except dora.DoraError as exc:
             print(_error(str(exc)))
             return 1
-        args.out.parent.mkdir(parents=True, exist_ok=True)
-        args.out.write_text(document, encoding="utf-8", newline="\n")
-        print(_ok(f"Register written to {args.out}"))
     if not register.ok:
         return 1
     return 1 if args.strict and register.warnings else 0
@@ -885,13 +925,36 @@ def cmd_ai_act_register(args: argparse.Namespace) -> int:
         # Same refusal as dora-register: an empty page that looks like a compliance
         # record is the worst artifact this command could produce.
         try:
-            document = airegister.markdown(register)
+            document = airegister.markdown(register, args.lang)
         except airegister.AiActError as exc:
             print(_error(str(exc)))
             return 1
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(document, encoding="utf-8", newline="\n")
         print(_ok(f"Inventory written to {args.out}"))
+    if not register.ok:
+        return 1
+    return 1 if args.strict and register.warnings else 0
+
+
+def cmd_gdpr_register(args: argparse.Namespace) -> int:
+    register = gdpr_mod.build(args.root.resolve(), today=_parse_as_of(args.as_of))
+    print(gdpr_mod.render(register))
+    if args.json_out:
+        args.json_out.parent.mkdir(parents=True, exist_ok=True)
+        args.json_out.write_text(
+            json.dumps(register.as_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
+        )
+        print(f"\nJSON report written to {args.json_out}")
+    if args.out:
+        try:
+            document = gdpr_mod.markdown(register, args.lang)
+        except gdpr_mod.GdprError as exc:
+            print(_error(str(exc)))
+            return 1
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(document, encoding="utf-8", newline="\n")
+        print(_ok(f"Record written to {args.out}"))
     if not register.ok:
         return 1
     return 1 if args.strict and register.warnings else 0
@@ -1056,6 +1119,7 @@ HANDLERS = {
     "align": cmd_align,
     "dora-register": cmd_dora_register,
     "ai-act-register": cmd_ai_act_register,
+    "gdpr-register": cmd_gdpr_register,
     "propose": cmd_propose,
     "maturity": cmd_maturity,
     "pin-reference": cmd_pin_reference,
