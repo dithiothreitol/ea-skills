@@ -5,7 +5,7 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
-## [Unreleased]
+## [0.19.0] — 2026-10-25 — the register release
 
 Phase 8.4 — the registers that were still missing, and the language they are read in. 163
 rules (+5), 26 skills, 37 commands.
