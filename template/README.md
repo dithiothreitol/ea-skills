@@ -50,6 +50,13 @@ python -m easkills impact  --root . --scope <id>      # blast radius + Phase H c
 python -m easkills context --root . --scope <id>      # agent context pack (AD-09)
 python -m easkills exposure --root .                  # reach from every public element
 python -m easkills propose --root . --from threats --as-of <date>   # assessments for trust-boundary crossings
+python -m easkills kpi --root . --as-of <date> --snapshot   # commit governance-log/metrics/<date>.json
+python -m easkills trend   --root .                         # the snapshots, and what regressed
+python -m easkills diff    --root . --plateau <from> <to>   # what the plan changes (or --ref <commit>)
+python -m easkills query   --root . --where regulatoryScope~dora --show provider
+python -m easkills export  --root . --format mermaid --out docs/diagrams/   # or plantuml
+python -m easkills render  --root . --heatmap lifecycle     # colour the views by a property
+python -m easkills serve   --root .                         # read-only MCP server (the plugin registers it)
 ```
 
 **Is it done?**
@@ -128,6 +135,7 @@ no document, which is the right answer when the regulation does not apply to you
 | `requirements/` | Architecture requirements. |
 | `governance-log/decisions/` | Architecture decision records (MADR). |
 | `governance-log/compliance/` | Compliance assessments, recorded with TOGAF's six conformance levels rather than pass/fail. |
+| `governance-log/metrics/` | KPI snapshots (`kpi --snapshot --as-of <date>`), one JSON file per date, committed as records; `trend` reads them. |
 | `governance-log/dispensations/` | Time-bounded waivers. **An expiry date is mandatory** -- a dispensation without one is not governance. |
 | `docs/` | Generated architecture description and audience-facing outputs. |
 | `build/` | Compiled artifacts. Reproducible; not committed. |

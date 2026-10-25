@@ -58,6 +58,15 @@ def test_the_plugin_manifest_carries_the_package_version():
     assert manifest["license"] == project["license"]
 
 
+def test_the_package_reports_the_release_it_is():
+    """`serve` tells every MCP host its version. It said 0.1.0 from 0.1.0 to 0.19.0,
+    because nothing compared it with anything."""
+    import easkills
+
+    project = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    assert easkills.__version__ == project["version"]
+
+
 def test_the_marketplace_serves_this_repository_as_the_plugin():
     market = json.loads((REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8"))
     assert market["owner"]["name"]
@@ -138,6 +147,35 @@ def test_the_wrapper_runs_the_cli():
     )
     assert done.returncode == 0, done.stderr
     assert "ArchiMate version" in done.stdout
+
+
+def test_the_registered_mcp_command_answers_a_handshake():
+    """The exact command the manifest registers -- sh, the wrapper, `serve` -- run from
+    outside the repository with the project directory in the environment, as the host
+    runs it. A wrapper that printed one stray line would break every session."""
+    shell = _shell()
+    if not shell:
+        pytest.skip("no POSIX shell")
+    manifest = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
+    server = manifest["mcpServers"]["easkills"]
+    assert server["command"] == "sh"
+    args = [a.replace("${CLAUDE_PLUGIN_ROOT}", str(REPO_ROOT)) for a in server["args"]]
+    env = {**os.environ, "EASKILLS_PYTHON": sys.executable, "CLAUDE_PROJECT_DIR": str(REPO_ROOT / "eval" / "example")}
+    messages = [
+        {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-11-25"}},
+        {"jsonrpc": "2.0", "method": "notifications/initialized"},
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "kpi", "arguments": {"asOf": "2026-07-30"}}},
+    ]
+    done = subprocess.run(
+        [shell, *args],
+        input="".join(json.dumps(m) + chr(10) for m in messages),
+        capture_output=True, text=True, encoding="utf-8", errors="replace", env=env,
+        cwd=Path(os.environ.get("TMPDIR", os.environ.get("TEMP", "/"))), timeout=120,
+    )
+    assert done.returncode == 0, done.stderr
+    replies = [json.loads(line) for line in done.stdout.splitlines()]
+    assert [r["id"] for r in replies] == [1, 2]
+    assert replies[1]["result"]["structuredContent"]["asOf"] == "2026-07-30"
 
 
 # ------------------------------------------------------------------------------ hook

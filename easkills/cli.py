@@ -23,7 +23,9 @@ from . import (
     documents as documents_mod,
     dora,
     dora_its,
+    diff as diff_mod,
     dsl,
+    export as export_mod,
     facts as facts_mod,
     gdpr as gdpr_mod,
     genschema,
@@ -35,13 +37,16 @@ from . import (
     oracle,
     promote as promote_mod,
     propose as propose_mod,
+    query as query_mod,
     readiness as readiness_mod,
     reference as reference_mod,
     render as render_mod,
     reports,
     score as score_mod,
     security as security_mod,
+    serve as serve_mod,
     tabular,
+    timeline,
     ui,
     validate as validate_mod,
 )
@@ -133,6 +138,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_render = sub.add_parser("render", help="render views to deterministic SVG")
     _add_common(p_render)
     p_render.add_argument("--out", type=Path, help="output directory (default: <root>/docs/views)")
+    p_render.add_argument(
+        "--heatmap",
+        metavar="PROPERTY",
+        help="colour each view by this property instead of by layer, written beside it as "
+        "<view>.heatmap-<property>.svg",
+    )
+
+    p_export = sub.add_parser("export", help="write views as PlantUML (ArchiMate notation) or Mermaid text")
+    _add_common(p_export)
+    p_export.add_argument("--format", dest="format", choices=export_mod.FORMATS, required=True, help="diagram language")
+    p_export.add_argument("--view", help="one view id (default: every view)")
+    p_export.add_argument(
+        "--out", type=Path, help="output directory (default: print one --view, else <root>/build/diagrams)"
+    )
 
     p_docs = sub.add_parser(
         "docs", help="generate the architecture description (ISO 42010 shape) from the approved zone"
@@ -242,6 +261,54 @@ def build_parser() -> argparse.ArgumentParser:
             p_report.add_argument("--as-of", dest="as_of", help="evaluate against this date (YYYY-MM-DD)")
         if name == "conformance":
             p_report.add_argument("--strict", action="store_true", help="exit 1 if any clause fails")
+        if name == "kpi":
+            p_report.add_argument(
+                "--snapshot",
+                action="store_true",
+                help="also commit-ready: write governance-log/metrics/<as-of>.json (requires --as-of)",
+            )
+
+    p_trend = sub.add_parser("trend", help="the KPI series from committed snapshots, and what regressed")
+    p_trend.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_trend.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+    p_trend.add_argument("--last", type=int, metavar="N", help="show only the last N snapshots (the JSON keeps all)")
+    p_trend.add_argument(
+        "--strict", action="store_true", help="exit 1 if any metric regressed since the previous snapshot"
+    )
+
+    p_diff = sub.add_parser("diff", help="what changes between two plateaus, or since a git commit")
+    p_diff.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    mode = p_diff.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--plateau", nargs=2, metavar=("FROM", "TO"), help="two plateau ids")
+    mode.add_argument("--ref", metavar="GIT-REF", help="a commit, tag or branch to compare the approved zone with")
+    p_diff.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+
+    p_query = sub.add_parser("query", help="find elements by type, property and relationship hops (read-only)")
+    _add_common(p_query)
+    p_query.add_argument("--type", dest="types", action="append", metavar="TYPE", help="element type (repeatable)")
+    p_query.add_argument(
+        "--where",
+        action="append",
+        metavar="COND",
+        help="key=value, key!=value, key~token (membership), key= (absent); repeatable, all must hold",
+    )
+    p_query.add_argument("--from", dest="start", metavar="ID", help="walk from this element")
+    p_query.add_argument("--hops", type=int, default=1, help="steps from --from (default 1)")
+    p_query.add_argument(
+        "--rel", dest="relations", action="append", metavar="TYPE",
+        help="relationship type to walk, or appliesTo (repeatable; default all)",
+    )
+    p_query.add_argument("--direction", choices=query_mod.DIRECTIONS, default="both", help="which way to walk")
+    p_query.add_argument("--show", action="append", metavar="KEY", help="add a property column (repeatable)")
+    p_query.add_argument("--json", dest="json_out", type=Path, help="also write the result as JSON")
+
+    p_serve = sub.add_parser("serve", help="serve the approved model as a read-only MCP server over stdio")
+    p_serve.add_argument(
+        "--root",
+        type=Path,
+        help="where to look for the repository (default: $CLAUDE_PROJECT_DIR, else cwd; the nearest "
+        "directory upwards holding ea.config.yaml is used)",
+    )
 
     p_context = sub.add_parser(
         "context", help="generate an agent context pack for one element or capability (AD-09)"
@@ -500,7 +567,7 @@ def cmd_render(args: argparse.Namespace) -> int:
     if not _oracle_intact():
         return 1
     try:
-        result = render_mod.render_all(root, zone=args.zone, out_dir=args.out)
+        result = render_mod.render_all(root, zone=args.zone, out_dir=args.out, heatmap=args.heatmap)
     except render_mod.RenderError as exc:
         print(_error(str(exc)))
         return 1
@@ -717,9 +784,92 @@ def cmd_staleness(args: argparse.Namespace) -> int:
 
 
 def cmd_kpi(args: argparse.Namespace) -> int:
-    data = reports.kpi(args.root.resolve(), today=_parse_as_of(args.as_of))
+    if args.snapshot and not args.as_of:
+        # The file name is the date. A wall-clock date there would make two runs of an
+        # unchanged repository disagree, which a committed record must never do.
+        print(_error("--snapshot needs --as-of: the snapshot is named by its date"))
+        return 1
+    root = args.root.resolve()
+    data = reports.kpi(root, today=_parse_as_of(args.as_of))
     _emit_report(args, data, reports.render_kpi(data))
+    if args.snapshot:
+        try:
+            path, written = timeline.write_snapshot(root, data)
+        except timeline.TimelineError as exc:
+            print(_error(str(exc)))
+            return 1
+        print(_ok(f"Snapshot {'written to' if written else 'unchanged at'} {path}"))
     return 0
+
+
+def cmd_trend(args: argparse.Namespace) -> int:
+    data = timeline.trend(args.root.resolve(), last=args.last)
+    _emit_report(args, data, timeline.render_trend(data))
+    if data["errors"]:
+        return 1
+    return 1 if args.strict and data["regressions"] else 0
+
+
+def cmd_diff(args: argparse.Namespace) -> int:
+    root = args.root.resolve()
+    try:
+        if args.plateau:
+            data = diff_mod.plateaus(root, *args.plateau)
+            rendered = diff_mod.render_plateaus(data)
+        else:
+            data = diff_mod.since(root, args.ref)
+            rendered = diff_mod.render_since(data)
+    except diff_mod.DiffError as exc:
+        print(_error(str(exc)))
+        return 1
+    _emit_report(args, data, rendered)
+    return 0
+
+
+def cmd_query(args: argparse.Namespace) -> int:
+    try:
+        data = query_mod.run(
+            args.root.resolve(),
+            zone=args.zone,
+            types=args.types,
+            where=args.where,
+            start=args.start,
+            hops=args.hops,
+            relations=args.relations,
+            direction=args.direction,
+            show=args.show,
+        )
+    except query_mod.QueryError as exc:
+        print(_error(str(exc)))
+        return 1
+    _emit_report(args, data, query_mod.render(data))
+    return 0
+
+
+def cmd_export(args: argparse.Namespace) -> int:
+    root = args.root.resolve()
+    try:
+        diagrams = export_mod.export(root, args.format, zone=args.zone, view_id=args.view)
+    except export_mod.ExportError as exc:
+        print(_error(str(exc)))
+        return 1
+    if args.view and not args.out:
+        print(diagrams.get(args.view, ""), end="")
+        return 0
+    out_dir = args.out or (root / "build" / "diagrams")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for view_id, text in diagrams.items():
+        path = out_dir / f"{view_id}{export_mod.SUFFIX[args.format]}"
+        path.write_text(text, encoding="utf-8", newline="\n")
+        print(_ok(f"Exported {ui.bold(view_id)} {ui.arrow()} {path}"))
+    if not diagrams:
+        print("No views to export.")
+    return 0
+
+
+def cmd_serve(args: argparse.Namespace) -> int:
+    root = (args.root or serve_mod.default_root()).resolve()
+    return serve_mod.serve(root)
 
 
 def cmd_debt(args: argparse.Namespace) -> int:
@@ -1102,6 +1252,11 @@ HANDLERS = {
     "validate-gov": cmd_validate_gov,
     "staleness": cmd_staleness,
     "kpi": cmd_kpi,
+    "trend": cmd_trend,
+    "diff": cmd_diff,
+    "query": cmd_query,
+    "export": cmd_export,
+    "serve": cmd_serve,
     "debt": cmd_debt,
     "conformance": cmd_conformance,
     "correspondences": cmd_correspondences,

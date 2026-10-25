@@ -32,6 +32,7 @@ REFERENCE_SCHEMA_PATH = SCHEMA_DIR / "reference.schema.json"
 REFERENCE_MAPPINGS_SCHEMA_PATH = SCHEMA_DIR / "reference-mappings.schema.json"
 CONFIG_SCHEMA_PATH = SCHEMA_DIR / "ea-config.schema.json"
 QUESTION_SCHEMA_PATH = SCHEMA_DIR / "question.schema.json"
+METRICS_SCHEMA_PATH = SCHEMA_DIR / "metrics.schema.json"
 
 # A clarification question is open until a fact answers it or somebody withdraws it with
 # a reason. Closed, because `kpi` and the architecture description count by status.
@@ -694,6 +695,89 @@ def build_question_schema() -> dict[str, Any]:
     }
 
 
+def build_metrics_schema() -> dict[str, Any]:
+    """Schema for governance-log/metrics/<date>.json -- a committed KPI snapshot.
+
+    A snapshot is exactly what ``kpi --json`` prints on its date, kept as a record so the
+    next one has something to be compared with. Two rules keep the series readable for
+    years: the top level is closed, so a misspelt section is an error rather than a
+    silently missing line in ``trend``; and every key ``kpi`` gains later is *optional*
+    here, so a snapshot committed before it existed stays valid. A section may carry keys
+    this schema does not name for the same reason.
+    """
+    share = {"type": "number", "minimum": 0, "maximum": 1}
+    count = {"type": "integer", "minimum": 0}
+    ids = {"type": "array", "items": {"type": "string"}}
+
+    def section(fields: dict[str, Any]) -> dict[str, Any]:
+        return {"type": "object", "required": list(fields), "properties": fields}
+
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:ea-skills:schema:metrics",
+        "title": "EA Skills KPI snapshot",
+        "description": (
+            "The output of `kpi --json` on one date, committed under governance-log/metrics/ "
+            "and named by that date. Read by `trend`."
+        ),
+        "type": "object",
+        "additionalProperties": False,
+        "required": [
+            "asOf", "size", "evidence", "governance", "portfolio",
+            "capabilities", "quality", "documentation", "service",
+        ],
+        "properties": {
+            "asOf": {"type": "string", "pattern": DATE_PATTERN},
+            "size": section(
+                {"elements": count, "relationships": count, "views": count, "facts": count, "entities": count}
+            ),
+            "evidence": section({"evidencedShare": share, "assumed": count}),
+            "governance": section(
+                {
+                    "ownedShare": share,
+                    "staleShare": share,
+                    "openDispensations": count,
+                    "decisions": count,
+                    "assessments": count,
+                }
+            ),
+            "portfolio": section(
+                {"applications": count, "timeClassifiedShare": share, "obsolescenceExposure": ids}
+            ),
+            "capabilities": section(
+                {
+                    "total": count,
+                    "unsupported": ids,
+                    "applicationsPerCapability": {"type": ["number", "null"], "minimum": 0},
+                }
+            ),
+            "quality": section({"orphans": ids}),
+            "documentation": section({"concerns": count, "unheldConcerns": ids, "unframedConcerns": ids}),
+            "service": section(
+                {
+                    "offerings": count,
+                    "requests": count,
+                    "open": count,
+                    "fulfilled": count,
+                    "declined": count,
+                    "slaBreaches": ids,
+                    "avgFulfilmentDays": {"type": ["number", "null"]},
+                }
+            ),
+            # Present only where the repository keeps clarification questions (0.17.0).
+            "questions": section(
+                {
+                    "open": count,
+                    "answered": count,
+                    "withdrawn": count,
+                    "oldestOpenDays": {"type": ["integer", "null"]},
+                    "unaddressed": ids,
+                }
+            ),
+        },
+    }
+
+
 def _slug_def() -> dict[str, Any]:
     return {
         "type": "string",
@@ -1203,6 +1287,7 @@ SCHEMAS: tuple[tuple[Path, Callable[[], dict[str, Any]]], ...] = (
     (REFERENCE_MAPPINGS_SCHEMA_PATH, build_reference_mappings_schema),
     (CONFIG_SCHEMA_PATH, build_config_schema),
     (QUESTION_SCHEMA_PATH, build_question_schema),
+    (METRICS_SCHEMA_PATH, build_metrics_schema),
 )
 
 
@@ -1266,3 +1351,7 @@ def load_config_schema(path: Path | None = None) -> dict[str, Any]:
 
 def load_question_schema(path: Path | None = None) -> dict[str, Any]:
     return _load(path or QUESTION_SCHEMA_PATH, build_question_schema)
+
+
+def load_metrics_schema(path: Path | None = None) -> dict[str, Any]:
+    return _load(path or METRICS_SCHEMA_PATH, build_metrics_schema)

@@ -161,9 +161,10 @@ and keeps the stage order honest.
 | Ingest | `ea-intake`, `ea-delta-ingest`, `ea-import` | `validate-facts`, `coverage --min-coverage`; `intake-csv` and `intake-doc` make a spreadsheet, PDF, Word, PowerPoint or Excel file citable; clarification questions are records (`QST*`); `import` lands in staging, all `assumed` |
 | Model | `ea-capability-map`, `ea-model`, `ea-validate` | `validate` (staging as overlay), 3-repair cap |
 | Publish | `ea-approve` | `promote` — the only write path into `approved/` |
-| Document | `ea-stakeholders`, `ea-views`, `ea-docs` | `docs`, `render`, ISO loop rules, freshness CI check; `rtm` and `glossary` derive the traceability matrix and the glossary, as CSV for a spreadsheet when asked |
+| Document | `ea-stakeholders`, `ea-views`, `ea-docs` | `docs`, `render`, ISO loop rules, freshness CI check; `rtm` and `glossary` derive the traceability matrix and the glossary, as CSV for a spreadsheet when asked; `export` writes views as PlantUML (ArchiMate notation) or Mermaid; `render --heatmap` colours any view by a property |
 | Govern | `ea-standards-base`, `ea-dispensation`, `ea-adr`, `ea-compliance`, `ea-service` | `validate-gov` — expiry and SLA are enforced, not filed |
-| Maintain | `ea-health`, `ea-change-triage`, `ea-board`, `ea-context` | `kpi`, `debt`, `staleness`, `conformance`, `correspondences`, `roadmap`, `delta`, `context`, `impact` |
+| Maintain | `ea-health`, `ea-change-triage`, `ea-board`, `ea-context` | `kpi`, `debt`, `staleness`, `conformance`, `correspondences`, `roadmap`, `delta`, `context`, `impact`; `kpi --snapshot` commits the KPIs as a dated record and `trend` names what regressed; `diff` says what a plateau changes or what changed since a commit; `query` answers the questions no report was written for |
+| Serve | `ea-context` | `serve` — the approved model as a read-only MCP server, registered by the plugin: the reports as tools, the architecture description and context packs as resources, nothing that writes |
 | Assess | `ea-model`, `ea-capability-map`, `ea-align` | `readiness` — the per-layer definition of done, every checkpoint naming its elements; `align --strict` — the model against a hash-pinned reference architecture, every unmapped node a named gap and every exclusion a recorded decision |
 | Propose | `ea-align`, `ea-adr` | `propose --from align\|readiness\|overlap\|time\|coverage\|threats\|ai-act` — findings become staging skeletons with derived ids; the prose, the owner and the review date stay human, and the gate enforces it. Refuses rather than emitting anything the gate would reject |
 | Secure | `ea-security` | `validate` reads the security vocabulary (`SEC*`: public elements holding restricted data, trust-boundary crossings, personal data outside the GDPR scope) and only where a repository uses it; `exposure` walks what an attacker holding a public element could reach; `propose --from threats` writes an assessment per boundary crossing; `align` against NIST SP 800-53 or SP 800-207 names high-rated systems no control anchors (`ALN009`); `check --sbom` reads CycloneDX and SPDX |
@@ -368,11 +369,13 @@ argued with.
 | 5 | Evaluation: golden-set regression harness, capability comparison | **done** |
 | 6 | Service layer: offering catalog with SLAs, demand ledger, demand-weighted maintenance | **done** |
 | 7 | Reference, regulation, proposal: alignment to reference architectures, per-layer readiness, rationalization, cost, regulatory reporting, generated proposals, maturity | **done** |
-| 8 | Host, analyst, security, registers, time, measurement: the plugin and its guard, document intake and question records, security vocabulary and exposure, further registers and Polish output, diff/query/serve, a host eval | 8.1–8.4 **done** |
+| 8 | Host, analyst, security, registers, time, measurement: the plugin and its guard, document intake and question records, security vocabulary and exposure, further registers and Polish output, diff/query/serve, a host eval | 8.1–8.5 **done** |
 
-Deliberately open (decisions, not backlog): the **network facade** (MCP/HTTP) over the
-read-only commands stays deferred until the demand ledger shows someone asking for it —
-`ea-check` shipped without it, and needs no service to run; §6.9 correspondences to AD
+Deliberately open (decisions, not backlog): the **network facade** is half shipped on
+purpose — `serve` speaks MCP over stdio to a local host, read-only, approved zone only
+(the AD-10 deferral reversed in 0.20.0, because demand cannot appear for a surface that
+does not exist); an HTTP transport, with the authentication and hosting it would bring,
+stays deferred until the demand ledger shows someone asking for it; §6.9 correspondences to AD
 elements in *another* architecture description stay underived, because nothing here can
 check the far end of one; the [comparison table](#how-it-compares) above carries a quarterly
 re-check obligation that nothing can automate; and the worked example carries

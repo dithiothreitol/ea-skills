@@ -9,6 +9,12 @@ derived from the same structures.
 Notation is deliberately simplified: layer-coloured boxes, solid connections with an
 arrowhead, dashed lines for Realization and Specialization. It is a reading aid for
 stakeholders, not a substitute for opening the exchange file in a real ArchiMate tool.
+
+``--heatmap <property>`` colours the same boxes by one property instead of by layer --
+lifecycle, TIME disposition, criticality, owner -- with a legend that counts each value
+and names the elements carrying none. A heatmap is written beside the view
+(``<view>.heatmap-<property>.svg``), never over it, so the committed views stay what the
+freshness check compares.
 """
 
 from __future__ import annotations
@@ -17,7 +23,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from xml.sax.saxutils import escape
 
-from . import aoef, dsl, oracle
+from . import aoef, dsl, genschema, oracle, query
 
 # Archi-like layer fills, so anyone who has seen an ArchiMate diagram reads these.
 LAYER_FILL = {
@@ -32,6 +38,17 @@ LAYER_FILL = {
 }
 
 DASHED_RELATIONSHIPS = {"Realization", "Specialization"}
+
+# Light, distinguishable fills that keep black text readable (ColorBrewer Set3). A value
+# keeps its colour across every view: a closed vocabulary assigns by its schema order, a
+# free one by sorted value over the whole model.
+HEATMAP_PALETTE = (
+    "#8DD3C7", "#FFFFB3", "#BEBADA", "#FB8072", "#80B1D3", "#FDB462",
+    "#B3DE69", "#FCCDE5", "#D9D9D9", "#BC80BD", "#CCEBC5", "#FFED6F",
+)
+NO_VALUE_FILL = "#FFFFFF"
+NAME_LIMIT = 24
+LEGEND_ROW = 18
 FONT = "font-family='Segoe UI, Arial, sans-serif'"
 
 
@@ -62,7 +79,31 @@ def _truncate(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[: limit - 1] + "…"
 
 
-def render_view(model: dsl.Model, view: dsl.View) -> str:
+def _wrap(text: str, limit: int = NAME_LIMIT) -> list[str]:
+    """A name on one line if it fits, otherwise two -- broken at a space where there is
+    one -- and only the second line is ever cut short. Truncating at 24 characters made
+    "Warehouse Management Sys…" the name a stakeholder read."""
+    if len(text) <= limit:
+        return [text]
+    cut = text.rfind(" ", 0, limit + 1)
+    first, rest = (text[:limit], text[limit:]) if cut <= 0 else (text[:cut], text[cut + 1 :])
+    return [first, _truncate(rest, limit)]
+
+
+def _vocabulary(key: str) -> list[str]:
+    spec = genschema.load_schema()["$defs"]["element"]["properties"]["properties"]["properties"].get(key, {})
+    return [str(v) for v in spec.get("enum", [])]
+
+
+def heatmap_colours(model: dsl.Model, key: str) -> dict[str, str]:
+    """Value -> fill for one property, stable across views of the same model."""
+    order = _vocabulary(key)
+    present = sorted({query.field_value(e, key) for e in model.elements.values()} - {""})
+    values = order + [v for v in present if v not in order]
+    return {value: HEATMAP_PALETTE[index % len(HEATMAP_PALETTE)] for index, value in enumerate(values)}
+
+
+def render_view(model: dsl.Model, view: dsl.View, heatmap: str | None = None) -> str:
     included = [e for e in view.include if e in model.elements]
     positions = aoef._layout(model, included)
 
@@ -70,6 +111,16 @@ def render_view(model: dsl.Model, view: dsl.View) -> str:
     height = max((y for _, y in positions.values()), default=0) + aoef.NODE_HEIGHT + aoef.MARGIN
     title_height = 34
     height += title_height
+    colours = heatmap_colours(model, heatmap) if heatmap else {}
+    counts: dict[str, int] = {}
+    legend_top = height
+    if heatmap:
+        for element_id in sorted(set(included)):
+            value = query.field_value(model.elements[element_id], heatmap)
+            counts[value] = counts.get(value, 0) + 1
+        height += 10 + LEGEND_ROW * len(counts)
+        width = max(width, 320)
+    title = f"{view.name} — {heatmap}" if heatmap else view.name
 
     lines: list[str] = [
         f"<svg xmlns='http://www.w3.org/2000/svg' width='{width}' height='{height}' "
@@ -78,7 +129,7 @@ def render_view(model: dsl.Model, view: dsl.View) -> str:
         "<path d='M0,0 L10,4 L0,8 z' fill='#555555'/></marker></defs>",
         f"<rect x='0' y='0' width='{width}' height='{height}' fill='#FFFFFF'/>",
         f"<text x='{aoef.MARGIN}' y='22' {FONT} font-size='15' font-weight='bold'>"
-        f"{escape(view.name)}</text>",
+        f"{escape(title)}</text>",
     ]
 
     def centre(element_id: str) -> tuple[float, float]:
@@ -123,23 +174,61 @@ def render_view(model: dsl.Model, view: dsl.View) -> str:
         element = model.elements[element_id]
         x, y = positions[element_id]
         y += title_height
-        fill = LAYER_FILL.get(oracle.layer_of(element.type), LAYER_FILL["Other"])
+        dash = ""
+        if heatmap:
+            value = query.field_value(element, heatmap)
+            fill = colours.get(value, NO_VALUE_FILL)
+            dash = "" if value else " stroke-dasharray='4,3'"
+            tooltip = f"{element.name} ({element.type}) -- {heatmap}: {value or 'no value'}"
+        else:
+            fill = LAYER_FILL.get(oracle.layer_of(element.type), LAYER_FILL["Other"])
+            tooltip = f"{element.name} ({element.type})"
+        name_lines = _wrap(element.name)
+        centre_x = x + aoef.NODE_WIDTH / 2
+        if len(name_lines) == 1:
+            name_svg = (
+                f"<text x='{centre_x}' y='{y + 26}' {FONT} font-size='11' "
+                f"text-anchor='middle'>{escape(name_lines[0])}</text>"
+            )
+            type_y = y + 42
+        else:
+            name_svg = "".join(
+                f"<text x='{centre_x}' y='{y + offset}' {FONT} font-size='11' "
+                f"text-anchor='middle'>{escape(line)}</text>"
+                for offset, line in zip((20, 33), name_lines)
+            )
+            type_y = y + 48
         lines.append(
             f"<g><rect x='{x}' y='{y}' width='{aoef.NODE_WIDTH}' height='{aoef.NODE_HEIGHT}' "
-            f"rx='3' fill='{fill}' stroke='#777777'/>"
-            f"<title>{escape(element.name)} ({escape(element.type)})</title>"
-            f"<text x='{x + aoef.NODE_WIDTH / 2}' y='{y + 26}' {FONT} font-size='11' "
-            f"text-anchor='middle'>{escape(_truncate(element.name, 24))}</text>"
-            f"<text x='{x + aoef.NODE_WIDTH / 2}' y='{y + 42}' {FONT} font-size='9' "
+            f"rx='3' fill='{fill}' stroke='#777777'{dash}/>"
+            f"<title>{escape(tooltip)}</title>"
+            f"{name_svg}"
+            f"<text x='{centre_x}' y='{type_y}' {FONT} font-size='9' "
             f"fill='#555555' text-anchor='middle'>{escape(element.type)}</text></g>"
         )
+
+    if heatmap:
+        ordered = [v for v in colours if v in counts] + ([""] if "" in counts else [])
+        for row, value in enumerate(ordered):
+            top = legend_top + 4 + row * LEGEND_ROW
+            dash = " stroke-dasharray='4,3'" if not value else ""
+            label = value or "no value"
+            lines.append(
+                f"<g><rect x='{aoef.MARGIN}' y='{top}' width='14' height='12' "
+                f"fill='{colours.get(value, NO_VALUE_FILL)}' stroke='#777777'{dash}/>"
+                f"<text x='{aoef.MARGIN + 20}' y='{top + 10}' {FONT} font-size='11'>"
+                f"{escape(label)} ({counts[value]})</text></g>"
+            )
 
     lines.append("</svg>")
     return "\n".join(lines) + "\n"
 
 
-def render_all(root: Path, zone: str = "approved", out_dir: Path | None = None) -> RenderResult:
-    """Render every view of the zone to ``docs/views/<id>.svg`` (path-sorted, stable)."""
+def render_all(
+    root: Path, zone: str = "approved", out_dir: Path | None = None, heatmap: str | None = None
+) -> RenderResult:
+    """Render every view of the zone to ``docs/views/<id>.svg`` (path-sorted, stable),
+    or with ``heatmap`` to ``<id>.heatmap-<property>.svg`` beside it."""
     # load_zone, not load: 'staging' is the overlay, so a delta renders against the
     # approved model it proposes to change instead of reporting "no views".
     model, _documents, _config = dsl.load_zone(root, zone)
@@ -153,7 +242,8 @@ def render_all(root: Path, zone: str = "approved", out_dir: Path | None = None) 
             raise RenderError(
                 f"view '{view.id}' includes unknown element(s) {missing}; validate before rendering"
             )
-        path = target_dir / f"{view.id}.svg"
-        path.write_text(render_view(model, view), encoding="utf-8", newline="\n")
+        name = f"{view.id}.heatmap-{heatmap}.svg" if heatmap else f"{view.id}.svg"
+        path = target_dir / name
+        path.write_text(render_view(model, view, heatmap), encoding="utf-8", newline="\n")
         result.views.append((view.id, path))
     return result

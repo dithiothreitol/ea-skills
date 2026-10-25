@@ -496,6 +496,74 @@ triage turns on — and lists the decisions, obligations, waivers and consumer r
 inside the radius. It answers the arithmetic half and says so; the classification
 stays a recorded judgement (`ea-change-triage`).
 
+### Over time: snapshots, trends and what changed
+
+`kpi` answers how the model is today. Keep the answer, and the next one has something to
+be compared with:
+
+```bash
+python -m easkills kpi --root . --as-of 2026-07-30 --snapshot   # -> governance-log/metrics/2026-07-30.json
+python -m easkills trend --root .                               # every committed snapshot, and what regressed
+python -m easkills trend --root . --strict                      # ...as a gate: a regression fails
+```
+
+A snapshot is a record: commit it with the model it measured. Taking it again on the same
+date is a no-op while the model is unchanged and a refusal once it has changed, because
+the record of a past date is not rewritten. `trend` marks only metrics with a better
+direction as regressions — evidence share, ownership, staleness, orphans, unheld concerns —
+and leaves growth and open dispensations neutral, so nobody is rewarded for deleting
+records to clear a line.
+
+Before a board, ask what the plan changes and what changed since the last one:
+
+```bash
+python -m easkills diff --root . --plateau plateau-2026-baseline plateau-2028-wms-cloud
+python -m easkills diff --root . --ref v1.4                       # the approved zone then and now
+```
+
+`--plateau` lists what enters, leaves and stays between two states of the roadmap, and the
+gaps at either end. `--ref` reads the approved zone as git holds it at a commit and names
+every change by field — `properties.lifecycle`, `owner`, `appliesTo` — without checking
+anything out; moving a concept between files is not a change.
+
+### Questions nobody wrote a report for
+
+```bash
+python -m easkills query --root . --type ApplicationComponent --show lifecycle --show timeDisposition
+python -m easkills query --root . --where exposure=public --where dataClassification=restricted
+python -m easkills query --root . --where regulatoryScope~dora      # membership: matches "dora gdpr" too
+python -m easkills query --root . --from app-wms --rel appliesTo --direction in   # what binds the WMS
+python -m easkills query --root . --from app-core-ledger --hops 2 --rel Serving --json q.json
+```
+
+`~` is membership in a space-joined value, which is how a combined regulatory scope must
+be read; `key=` with nothing after it finds elements that lack the property.
+
+### Diagrams elsewhere, and colour by property
+
+```bash
+python -m easkills export --root . --format mermaid --out docs/diagrams/      # GitHub renders these inline
+python -m easkills export --root . --format plantuml --view layered-overview  # ArchiMate notation, to stdout
+python -m easkills render --root . --heatmap lifecycle    # <view>.heatmap-lifecycle.svg beside each view
+```
+
+The export is generated from the same view definitions as the SVGs, so a diagram pasted
+into a wiki or a pull request cannot drift from the model by being redrawn. A heatmap
+colours each box by one property — lifecycle, TIME disposition, criticality, owner — with
+a legend that counts each value and draws the elements carrying none dashed.
+
+### The model as an MCP server
+
+```bash
+python -m easkills serve --root .     # read-only MCP server over stdio
+```
+
+With the Claude Code plugin enabled this is already registered, as `easkills`: an agent
+can call `kpi`, `query`, `impact`, `diff_plateaus` or the registers as tools, and read the
+architecture description or any element's context pack as a resource, without a shell.
+Any other MCP host can run the same command. It reads the approved zone only and has no
+tool that writes — changes still go through staging and `promote`.
+
 Product repositories can gate on this too: `python -m easkills check --root <this repo>
 --repo . --scope <element-id>` fails a team's CI when a dependency implements a retired
 standard with no dispensation (`ea-check`).

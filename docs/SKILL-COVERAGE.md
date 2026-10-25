@@ -38,14 +38,14 @@ it happens, no row below claims it. The last is a human sitting down and doing i
 | `ea-align` | path test | `align` on the worked example's reference pack (clean under `--strict`) and on `eval/fixtures/broken/reference/`, where every `ALN` rule has a provoking pack; plus `propose --from align`, including that it binds nothing and writes no prose |
 | `ea-docs` | path test | the architecture description generated from the approved zone only |
 | `ea-change-triage` | path test | `impact` in both zones, including the staging-versus-approved blast radius; the `debt` overlap queries it reads before classifying, including the three exclusions that keep them out of noise |
-| `ea-context` | path test | context-pack tests (scope expansion, freshness label, binding closure) |
+| `ea-context` | path test | context-pack tests (scope expansion, freshness label, binding closure); `query` (membership, absence, hops along relationships and `appliesTo`, every refusal) and `serve` (the tool table held to an allowlist, every tool run over a copy with no file changed, the handshake through the exact command the plugin registers) in `tests/test_surface.py` and `tests/test_plugin.py` |
 | `ea-check` | path test | consuming-repository lint fixtures (`eval/fixtures/consumer*`) |
 | `ea-compliance` | path test | `validate-gov` COMP rules, including "non-conformant with no follow-up" |
 | `ea-standards-base` | path test | `validate-gov` SIB/STD rules and the dispensation interaction |
 | `ea-service` | path test | service-layer validation and the worked example's service records |
 | `ea-regulatory` | path test | `gdpr-register` on `finco` (clean) and `finco-broken` (every `GDR` code), the ITS worksheets and their README, Polish rendering of every register (`tests/test_gdpr.py`); `dora-register` on `eval/fixtures/finco` (clean, and carrying `REG003` on purpose) and on `eval/fixtures/finco-broken`, where every `REG` code has a provoking element; plus the register's own gap section, asserted field by field |
 | `ea-ai-governance` | path test | `propose --from ai-act` on `aico` (a FRIA skeleton that validates in staging and is skipped by name on a re-run);  `ai-act-register` on `eval/fixtures/aico` (clean, and carrying `AIR003` on purpose) and on `eval/fixtures/aico-broken`, where every `AIR` code has a provoking element; the inventory's own gap section, asserted field by field; and the dual-scope element (`regulatoryScope: ai-act dora`) asserted present in both registers |
-| `ea-board` | path test | the reports it assembles (`kpi`, `staleness`, `conformance`, `debt`) |
+| `ea-board` | path test | the reports it assembles (`kpi`, `staleness`, `conformance`, `debt`), and `trend` and both `diff` modes (`tests/test_time.py`) |
 | `ea-health` | path test | the same reports, plus every debt kind — a test pins that each one this skill can print is explained here — and `maturity`, whose thresholds are pinned against the table in `docs/CLI.md` |
 | `ea-delta-ingest` | path test | `delta` — unmodelled entities and unused facts |
 | `ea-security` | path test | `validate` SEC rules on `eval/fixtures/secco` (clean under `--strict`) and on `eval/fixtures/broken`, each beside a negative half that must stay silent; `ALN009` on both; `exposure` and `propose --from threats` on `secco`; SBOM and `pyproject.toml` reading in `check` (`tests/test_security.py`) |

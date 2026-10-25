@@ -138,7 +138,7 @@ decoration, so the test suite enforces the pattern:
   expected-codes list in the matching test module.
 
 **2. Generated artifacts regenerate in the same commit.** Every schema under `schema/`
-(`python -m easkills gen-schema` — all thirteen are freshness-tested) and the example's
+(`python -m easkills gen-schema` — all fourteen are freshness-tested) and the example's
 generated documentation (`python -m easkills docs --root eval/example`, i.e.
 `eval/example/docs/`) are committed *and* freshness-checked — a stale artifact fails
 CI, so regenerate alongside the change that invalidated it.

@@ -624,6 +624,24 @@ def render_debt(data: dict[str, Any]) -> str:
 # ------------------------------------------------------------------------- roadmap
 
 
+PLATEAU_MEMBERSHIP = ("Aggregation", "Composition")
+
+
+def plateau_membership(model: dsl.Model) -> dict[str, list[str]]:
+    """What each plateau holds: the targets of its Aggregation and Composition edges.
+
+    One definition, read by ``roadmap`` and ``diff --plateau`` alike -- two readings of
+    "what a plateau holds" would make the roadmap and the difference between its states
+    disagree about the same model.
+    """
+    plateau_ids = {e.id for e in model.elements.values() if e.type == "Plateau"}
+    membership: dict[str, list[str]] = {}
+    for relationship in model.relationships.values():
+        if relationship.source in plateau_ids and relationship.type in PLATEAU_MEMBERSHIP:
+            membership.setdefault(relationship.source, []).append(relationship.target)
+    return membership
+
+
 def roadmap(root: Path, today: date | None = None) -> dict[str, Any]:
     """The Implementation & Migration layer read as a plan: plateaus in date order,
     what each one holds, the gaps between them, and the portfolio decisions no plateau
@@ -633,13 +651,7 @@ def roadmap(root: Path, today: date | None = None) -> dict[str, Any]:
     model, _documents, _config = dsl.load(root, "approved")
 
     plateaus = [e for e in model.elements.values() if e.type == "Plateau"]
-    membership: dict[str, list[str]] = {}
-    for relationship in model.relationships.values():
-        if relationship.source in {p.id for p in plateaus} and relationship.type in {
-            "Aggregation",
-            "Composition",
-        }:
-            membership.setdefault(relationship.source, []).append(relationship.target)
+    membership = plateau_membership(model)
 
     rows: list[dict[str, Any]] = []
     for plateau in plateaus:

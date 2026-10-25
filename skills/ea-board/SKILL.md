@@ -27,8 +27,13 @@ Collect, in this order (the standing agenda):
    leading with `non-conformant` verdicts and their follow-up state (`COMP003`
    flags the ones going nowhere).
 4. **Proposed decisions** -- ADRs with `status: proposed` awaiting acceptance.
-5. **Health movements** -- `kpi`/`debt`/`staleness` deltas since the last run:
-   obsolescence exposure, unsupported capabilities, the review queue by owner.
+5. **Health movements** -- `easkills trend` over the committed KPI snapshots names
+   what regressed since the last one (take today's with `kpi --as-of <date>
+   --snapshot` first and commit it with the minutes); `easkills diff --ref <commit of
+   the last board>` lists what changed in the approved model since then, by field.
+   Obsolescence exposure, unsupported capabilities, the review queue by owner.
+   For a roadmap item, `easkills diff --plateau <from> <to>` states what the target
+   state changes -- what enters, what leaves, and the gap that closes it.
 6. **Rationalization candidates** -- `debt` items of kind `rationalization-candidate`,
    `overlapping-applications` and `duplicate-service`. Each is a board item precisely
    because the tool cannot decide it: overlap is either portfolio drift or *bought

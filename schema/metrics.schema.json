@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ea-skills:schema:metrics",
+  "title": "EA Skills KPI snapshot",
+  "description": "The output of `kpi --json` on one date, committed under governance-log/metrics/ and named by that date. Read by `trend`.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "asOf",
+    "size",
+    "evidence",
+    "governance",
+    "portfolio",
+    "capabilities",
+    "quality",
+    "documentation",
+    "service"
+  ],
+  "properties": {
+    "asOf": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "size": {
+      "type": "object",
+      "required": [
+        "elements",
+        "relationships",
+        "views",
+        "facts",
+        "entities"
+      ],
+      "properties": {
+        "elements": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "relationships": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "views": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "facts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "entities": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "evidencedShare",
+        "assumed"
+      ],
+      "properties": {
+        "evidencedShare": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "assumed": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "required": [
+        "ownedShare",
+        "staleShare",
+        "openDispensations",
+        "decisions",
+        "assessments"
+      ],
+      "properties": {
+        "ownedShare": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "staleShare": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "openDispensations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "decisions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "assessments": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "portfolio": {
+      "type": "object",
+      "required": [
+        "applications",
+        "timeClassifiedShare",
+        "obsolescenceExposure"
+      ],
+      "properties": {
+        "applications": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timeClassifiedShare": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "obsolescenceExposure": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "required": [
+        "total",
+        "unsupported",
+        "applicationsPerCapability"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unsupported": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "applicationsPerCapability": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "required": [
+        "orphans"
+      ],
+      "properties": {
+        "orphans": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "documentation": {
+      "type": "object",
+      "required": [
+        "concerns",
+        "unheldConcerns",
+        "unframedConcerns"
+      ],
+      "properties": {
+        "concerns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unheldConcerns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unframedConcerns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "service": {
+      "type": "object",
+      "required": [
+        "offerings",
+        "requests",
+        "open",
+        "fulfilled",
+        "declined",
+        "slaBreaches",
+        "avgFulfilmentDays"
+      ],
+      "properties": {
+        "offerings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requests": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "open": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fulfilled": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "declined": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "slaBreaches": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "avgFulfilmentDays": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
+    },
+    "questions": {
+      "type": "object",
+      "required": [
+        "open",
+        "answered",
+        "withdrawn",
+        "oldestOpenDays",
+        "unaddressed"
+      ],
+      "properties": {
+        "open": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "answered": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "withdrawn": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "oldestOpenDays": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "unaddressed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

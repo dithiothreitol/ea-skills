@@ -16,6 +16,14 @@
     "togaf",
     "governance",
     "dora",
-    "ai-act"
-  ]
+    "ai-act",
+    "gdpr",
+    "mcp"
+  ],
+  "mcpServers": {
+    "easkills": {
+      "command": "sh",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/easkills", "serve"]
+    }
+  }
 }

@@ -53,7 +53,9 @@ Everything else routes by situation:
 | Security architecture, threat modelling, "what could an attacker reach", data classification, zero trust, SBOMs | `ea-security` -- `exposure` walks the reach from public elements, `propose --from threats` writes the assessments, control coverage is `align` against `nist-sp-800-53-r5` |
 | AI systems, "the AI Act", risk classification, the AI inventory, AI risk acceptance | `ea-ai-governance` — same mechanism one register over: gaps are `align` against `nist-ai-rmf-1.0`, the inventory is `ai-act-register`, and accepted AI risk is a dispensation with an expiry |
 | "Make a backlog out of these findings" · gaps into requirements or work packages | `propose --from align\|readiness\|overlap\|time\|coverage\|threats` writes the skeletons; the words, owner and review date are the human half (`ea-align`, `ea-adr`) |
-| Downstream repo needs its constraints | `ea-context` |
+| Downstream repo needs its constraints · an ad-hoc question about the model · another agent or MCP host needs the architecture | `ea-context` -- `context` packs, `query`, and `serve` (read-only MCP) |
+| "What does the target state change?" · "what changed since the last board?" · "are we getting better?" | `diff --plateau`, `diff --ref`, `trend` via `ea-board` / `ea-health` |
+| Diagrams for a wiki, a pull request or slides · colour a view by lifecycle or owner | `ea-views` -- `export --format mermaid\|plantuml`, `render --heatmap` |
 | Periodic health / board preparation | `ea-health` / `ea-board` |
 | "How mature is our architecture practice?" | `maturity` via `ea-health` — five dimensions, never one number; the blockers are the answer |
 | "Do two systems do the same thing?" · application rationalization | `ea-health` reads the `debt` overlap items; the verdict goes to `ea-change-triage` (undecided overlap classifies **up**) or `ea-board`, and deliberate redundancy ends in `ea-adr` |

@@ -1,6 +1,6 @@
 ---
 name: ea-context
-description: Generate scoped EA context packs for development and coding agents working in downstream system repositories (AD-09). Use when asked what constraints, standards or decisions apply to a system, when preparing an AGENTS.md/CLAUDE.md governance section for a consuming repo, or before a compliance assessment needs its checklist inputs.
+description: Generate scoped EA context packs for development and coding agents working in downstream system repositories (AD-09), query the approved model, or serve it read-only over MCP. Use when asked what constraints, standards or decisions apply to a system, when preparing an AGENTS.md/CLAUDE.md governance section for a consuming repo, before a compliance assessment needs its checklist inputs, for an ad-hoc question about the model, or to give another agent or MCP host access to the architecture.
 argument-hint: "[element-id]"
 allowed-tools:
   - Bash(easkills *)
@@ -32,6 +32,31 @@ neighbour's owner.
   authority -- the banner is not optional and you must not remove it.
 * **Waivers with end dates.** A dispensation shows up with its expiry and the
   explicit note that the waiver is void afterwards.
+
+## Questions no report answers: `query`
+
+```bash
+easkills query --root <ea-repo> --type ApplicationComponent --where lifecycle=active --show owner
+easkills query --root <ea-repo> --where regulatoryScope~dora --show provider
+easkills query --root <ea-repo> --from app-erp-core --hops 2 --rel Serving --json q.json
+```
+
+Use it instead of reading YAML by hand: the answer is computed from the same loaded
+model every report reads, so it cannot disagree with them. `~` is membership in a
+space-joined value -- the only correct way to ask about `regulatoryScope` -- and `key=`
+finds elements missing a property. Quote the command with the answer, so the reader can
+re-run it.
+
+## The model over MCP: `serve`
+
+With the plugin enabled, the approved model is already an MCP server (`easkills`): the
+reports are tools (`kpi`, `query`, `impact`, `context`, `diff_plateaus`, the registers
+and more) and the architecture description and context packs are resources. Point a
+downstream agent at it instead of copying packs around when it can reach the server;
+anywhere else, `easkills serve --root <ea-repo>` runs the same server for any MCP host.
+It is read-only and approved-only by construction -- there is no tool that writes, and a
+request to change the model through it is answered by the repository's own path:
+staging, then `promote`.
 
 ## How to deploy a pack into a consuming repository
 

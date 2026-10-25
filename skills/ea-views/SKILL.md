@@ -49,6 +49,9 @@ Rules that keep views honest:
 easkills render --root <repo>                 # approved -> docs/views/*.svg
 easkills render --root <repo> --zone staging  # preview proposals
 easkills docs   --root <repo>                 # views + architecture description
+easkills render --root <repo> --heatmap lifecycle          # <view>.heatmap-lifecycle.svg
+easkills export --root <repo> --format mermaid --out docs/diagrams/
+easkills export --root <repo> --format plantuml --view <view-id>
 ```
 
 Rendering is dependency-free and byte-stable; re-render after any model change that
@@ -56,6 +59,19 @@ touches a view's elements, and commit the SVGs together with the model change --
 CI treats stale committed views as a failure. The notation is simplified (layer
 colours, arrows, dashed realization); for full ArchiMate notation open
 `build/model.xml` in Archi via File > Import > Model Exchange File.
+
+A long name wraps onto a second line; only the second line is ever cut, so shorten a
+name that still does not fit rather than living with the ellipsis.
+
+**Heatmaps** colour the same view by one property -- `lifecycle`, `timeDisposition`,
+`doraCriticality`, `owner` -- instead of by layer, with a legend that counts each value;
+elements carrying none are drawn dashed, which is often the finding. They are written
+beside the views, never over them, so commit one only when somebody will read it.
+
+**Export** is for the places stakeholders already read diagrams: Mermaid renders inline
+on GitHub and in most wikis, PlantUML's ArchiMate library gives the full notation. Both
+are generated from the view definition, so never hand-edit an exported diagram -- change
+the view and export again, or the copy starts disagreeing with the model.
 
 ## Checking
 

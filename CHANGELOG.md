@@ -5,6 +5,99 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
+## [Unreleased]
+
+Phase 8.5 — the architect's questions about time, the ones no report was written for, and a
+surface for other agents. 163 rules (unchanged), 26 skills, 42 commands, 14 schemas.
+
+### Added — `kpi --snapshot` and `trend`: is the model getting better?
+
+`kpi` answered how the model is today, and the answer was printed and gone. `kpi --as-of
+<date> --snapshot` keeps it: the exact `--json` output, written to
+`governance-log/metrics/<date>.json` and validated by the fourteenth generated schema
+(`metrics.schema.json`). A snapshot is a **record**: `--as-of` is required because the file
+name is the date, a re-run of an unchanged model is a no-op, and a re-run after the model
+changed is refused — the record of a past date is not rewritten. The schema closes the top
+level and leaves every key `kpi` gains later optional, so a snapshot committed today stays
+readable.
+
+`trend` reads only what was committed — it never recomputes a past value from today's model
+— and prints one row per metric, one column per date, and what improved and what
+**regressed** since the previous snapshot. Only metrics with a better direction can
+regress; model growth, open requests and open dispensations are neutral, because calling a
+rise in a waiver count a regression would reward deleting records, the incentive `REG003`
+was written to avoid. An unreadable snapshot, or one whose name disagrees with its `asOf`,
+is named and exits 1; `--strict` makes a regression exit 1 too.
+
+### Added — `diff`: what a plateau changes, and what changed since a commit
+
+- **`diff --plateau FROM TO`** lists what enters, leaves and stays between two plateaus, and
+  the gaps at either end. Membership is the one `roadmap` reads — Aggregation and
+  Composition from the plateau, now a shared function (`reports.plateau_membership`) — so
+  the roadmap and the difference between its states cannot disagree. On the worked example
+  both plateaus hold the same system, and the report says so and points at the gap rather
+  than printing two empty lists.
+- **`diff --ref GIT-REF`** compares the approved zone with the approved zone at a commit,
+  read through `git ls-tree` and `git show` — nothing is checked out, the index is never
+  written, and a test byte-compares the working tree before and after. Changes are named
+  by field (`properties.lifecycle`, `owner`, `appliesTo`); moving a concept between files
+  is not a change.
+
+### Added — `query`: the questions nobody wrote a report for
+
+Type filters, property conditions and relationship hops over the same loaded model the
+reports read, in a table or JSON. `key~token` is **membership** in a space-joined value, so
+`regulatoryScope~dora` finds `dora gdpr` — the lesson 0.15.0 learned about equality on that
+property, built into the language — and `key=` finds an absent property. `--from` walks
+relationships and the `appliesTo` binding by name, each result saying the hop and the link
+it came by. Read-only; an unknown type, id or relationship is a refusal naming it.
+
+### Added — `export --format plantuml|mermaid` and `render --heatmap`
+
+- **PlantUML** uses the ArchiMate library in PlantUML's standard library, one procedure per
+  element and relationship type. The procedure names were copied from
+  `stdlib/archimate/Archimate.puml` at plantuml-stdlib commit `d4a391be`, not recalled, and
+  a test holds every type the oracle knows to one of them — a wrong name fails the whole
+  diagram in the tool somebody pasted it into. **Mermaid** has no ArchiMate notation, so a
+  view becomes a flowchart with `render`'s layer colours and dashed Realization.
+  Identifiers are made diagram-safe injectively (`a.b`, `a_b` and `a-b` stay three nodes,
+  and Mermaid's keywords are never node ids).
+- **`render --heatmap PROPERTY`** colours every box by one property — or `owner`, `layer`,
+  `type` — with a legend counting each value and dashed boxes for elements carrying none. A
+  closed vocabulary keeps its schema order, so a value has the same colour in every view.
+  Written beside the views (`<view>.heatmap-<property>.svg`), never over them.
+- **Names wrap onto two lines** instead of being cut at 24 characters; only the second line
+  is ever shortened. "Warehouse Management Sy…" is gone from the example's committed views,
+  which changed only in the boxes whose names were too long.
+
+### Added — `serve`: the approved model as a read-only MCP server
+
+The AD-10 deferral of a network facade is reversed (Phase 8 operator decision 3). `serve`
+speaks MCP over stdio — standard library only, the handshake revisions 2024-11-05 to
+2025-11-25 — and exposes the reports as tools (`validate`, `kpi`, `trend`, `staleness`,
+`debt`, `roadmap`, `readiness`, `impact`, `exposure`, `query`, `diff_plateaus`,
+`diff_since`, `context`, `rtm`, `glossary` and the three registers), and the architecture
+description and context packs as resources. **Read-only by construction**: the tool table
+is an allowlist of report functions, each marked `readOnlyHint`, a test runs every tool
+over a copy of a repository and byte-compares it afterwards, and nothing reads staging.
+Report code runs with stdout captured, so a stray print cannot corrupt the stream.
+Registers come back as the document, not its JSON: a host that prefers structured content
+would otherwise hand the model the rows without the notice and the gap section.
+
+The plugin registers it as `easkills` — inline in `plugin.json`, not as a root `.mcp.json`,
+which in this repository would also be read as the project's own MCP configuration where
+the plugin root is undefined. Checked end to end with Claude Code 2.1.268 on Windows: the
+server connected through `sh` and the wrapper, and a model call through it returned the
+example's KPIs. A test runs the exact registered command through the wrapper. The newer
+handshake-free protocol revision is not implemented; a client asking for it is answered
+the way the specification expects of a server that predates it.
+
+### Fixed
+
+- **`easkills.__version__` said 0.1.0 since 0.1.0.** Nothing compared it with anything until
+  `serve` started telling hosts its version. It now tracks `pyproject.toml`, the release
+  helper bumps it, and a test holds the two equal.
+
 ## [0.19.0] — 2026-10-25 — the register release
 
 Phase 8.4 — the registers that were still missing, and the language they are read in. 163
