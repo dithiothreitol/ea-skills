@@ -244,6 +244,7 @@ EXPECTED_ERROR_CODES = [
 EXPECTED_WARNING_CODES = [
     "ALN004",  # the gap: unmapped and not declared out-of-scope
     "ALN007",  # coverage claimed by a staging-only element while reading approved
+    "ALN009",  # rated high, and no control of the pack anchors it
 ]
 
 

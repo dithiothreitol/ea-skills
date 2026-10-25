@@ -650,7 +650,49 @@ def _align_pack(
         for element in model.elements.values()
         if element.type in anchorable and element.id not in anchored
     )
+    findings += _unanchored_high_ratings(root, pack, model)
     return alignment, findings
+
+
+def _unanchored_high_ratings(root: Path, pack: reference_mod.ReferencePack, model: dsl.Model) -> list[Finding]:
+    """ALN009: an element rated high that no control of this pack anchors.
+
+    Only a pack with `kind: control` nodes asks the question -- a capability reference has
+    nothing to say about confidentiality. An element is anchored when a control node is
+    mapped (covered or partial) to it, or to an obligation that binds it: controls are
+    usually answered by a requirement, and the requirement is what binds the system.
+    """
+    control_nodes = {node.id for node in pack.nodes.values() if node.kind == "control"}
+    if not control_nodes:
+        return []
+    anchored: set[str] = set()
+    for mapping in pack.mappings:
+        if mapping.ref not in control_nodes or mapping.status not in (STATUS_COVERED, STATUS_PARTIAL):
+            continue
+        for element_id in mapping.elements:
+            anchored.add(element_id)
+            bearer = model.elements.get(element_id)
+            if bearer is not None:
+                anchored.update(bearer.applies_to)
+    findings: list[Finding] = []
+    for element in sorted(model.elements.values(), key=lambda e: e.id):
+        rated = [key for key in genschema.SECURITY_RATING_KEYS if element.properties.get(key) == "high"]
+        if not rated or element.id in anchored:
+            continue
+        findings.append(
+            Finding(
+                "ALN009",
+                SEVERITY_WARNING,
+                f"'{element.name}' is rated high ({', '.join(rated)}) and no control of "
+                f"'{pack.name}' anchors it -- map the control that protects it, directly or "
+                "through the requirement that binds it. A high rating nobody can trace to a control "
+                "is a claim about risk with no claim about treatment",
+                file=_rel(root, element.source_path),
+                locator=element.locator,
+                concept=element.id,
+            )
+        )
+    return findings
 
 
 def _descendants(children: dict[str, list[str]], node_id: str) -> list[str]:

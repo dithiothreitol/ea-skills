@@ -96,6 +96,8 @@ python -m easkills readiness      --root eval/example --strict
 python -m easkills align          --root eval/example --strict
 python -m easkills dora-register  --root eval/fixtures/finco --as-of 2026-07-30 --strict
 python -m easkills ai-act-register --root eval/fixtures/aico --as-of 2026-07-30 --strict
+python -m easkills validate --root eval/fixtures/secco --strict
+python -m easkills align    --root eval/fixtures/secco --strict
 python -m easkills compile        --root eval/example
 python -m easkills docs           --root eval/example && git diff --exit-code eval/example/docs
 python -m easkills conformance    --root eval/example --strict --as-of 2026-07-30

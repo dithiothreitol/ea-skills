@@ -1,0 +1,10 @@
+id: std-webapp-baseline
+name: Web application security baseline (organisation, level 2)
+type: organisation
+lifecycle: active
+description: >
+  Customer-facing web applications meet the organisation's level-2 checklist for
+  authentication, session management, access control and input validation. Fixture
+  content: the pattern ea-standards-base describes, not a transcription of any checklist.
+owner: security@ferrous.example
+lastReviewed: 2026-07-01

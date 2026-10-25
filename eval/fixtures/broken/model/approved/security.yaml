@@ -1,0 +1,81 @@
+# Security vocabulary that breaks its rules on purpose (SEC001-SEC003), each case beside
+# the negative half that proves the rule stays silent when it should. The control pack
+# that ALN009 reads is reference/controls/.
+
+elements:
+  # --- SEC001: public, holding restricted data (through Access), governed by nothing ---
+  - id: app-public-unprotected
+    type: ApplicationComponent
+    name: Public Portal Nobody Governs
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    properties:
+      exposure: public
+      trustZone: dmz
+    assumed: true
+    rationale: A fixture element for SEC001/SEC002, not a claim about any real system.
+
+  # --- SEC003: personal data, outside the GDPR scope; ALN009: rated high, unanchored ----
+  - id: data-restricted-records
+    type: DataObject
+    name: Restricted Customer Records
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    properties:
+      dataClassification: restricted
+      personalData: personal
+      secConfidentiality: high
+      trustZone: internal
+    assumed: true
+    rationale: A fixture element for SEC001/SEC003/ALN009, not a claim about any real data.
+
+  # --- negative halves: governed, so SEC002 stays silent on the crossing into it, and
+  # anchored through the requirement the control pack maps, so ALN009 stays silent -------
+  - id: app-governed-ledger
+    type: ApplicationComponent
+    name: Ledger A Requirement Governs
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    properties:
+      trustZone: internal
+      secIntegrity: high
+    assumed: true
+    rationale: The negative half of SEC002 and ALN009.
+
+  - id: req-ledger-integrity
+    type: Requirement
+    name: Ledger Postings Are Tamper Evident
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    appliesTo: [app-governed-ledger]
+    assumed: true
+    rationale: Governs the ledger; the control pack's mapping names it.
+
+  # --- negative half of SEC003: personal data, and in the GDPR scope ------------------
+  - id: data-profile-in-scope
+    type: DataObject
+    name: Customer Profile In GDPR Scope
+    owner: someone@example.test
+    lastReviewed: 2026-07-20
+    properties:
+      personalData: personal
+      regulatoryScope: gdpr
+    assumed: true
+    rationale: The negative half of SEC003.
+
+relationships:
+  # SEC002: dmz -> internal, and neither end is governed.
+  - id: rel-portal-reads-restricted
+    type: Access
+    source: app-public-unprotected
+    target: data-restricted-records
+    assumed: true
+    rationale: Makes the portal hold restricted data (SEC001) across a boundary (SEC002).
+
+  # Crosses dmz -> internal too, but the target is governed: SEC002 stays silent.
+  - id: rel-portal-flows-to-ledger
+    type: Flow
+    source: app-public-unprotected
+    target: app-governed-ledger
+    assumed: true
+    rationale: The negative half of SEC002.

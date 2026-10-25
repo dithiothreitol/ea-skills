@@ -35,6 +35,21 @@ and whether a human has verified its structure against that source. See
 * **`nist-csf-2.0/`** — NIST Cybersecurity White Paper CSWP 29 (February 2024). A work of
   the U.S. federal government, not subject to copyright protection in the United States
   under 17 U.S.C. §105. NIST does not endorse this repository or any product.
+* **`nist-ai-rmf-1.0/`** — NIST AI 100-1 (January 2023), the AI Risk Management Framework.
+  A U.S. federal government work, public domain under 17 U.S.C. §105.
+* **`nist-sp-800-53-r5/`** — NIST SP 800-53 Revision 5, generated from NIST's OSCAL
+  catalog (version 5.2.0). A U.S. federal government work, public domain under 17 U.S.C.
+  §105.
+* **`nist-sp-800-207/`** — NIST SP 800-207 (August 2020), Zero Trust Architecture. A U.S.
+  federal government work, public domain under 17 U.S.C. §105.
+* **`knf-rek-d-2013/`** — Rekomendacja D, Uchwała nr 7/2013 Komisji Nadzoru Finansowego.
+  An official document of a Polish public authority, excluded from copyright by art. 4 of
+  the Polish Copyright Act (public law).
+
+NIST and KNF do not endorse this repository or any product; their names identify sources.
+**MITRE ATT&CK is not shipped**: it is offered under MITRE's own terms, which are neither
+public domain nor public law, and admitting it would change this library's licence gate --
+a separate decision, recorded in `docs/PHASE8-PLAN.md`.
 
 **BIAN, APQC PCF, eTOM, ACORD and TOGAF's TRM are licensed and are deliberately absent.**
 They are the reference models most organisations actually own, and none of them may be

@@ -1,0 +1,34 @@
+# Security obligations in the motivation layer, bound to what they govern. The control
+# pack under reference/ maps its controls to these, which is how an element rated high is
+# anchored (ALN009): through the requirement that binds it.
+
+elements:
+  - id: req-account-change-mfa
+    type: Requirement
+    name: Account Changes Require Multi-Factor Authentication
+    documentation: A change to a customer account is accepted only after a second factor.
+    owner: security@ferrous.example
+    lastReviewed: 2026-07-01
+    appliesTo: [app-account-service]
+    assumed: true
+    rationale: Fixture content authored for the security rules, not extracted from a source.
+
+  - id: req-account-record-encryption
+    type: Requirement
+    name: Account Records Are Encrypted At Rest
+    documentation: The customer account record is stored encrypted with managed keys.
+    owner: security@ferrous.example
+    lastReviewed: 2026-07-01
+    appliesTo: [data-customer-account]
+    assumed: true
+    rationale: Fixture content authored for the security rules, not extracted from a source.
+
+  - id: principle-authenticated-communication
+    type: Principle
+    name: Every Call Between Services Is Authenticated
+    documentation: No call is trusted for where it comes from; each one authenticates.
+    owner: security@ferrous.example
+    lastReviewed: 2026-07-01
+    appliesTo: [app-customer-portal, app-account-service]
+    assumed: true
+    rationale: Fixture content authored for the security rules, not extracted from a source.

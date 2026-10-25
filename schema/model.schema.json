@@ -145,7 +145,11 @@
               "enum": [
                 "ai-act",
                 "dora",
-                "ai-act dora"
+                "gdpr",
+                "ai-act dora",
+                "ai-act gdpr",
+                "dora gdpr",
+                "ai-act dora gdpr"
               ],
               "description": "Puts this element in one or more regulatory registers' scope. An enum, not free text: 'DORA' or 'dora ' would silently drop the element out of the register, and under-inclusion is the failure mode that matters here. Multi-scope is declared as the space-joined combination in alphabetical order ('ai-act dora'); any other order or spelling is a schema error, never a silent drop. Use your own property key for scopes this tool does not generate a register for."
             },
@@ -191,6 +195,60 @@
               "type": "string",
               "minLength": 1,
               "description": "Who or what exercises human oversight over this system (Art. 14): a role, a committee, a named procedure. Required on high-risk elements (AIR002); the register lists it, it never audits it."
+            },
+            "dataClassification": {
+              "enum": [
+                "public",
+                "internal",
+                "confidential",
+                "restricted"
+              ],
+              "description": "Information classification of what this element holds or is. Read by SEC001 (on the element and on the data objects it accesses) and by 'exposure'."
+            },
+            "personalData": {
+              "enum": [
+                "none",
+                "personal",
+                "special-category"
+              ],
+              "description": "Whether the element holds personal data, and of which GDPR category. SEC003 asks for the GDPR scope where it does."
+            },
+            "secConfidentiality": {
+              "enum": [
+                "low",
+                "moderate",
+                "high"
+              ],
+              "description": "FIPS 199 impact level for confidentiality. 'high' asks a control framework to anchor the element (ALN009) and is named in the 'exposure' report."
+            },
+            "secIntegrity": {
+              "enum": [
+                "low",
+                "moderate",
+                "high"
+              ],
+              "description": "FIPS 199 impact level for integrity. 'high' asks a control framework to anchor the element (ALN009) and is named in the 'exposure' report."
+            },
+            "secAvailability": {
+              "enum": [
+                "low",
+                "moderate",
+                "high"
+              ],
+              "description": "FIPS 199 impact level for availability. 'high' asks a control framework to anchor the element (ALN009) and is named in the 'exposure' report."
+            },
+            "exposure": {
+              "enum": [
+                "internal",
+                "partner",
+                "public"
+              ],
+              "description": "Who can reach this element: only the organisation, named partners, or the public internet. 'public' is where SEC001 and 'exposure' start."
+            },
+            "trustZone": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The trust zone the element runs in -- a label of your own (dmz, internal, partner-net). Rules compare zones for equality only: a relationship between two zones is a trust boundary (SEC002, 'propose --from threats')."
             }
           },
           "additionalProperties": {
@@ -349,7 +407,11 @@
               "enum": [
                 "ai-act",
                 "dora",
-                "ai-act dora"
+                "gdpr",
+                "ai-act dora",
+                "ai-act gdpr",
+                "dora gdpr",
+                "ai-act dora gdpr"
               ],
               "description": "Puts this element in one or more regulatory registers' scope. An enum, not free text: 'DORA' or 'dora ' would silently drop the element out of the register, and under-inclusion is the failure mode that matters here. Multi-scope is declared as the space-joined combination in alphabetical order ('ai-act dora'); any other order or spelling is a schema error, never a silent drop. Use your own property key for scopes this tool does not generate a register for."
             },
@@ -395,6 +457,60 @@
               "type": "string",
               "minLength": 1,
               "description": "Who or what exercises human oversight over this system (Art. 14): a role, a committee, a named procedure. Required on high-risk elements (AIR002); the register lists it, it never audits it."
+            },
+            "dataClassification": {
+              "enum": [
+                "public",
+                "internal",
+                "confidential",
+                "restricted"
+              ],
+              "description": "Information classification of what this element holds or is. Read by SEC001 (on the element and on the data objects it accesses) and by 'exposure'."
+            },
+            "personalData": {
+              "enum": [
+                "none",
+                "personal",
+                "special-category"
+              ],
+              "description": "Whether the element holds personal data, and of which GDPR category. SEC003 asks for the GDPR scope where it does."
+            },
+            "secConfidentiality": {
+              "enum": [
+                "low",
+                "moderate",
+                "high"
+              ],
+              "description": "FIPS 199 impact level for confidentiality. 'high' asks a control framework to anchor the element (ALN009) and is named in the 'exposure' report."
+            },
+            "secIntegrity": {
+              "enum": [
+                "low",
+                "moderate",
+                "high"
+              ],
+              "description": "FIPS 199 impact level for integrity. 'high' asks a control framework to anchor the element (ALN009) and is named in the 'exposure' report."
+            },
+            "secAvailability": {
+              "enum": [
+                "low",
+                "moderate",
+                "high"
+              ],
+              "description": "FIPS 199 impact level for availability. 'high' asks a control framework to anchor the element (ALN009) and is named in the 'exposure' report."
+            },
+            "exposure": {
+              "enum": [
+                "internal",
+                "partner",
+                "public"
+              ],
+              "description": "Who can reach this element: only the organisation, named partners, or the public internet. 'public' is where SEC001 and 'exposure' start."
+            },
+            "trustZone": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The trust zone the element runs in -- a label of your own (dmz, internal, partner-net). Rules compare zones for equality only: a relationship between two zones is a trust boundary (SEC002, 'propose --from threats')."
             }
           },
           "additionalProperties": {

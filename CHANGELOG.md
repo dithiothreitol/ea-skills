@@ -5,6 +5,104 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
+## [Unreleased]
+
+Phase 8.3 — security architecture in the existing homes. 158 rules (+4), 26 skills, 36
+commands.
+
+### Added — a security vocabulary the tooling can read
+
+0.15.0 wrote down that security architecture belongs in the existing layers rather than a
+parallel structure, and left the homes empty: nothing could ask whether restricted data
+sat behind a public element, because nothing recorded either. Seven element properties,
+closed and prefixed (the `criticality` lesson — never close a generic word):
+`dataClassification` (public, internal, confidential, restricted), `personalData` (none,
+personal, special-category), `secConfidentiality`/`secIntegrity`/`secAvailability` (FIPS
+199's low, moderate, high — the scale the SP 800-53 baselines are selected by), `exposure`
+(internal, partner, public), and `trustZone`, a free label the rules compare for equality
+only. `regulatoryScope` gains `gdpr`, so the combinations grow to seven.
+
+"Governed" has **one definition**, used by every rule and report: a `Requirement`,
+`Constraint` or `Principle` binds the element, or it claims a standard. Nothing reads an
+obligation's text to decide whether it is "about security" — the rules state the narrower,
+checkable fact — and an `Assessment` does not govern.
+
+### Added — `SEC001`–`SEC003` in `validate`, and `ALN009` in `align`
+
+| Code | Severity | Catches |
+|---|---|---|
+| `SEC001` | warning | a public element holding confidential or restricted data — its own, or a data object it accesses — with nothing governing it |
+| `SEC002` | warning | a `Flow`/`Access`/`Serving`/`Triggering` between two trust zones, neither end governed |
+| `SEC003` | warning | personal data outside the GDPR scope |
+| `ALN009` | warning | an element rated high that no control of a control pack anchors, directly or through the requirement binding it |
+
+Every rule is silent until a repository uses the property it reads; the worked example
+uses none of it and a test keeps it silent. Each case in the negative fixture sits beside
+a negative half that must stay quiet — the governed ledger behind the same boundary, the
+profile already in GDPR scope, the rating anchored through a mapped requirement.
+
+**`ALN009` is in `align`, not in `validate` as the plan had it (`SEC004`).** It needs a
+control pack, and the model gate deliberately reads none: a repository with no reference
+pack is not an invalid repository. The question belongs to the family that already owns
+"measured against a yardstick".
+
+### Added — `exposure`: what an attacker holding a public element could reach
+
+From every `exposure: public` element, a breadth-first walk with hop counts and the
+relationship each element was reached by, then the sensitive data, the high-rated elements,
+the personal data, the trust boundaries crossed and the **ungoverned** elements in reach.
+
+**Reach is not change impact, and reusing `impact.PROPAGATION` as the plan said would have
+been wrong.** When the order API serves the portal, a change to the API reaches the portal
+— and an attacker in the portal reaches the API. `Serving` runs in opposite directions for
+the two questions. So reach has its own declared table (`security.REACH`), a reason beside
+every entry, held by a test to the oracle's relationship types exactly as `PROPAGATION` is.
+`Association` is never walked, for the reason `impact` gives. A report, always exit 0.
+
+### Added — `propose --from threats`
+
+The sixth source: one `Assessment` per relationship that crosses a trust boundary, bound to
+both ends (an `Assessment` is a Motivation element, so `appliesTo` is legal), with STRIDE's
+six categories in the placeholder and every judgement left to it. A governed crossing still
+gets a skeleton — `SEC002` asks whether anything governs the ends, not whether anyone
+assessed the boundary — and a written assessment does not silence `SEC002`, which keeps
+asking until a requirement or a standard does.
+
+### Added — `check` reads `pyproject.toml` and SBOMs
+
+`pyproject.toml` (PEP 621 dependencies and optional groups, and Poetry's tables) is the
+fourth manifest found by name. CycloneDX and SPDX JSON documents are passed explicitly with
+`--sbom` — an SBOM has no conventional file name worth guessing at — and a `detect:` rule
+with `manifest: sbom` names the package by URL without its version (`pkg:npm/pg`). Nested
+CycloneDX components are walked; an SBOM that is neither format, or missing, is `CHK000`,
+never a skip.
+
+### Added — two public-domain control packs
+
+- **`nist-sp-800-53-r5`** — twenty families and 300 base controls, **generated** from
+  NIST's own OSCAL catalog (version 5.2.0) by `tools/oscal_to_pack.py`, with 24 withdrawn
+  controls left out and counted. Generation from the machine-readable publication is
+  exact about identifiers, titles and parentage; re-running the script is the whole upgrade
+  procedure.
+- **`nist-sp-800-207`** — the seven zero-trust tenets, each lead sentence extracted
+  mechanically from the PDF of the cited edition. Two dashes in tenet 4 are drawn by a glyph
+  the PDF maps to no Unicode character; the pack's em dashes are an inference, and its
+  NOTICE says so rather than presenting them as extracted.
+
+Both carry **`structure not yet verified`**: produced from the primary source by code, not
+yet read by a person, which is what this repository calls verification. **MITRE ATT&CK is
+not shipped** — its terms are neither public domain nor public law, and admitting it would
+change the library's licence gate (`docs/PHASE8-PLAN.md`, operator decision 4).
+
+### Added — `ea-security`, the 26th skill, and `eval/fixtures/secco`
+
+The working discipline: classify from evidence, never lower a rating to clear a finding,
+the tooling finds paths and people judge threats, never transcribe a licensed catalogue.
+`ea-regulatory`, `ea-model`, `ea-check` and `ea-run` route to it. `secco` — a fictional
+software company with a public portal over an internal account service — is clean under
+`validate --strict` and `align --strict`, both gated in CI, the `finco` precedent: a food
+wholesaler would have had to invent a security posture to carry these properties.
+
 ## [0.17.0] — 2026-10-25 — the analyst release
 
 Phase 8.2 — the analyst's inputs and tables. 154 rules (+8), 35 commands.

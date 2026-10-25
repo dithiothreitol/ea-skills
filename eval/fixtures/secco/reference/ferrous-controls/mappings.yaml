@@ -1,0 +1,10 @@
+mappings:
+  - ref: fc-strong-authentication
+    status: covered
+    elements: [req-account-change-mfa]
+  - ref: fc-service-authentication
+    status: covered
+    elements: [principle-authenticated-communication]
+  - ref: fc-encryption-at-rest
+    status: covered
+    elements: [req-account-record-encryption]

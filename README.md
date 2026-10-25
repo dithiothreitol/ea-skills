@@ -10,7 +10,7 @@ and living governance out. All of it in git.
 [![CI](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Validation rules](https://img.shields.io/badge/validation%20rules-154-brightgreen.svg)](docs/RULES.md)
+[![Validation rules](https://img.shields.io/badge/validation%20rules-158-brightgreen.svg)](docs/RULES.md)
 [![ArchiMate 3.2](https://img.shields.io/badge/ArchiMate-3.2-orange.svg)](oracle/NOTICE.md)
 [![ISO/IEC/IEEE 42010](https://img.shields.io/badge/ISO%2FIEC%2FIEEE-42010%3A2022-lightgrey.svg)](docs/RULES.md)
 
@@ -152,7 +152,7 @@ flowchart LR
 ```
 
 Every arrow is a deterministic command with an exit-code contract, and every stage is
-driven by one of the **25 [agent skills](skills/)** — from `ea-intake` through
+driven by one of the **26 [agent skills](skills/)** — from `ea-intake` through
 `ea-approve` to `ea-board`. The orchestrator (`ea-run`) routes requests catalog-first
 and keeps the stage order honest.
 
@@ -165,7 +165,8 @@ and keeps the stage order honest.
 | Govern | `ea-standards-base`, `ea-dispensation`, `ea-adr`, `ea-compliance`, `ea-service` | `validate-gov` — expiry and SLA are enforced, not filed |
 | Maintain | `ea-health`, `ea-change-triage`, `ea-board`, `ea-context` | `kpi`, `debt`, `staleness`, `conformance`, `correspondences`, `roadmap`, `delta`, `context`, `impact` |
 | Assess | `ea-model`, `ea-capability-map`, `ea-align` | `readiness` — the per-layer definition of done, every checkpoint naming its elements; `align --strict` — the model against a hash-pinned reference architecture, every unmapped node a named gap and every exclusion a recorded decision |
-| Propose | `ea-align`, `ea-adr` | `propose --from align\|readiness\|overlap\|time\|coverage` — findings become staging skeletons with derived ids; the prose, the owner and the review date stay human, and the gate enforces it. Refuses rather than emitting anything the gate would reject |
+| Propose | `ea-align`, `ea-adr` | `propose --from align\|readiness\|overlap\|time\|coverage\|threats` — findings become staging skeletons with derived ids; the prose, the owner and the review date stay human, and the gate enforces it. Refuses rather than emitting anything the gate would reject |
+| Secure | `ea-security` | `validate` reads the security vocabulary (`SEC*`: public elements holding restricted data, trust-boundary crossings, personal data outside the GDPR scope) and only where a repository uses it; `exposure` walks what an attacker holding a public element could reach; `propose --from threats` writes an assessment per boundary crossing; `align` against NIST SP 800-53 or SP 800-207 names high-rated systems no control anchors (`ALN009`); `check --sbom` reads CycloneDX and SPDX |
 | Comply | `ea-regulatory`, `ea-ai-governance` | `dora-register` and `ai-act-register` — the Register of Information and the AI system inventory from the approved model, each naming the fields it could not fill; control gaps ride `align` as `ALN004` |
 | Consume | `ea-check` | `check --scope` inside a product repo — standards lifecycle vs declared dependencies |
 | Evaluate | `ea-eval` | `score --min-f1` against the [golden set](eval/golden/); the score names every unmatched item, and relationships the model only *implies* count as half a match via ArchiMate's derivation rules |
@@ -390,7 +391,7 @@ oracle/          vendored, hash-pinned rule data + NOTICE.md
 references/      the open reference-model library adopters copy from (public domain /
                  public law only -- licensed models live in the adopter's repository)
 schema/          JSON Schemas -- all generated, never hand-edited
-skills/          the 25 agent skills (this is the product)
+skills/          the 26 agent skills (this is the product)
 .claude-plugin/  plugin and marketplace manifests -- the repository root is the plugin
 bin/             `easkills`, on the Bash tool's PATH while the plugin is enabled
 hooks/           the PreToolUse guard: approved/ changes only through `promote`
@@ -411,7 +412,7 @@ docs/            GETTING-STARTED, CLI reference, RULES catalogue, BLUEPRINT (des
 |---|---|
 | [Getting started](docs/GETTING-STARTED.md) | Tutorial: from a raw interview to a validated, documented architecture |
 | [CLI reference](docs/CLI.md) | Every command, flag and exit-code contract |
-| [Rule catalogue](docs/RULES.md) | All 154 validation rules with severities and rationale |
+| [Rule catalogue](docs/RULES.md) | All 158 validation rules with severities and rationale |
 | [Blueprint](docs/BLUEPRINT.md) | The research-verified design: decisions, evidence, per-phase log |
 | [Golden set](eval/golden/README.md) | How pipeline quality is measured |
 | [Skill coverage](docs/SKILL-COVERAGE.md) | Which instrument measures which skill — including where nothing does |

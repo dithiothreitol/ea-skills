@@ -54,8 +54,9 @@ COMPLIANCE_VERDICTS = [
 # `properties.timeDisposition` to it, docgen groups by it, kpi counts it.
 TIME_DISPOSITIONS = ("Invest", "Migrate", "Tolerate", "Eliminate")
 
-# Dependency manifests `ea-check` reads in a consuming repository (AD-09).
-MANIFEST_KINDS = ("package.json", "pom.xml", "requirements.txt")
+# Dependency manifests `ea-check` reads in a consuming repository (AD-09): the files it
+# discovers, plus `sbom` for a CycloneDX or SPDX document passed with `--sbom`.
+MANIFEST_KINDS = ("package.json", "pom.xml", "requirements.txt", "pyproject.toml", "sbom")
 
 # What a reference-taxonomy node can be, and what a mapping may say about one. Closed
 # vocabularies, for the reason `timeDisposition` is one: `align` reasons per kind, so a
@@ -67,8 +68,20 @@ REFERENCE_MAPPING_STATUSES = ("covered", "partial", "out-of-scope")
 # the reason above, and one more: the failure mode of a *regulatory* register is
 # under-inclusion. `regulatoryScope: DORA` as free text would drop the element out of the
 # register silently, and nothing downstream would ever say so.
-REGULATORY_SCOPES = ("dora", "ai-act")
+REGULATORY_SCOPES = ("dora", "ai-act", "gdpr")
 CRITICALITIES = ("critical", "important", "standard")
+
+# Security architecture, in the existing homes (Phase 8.3, D6). ArchiMate has no security
+# layer and this repository adds none; what a security architect needs is a *vocabulary*
+# the rules can read. Every key is prefixed or specific -- the `criticality` lesson: a
+# generic word closed into an enum breaks every repository already using it for something
+# else -- and every rule that reads one stays silent until a repository uses it.
+DATA_CLASSIFICATIONS = ("public", "internal", "confidential", "restricted")
+PERSONAL_DATA = ("none", "personal", "special-category")
+# FIPS 199 impact levels: the scale the NIST SP 800-53 baselines are selected by.
+SECURITY_LEVELS = ("low", "moderate", "high")
+SECURITY_RATING_KEYS = ("secConfidentiality", "secIntegrity", "secAvailability")
+EXPOSURES = ("internal", "partner", "public")
 
 # The EU AI Act vocabularies `ai-act-register` reads. Risk classes follow the Act's own
 # structure (Art. 5 prohibited practices, Art. 6 high-risk, Art. 50 transparency-risk,
@@ -250,6 +263,49 @@ def build_schema() -> dict[str, Any]:
                         "Who or what exercises human oversight over this system (Art. 14): "
                         "a role, a committee, a named procedure. Required on high-risk "
                         "elements (AIR002); the register lists it, it never audits it."
+                    ),
+                },
+                "dataClassification": {
+                    "enum": list(DATA_CLASSIFICATIONS),
+                    "description": (
+                        "Information classification of what this element holds or is. Read by "
+                        "SEC001 (on the element and on the data objects it accesses) and by "
+                        "'exposure'."
+                    ),
+                },
+                "personalData": {
+                    "enum": list(PERSONAL_DATA),
+                    "description": (
+                        "Whether the element holds personal data, and of which GDPR category. "
+                        "SEC003 asks for the GDPR scope where it does."
+                    ),
+                },
+                **{
+                    key: {
+                        "enum": list(SECURITY_LEVELS),
+                        "description": (
+                            f"FIPS 199 impact level for {key.removeprefix('sec').lower()}. "
+                            "'high' asks a control framework to anchor the element (ALN009) "
+                            "and is named in the 'exposure' report."
+                        ),
+                    }
+                    for key in SECURITY_RATING_KEYS
+                },
+                "exposure": {
+                    "enum": list(EXPOSURES),
+                    "description": (
+                        "Who can reach this element: only the organisation, named partners, or "
+                        "the public internet. 'public' is where SEC001 and 'exposure' start."
+                    ),
+                },
+                "trustZone": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": (
+                        "The trust zone the element runs in -- a label of your own (dmz, "
+                        "internal, partner-net). Rules compare zones for equality only: a "
+                        "relationship between two zones is a trust boundary (SEC002, "
+                        "'propose --from threats')."
                     ),
                 },
             },
@@ -642,7 +698,11 @@ def build_standard_schema() -> dict[str, Any]:
                         "dependency": {
                             "type": "string",
                             "minLength": 1,
-                            "description": "Package name; 'groupId:artifactId' for pom.xml.",
+                            "description": (
+                                "Package name; 'groupId:artifactId' for pom.xml; for 'sbom', a "
+                                "package URL without its version (pkg:npm/pg, "
+                                "pkg:maven/org.postgresql/postgresql)."
+                            ),
                         },
                         "note": {"type": "string"},
                     },

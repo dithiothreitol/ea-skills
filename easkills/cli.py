@@ -38,6 +38,7 @@ from . import (
     render as render_mod,
     reports,
     score as score_mod,
+    security as security_mod,
     tabular,
     ui,
     validate as validate_mod,
@@ -264,6 +265,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_check.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
     p_check.add_argument("--strict", action="store_true", help="treat warnings as failures too")
     p_check.add_argument("--as-of", dest="as_of", help="evaluate dispensation expiry against this date")
+    p_check.add_argument(
+        "--sbom",
+        dest="sboms",
+        type=Path,
+        action="append",
+        help="a CycloneDX or SPDX JSON document to read as well (repeatable)",
+    )
+
+    p_exposure = sub.add_parser(
+        "exposure", help="what an attacker holding each publicly exposed element could reach"
+    )
+    _add_common(p_exposure)
+    p_exposure.add_argument("--depth", type=int, help="stop after N hops (default: unbounded)")
+    p_exposure.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
 
     p_score = sub.add_parser("score", help="score a candidate repository against a golden one (P/R/F1)")
     p_score.add_argument("--root", type=Path, default=Path.cwd(), help="candidate repository root (default: cwd)")
@@ -737,7 +752,11 @@ def cmd_impact(args: argparse.Namespace) -> int:
 
 def cmd_check(args: argparse.Namespace) -> int:
     report = check_mod.check(
-        args.root.resolve(), args.repo.resolve(), scope=args.scope, today=_parse_as_of(args.as_of)
+        args.root.resolve(),
+        args.repo.resolve(),
+        scope=args.scope,
+        today=_parse_as_of(args.as_of),
+        sboms=[path.resolve() for path in args.sboms or []],
     )
     print(report.render())
     if args.json_out:
@@ -747,6 +766,13 @@ def cmd_check(args: argparse.Namespace) -> int:
     if not report.ok:
         return 1
     return 1 if args.strict and report.warnings else 0
+
+
+def cmd_exposure(args: argparse.Namespace) -> int:
+    report = security_mod.exposure(args.root.resolve(), zone=args.zone, depth=args.depth)
+    _emit_report(args, report.as_dict(), security_mod.render_exposure(report))
+    # Always 0: a path an attacker could take is a decision to make, not a defect to gate on.
+    return 0
 
 
 def cmd_score(args: argparse.Namespace) -> int:
@@ -1021,6 +1047,7 @@ HANDLERS = {
     "context": cmd_context,
     "impact": cmd_impact,
     "check": cmd_check,
+    "exposure": cmd_exposure,
     "score": cmd_score,
     "validate-facts": cmd_validate_facts,
     "chunk": cmd_chunk,

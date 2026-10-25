@@ -32,6 +32,14 @@ filed; the product repository knows what it actually declares. `check` joins the
   convention. If you find yourself proposing a mapping file in the product repo, stop:
   that is a deferred decision (AD-09), not an implementation detail.
 
+## What it reads
+
+`package.json`, `pom.xml`, `requirements.txt` and `pyproject.toml` (PEP 621 and Poetry)
+are found by name. An SBOM -- CycloneDX or SPDX JSON, the one the build already produces
+-- is passed explicitly with `--sbom <file>` (repeatable), and a SIB `detect:` rule names
+the package by URL without its version (`manifest: sbom`, `dependency: pkg:npm/pg`). The
+version an SBOM records is reported, never matched.
+
 ## Procedure
 
 1. **Establish the scope.** Which element in `model/approved/` *is* this repository?

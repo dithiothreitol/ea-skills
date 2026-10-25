@@ -74,13 +74,15 @@
             "enum": [
               "package.json",
               "pom.xml",
-              "requirements.txt"
+              "requirements.txt",
+              "pyproject.toml",
+              "sbom"
             ]
           },
           "dependency": {
             "type": "string",
             "minLength": 1,
-            "description": "Package name; 'groupId:artifactId' for pom.xml."
+            "description": "Package name; 'groupId:artifactId' for pom.xml; for 'sbom', a package URL without its version (pkg:npm/pg, pkg:maven/org.postgresql/postgresql)."
           },
           "note": {
             "type": "string"

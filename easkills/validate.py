@@ -1115,6 +1115,72 @@ def check_roadmap(model: dsl.Model, today: date | None = None) -> list[Finding]:
     return findings
 
 
+def check_security(model: dsl.Model) -> list[Finding]:
+    """SEC001-SEC003: the security vocabulary, read where a repository uses it.
+
+    Every rule here is silent until the model declares the property it reads -- a
+    repository that records no exposure, no trust zone and no personal data is not
+    breaking its security architecture, it has not started one. "Governed" has one
+    definition (`security.governed_ids`): an obligation binds the element, or it claims a
+    standard. Nothing reads an obligation's text to decide whether it is "about security".
+    """
+    from . import security  # local: security imports nothing from here, but keep it lazy
+
+    findings: list[Finding] = []
+    governed = security.governed_ids(model)
+    for element in sorted(model.elements.values(), key=lambda e: e.id):
+        rel_file = _rel(model.root, element.source_path)
+        if element.properties.get("exposure") == "public" and element.id not in governed:
+            level, holders = security.effective_classification(model, element)
+            if level in security.SENSITIVE:
+                where = "itself" if holders == [element.id] else ", ".join(h for h in holders)
+                findings.append(
+                    Finding(
+                        "SEC001",
+                        SEVERITY_WARNING,
+                        f"publicly exposed and holding {level} data ({where}), with no requirement, "
+                        "constraint or principle binding it and no standard claimed -- record the "
+                        "control that protects it, or the decision that it needs none",
+                        file=rel_file,
+                        locator=element.locator,
+                        concept=element.id,
+                    )
+                )
+        personal = element.properties.get("personalData", "")
+        scopes = genschema.split_regulatory_scopes(element.properties.get("regulatoryScope"))
+        if personal in ("personal", "special-category") and "gdpr" not in scopes:
+            findings.append(
+                Finding(
+                    "SEC003",
+                    SEVERITY_WARNING,
+                    f"holds {personal} data but is outside the GDPR scope (regulatoryScope does not "
+                    "include 'gdpr') -- the record of processing activities will not list it, and "
+                    "a register that silently omits a system is the failure mode that matters",
+                    file=rel_file,
+                    locator=element.locator,
+                    concept=element.id,
+                )
+            )
+    for relationship in security.crossings(model):
+        if relationship.source in governed or relationship.target in governed:
+            continue
+        source, target = model.elements[relationship.source], model.elements[relationship.target]
+        findings.append(
+            Finding(
+                "SEC002",
+                SEVERITY_WARNING,
+                f"{relationship.type} from '{source.name}' (zone {source.properties.get('trustZone')}) "
+                f"to '{target.name}' (zone {target.properties.get('trustZone')}) crosses a trust "
+                "boundary, and nothing governs either end -- bind the control as a requirement, "
+                "or start from a threat assessment (propose --from threats)",
+                file=_rel(model.root, relationship.source_path),
+                locator=relationship.locator,
+                concept=relationship.id,
+            )
+        )
+    return findings
+
+
 # --------------------------------------------------------------------------- entry point
 
 CHECK_ORDER = (
@@ -1134,6 +1200,7 @@ CHECK_ORDER = (
     "naming",
     "smells",
     "roadmap",
+    "security",
 )
 
 
@@ -1159,6 +1226,7 @@ def _run_checks(
     findings += check_naming(model)
     findings += check_smells(model)
     findings += check_roadmap(model, today=today)
+    findings += check_security(model)
 
     severity_rank = {SEVERITY_ERROR: 0, SEVERITY_WARNING: 1, SEVERITY_INFO: 2}
     findings.sort(key=lambda f: (severity_rank.get(f.severity, 3), f.code, f.file, f.concept))

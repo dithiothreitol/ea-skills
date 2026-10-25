@@ -115,6 +115,13 @@ jobs:
       # Same bar for the second register: strict passes while carrying the AIR003 the
       # fixture holds on purpose -- an open waiver on a transparency-risk system is
       # accepted AI risk to disclose, not a defect to fix.
+      # The security vocabulary on its own fixture, clean the honest way: every public
+      # element and boundary crossing governed, every high rating anchored by a control.
+      - name: Security fixture validates and aligns (strict)
+        run: |
+          python -m easkills validate --root eval/fixtures/secco --strict
+          python -m easkills align    --root eval/fixtures/secco --strict
+
       - name: AI Act inventory of the AI fixture (strict)
         run: python -m easkills ai-act-register --root eval/fixtures/aico --as-of 2026-07-30 --strict
 

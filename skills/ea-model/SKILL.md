@@ -136,6 +136,11 @@ properties:
 Only record what the sources actually support. A `technicalFit` you made up is worse
 than a missing one.
 
+Security properties (`dataClassification`, `personalData`, the `sec*` ratings, `exposure`,
+`trustZone`) follow the same rule, and `ea-security` says what each one switches on. A
+restricted data object or a public portal is worth recording the day a source says so;
+a rating guessed to fill the field is not.
+
 ## Relationships
 
 Direction matters and is the most common mistake. `ApplicationComponent --Realization-->

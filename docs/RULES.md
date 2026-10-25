@@ -11,7 +11,7 @@ Severity meanings:
 * **info** -- a declared, accepted state worth surfacing (currently: assumptions).
 
 Three validators share this catalogue: `python -m easkills validate` covers the model
-zones (`ORACLE`/`SCHEMA`/`ID`/`REF`/`PROV`/`GOV`/`MOT`/`STD`/`ISO`/`REL`/`NAME`/`SMELL`/`PLAT`),
+zones (`ORACLE`/`SCHEMA`/`ID`/`REF`/`PROV`/`GOV`/`MOT`/`STD`/`ISO`/`REL`/`NAME`/`SMELL`/`PLAT`/`SEC`),
 `python -m easkills validate-facts` covers the fact register and its clarification
 questions (`FACT`/`ENT`/`SRC`/`QST`), and
 `python -m easkills validate-gov` covers the standards base, governance log, the
@@ -133,6 +133,26 @@ that has not started the documentation apparatus is not nagged about it.
 | `NAME003` | warning | The name is shorter than three characters. |
 | `NAME004` | warning | Another element of the same type already has this name. Duplicate names are an EA smell and break traceability for anyone reading a view. |
 | `SMELL001` | warning | The element has no relationships (isolated element / dead component). `appliesTo` bindings count as connectivity, in both directions. |
+
+## Layer 2 -- security vocabulary (the SEC family)
+
+Security architecture lives in the existing homes -- obligations in the motivation layer,
+standards in the SIB, accepted risk as dispensations -- and these rules read the
+vocabulary that makes those homes checkable: `dataClassification`, `personalData`,
+`secConfidentiality`/`secIntegrity`/`secAvailability`, `exposure`, `trustZone` (closed
+enums, except the zone, which is a label compared for equality). **Every rule is silent
+until a repository uses the property it reads.**
+
+"Governed" has one definition: a `Requirement`, `Constraint` or `Principle` binds the
+element through `appliesTo`, or the element claims a standard. Nothing reads an
+obligation's *text* to decide whether it is about security -- the rules state the narrower,
+checkable fact. An `Assessment` does not govern: it is the question, not the treatment.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `SEC001` | warning | An element with `exposure: public` holds confidential or restricted data -- its own `dataClassification`, or that of a data object it `Access`es -- and nothing governs it. A public portal holding no classification of its own still holds the restricted record it reads. |
+| `SEC002` | warning | A `Flow`, `Access`, `Serving` or `Triggering` relationship between two elements whose `trustZone` values differ, and neither end is governed. A trust boundary crossed with no recorded control on either side. `propose --from threats` writes the assessment the crossing needs. |
+| `SEC003` | warning | An element holding `personalData` (personal or special-category) is outside the GDPR scope -- `regulatoryScope` does not include `gdpr`. The record of processing activities would silently omit it, and under-inclusion is the failure mode of a register. |
 
 ## Zone semantics, and what promotion actually does
 
@@ -421,6 +441,7 @@ is not a pin. The taxonomy is what must not move underneath a coverage claim.
 | `ALN006` | error | Two mapping entries target one reference node. One node, one recorded judgement — the first is kept and the second reported, because two entries usually disagree. |
 | `ALN007` | warning | A mapping claims coverage from an element that exists only in `model/staging/`, while the report reads `approved`. The node stays a gap until the proposal is promoted; `--zone staging` is how to ask what promotion would close. |
 | `ALN008` | error | The pack declares no nodes. An empty yardstick reports full coverage of nothing, which is worse than no yardstick at all. Silent when `ALN000` already said the taxonomy did not parse. |
+| `ALN009` | warning | An element rated high (`secConfidentiality`, `secIntegrity` or `secAvailability`) that no `kind: control` node of the pack anchors -- mapped directly, or through a requirement, constraint or principle that binds it. Only a pack with control nodes asks the question, and each pack is asked separately: a high rating nobody can trace to a control is a claim about risk with no claim about treatment. |
 
 Local elements that no mapping anchors are reported as **information, never as
 findings**. A business does things its industry blueprint never heard of, and a tool that

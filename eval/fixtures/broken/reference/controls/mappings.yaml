@@ -1,0 +1,7 @@
+# The control is answered by the requirement that binds the ledger -- so the ledger is
+# anchored through it (ALN009 silent), and the restricted records, rated high and bound by
+# nothing this pack maps, are not (ALN009 fires).
+mappings:
+  - ref: c-tamper-evidence
+    status: covered
+    elements: [req-ledger-integrity]

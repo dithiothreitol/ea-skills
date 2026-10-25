@@ -1,0 +1,12 @@
+name: Ferrous Software Security Architecture
+documentation: >
+  Dedicated fixture for the security vocabulary (Phase 8.3). Ferrous Software is a
+  fictional software company running a public customer portal over an internal account
+  service. The model exists only to exercise SEC001-SEC003, ALN009, the exposure report
+  and `propose --from threats` end to end, clean under --strict. It is separate from the
+  worked example on the finco precedent: a food wholesaler's model would have had to
+  invent a security posture to carry these properties, which would teach the wrong thing.
+stalenessDays: 365
+quoteMatchThreshold: 0.90
+factsRoot: .
+sourcesDir: facts/sources

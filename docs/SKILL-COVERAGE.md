@@ -48,6 +48,7 @@ it happens, no row below claims it. The last is a human sitting down and doing i
 | `ea-board` | path test | the reports it assembles (`kpi`, `staleness`, `conformance`, `debt`) |
 | `ea-health` | path test | the same reports, plus every debt kind — a test pins that each one this skill can print is explained here — and `maturity`, whose thresholds are pinned against the table in `docs/CLI.md` |
 | `ea-delta-ingest` | path test | `delta` — unmodelled entities and unused facts |
+| `ea-security` | path test | `validate` SEC rules on `eval/fixtures/secco` (clean under `--strict`) and on `eval/fixtures/broken`, each beside a negative half that must stay silent; `ALN009` on both; `exposure` and `propose --from threats` on `secco`; SBOM and `pyproject.toml` reading in `check` (`tests/test_security.py`) |
 | `ea-run` | **manual only** | nothing mechanical yet. It routes between skills; its failure mode is choosing the wrong order, which only a real host exercises -- the host-eval cases `intake-from-sources` and `model-into-staging` exist for exactly that, and move this row once they have run |
 | `ea-eval` | **manual only** | nothing mechanical. It describes how to use the harnesses; a defect here shows up as somebody drawing the wrong conclusion from a number |
 

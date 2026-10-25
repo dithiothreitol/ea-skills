@@ -50,8 +50,9 @@ Everything else routes by situation:
 | Standards, waivers, decisions, assessments | `ea-standards-base` / `ea-dispensation` / `ea-adr` / `ea-compliance` |
 | "Is this done / complete?" · gap analysis against a reference model or industry blueprint | `ea-align` (there is no answer without a yardstick) |
 | Regulation, control frameworks, ICT third-party risk, "the DORA register" | `ea-regulatory` — control gaps are `align` against a `kind: control` pack; the register is `dora-register`, and it generates rather than attests |
+| Security architecture, threat modelling, "what could an attacker reach", data classification, zero trust, SBOMs | `ea-security` -- `exposure` walks the reach from public elements, `propose --from threats` writes the assessments, control coverage is `align` against `nist-sp-800-53-r5` |
 | AI systems, "the AI Act", risk classification, the AI inventory, AI risk acceptance | `ea-ai-governance` — same mechanism one register over: gaps are `align` against `nist-ai-rmf-1.0`, the inventory is `ai-act-register`, and accepted AI risk is a dispensation with an expiry |
-| "Make a backlog out of these findings" · gaps into requirements or work packages | `propose --from align\|readiness\|overlap\|time\|coverage` writes the skeletons; the words, owner and review date are the human half (`ea-align`, `ea-adr`) |
+| "Make a backlog out of these findings" · gaps into requirements or work packages | `propose --from align\|readiness\|overlap\|time\|coverage\|threats` writes the skeletons; the words, owner and review date are the human half (`ea-align`, `ea-adr`) |
 | Downstream repo needs its constraints | `ea-context` |
 | Periodic health / board preparation | `ea-health` / `ea-board` |
 | "How mature is our architecture practice?" | `maturity` via `ea-health` — five dimensions, never one number; the blockers are the answer |

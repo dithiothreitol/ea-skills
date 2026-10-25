@@ -1,0 +1,28 @@
+# A small control pack authored for this fixture, so ALN009 can be shown satisfied: every
+# element rated high is anchored by a control, through the requirement that binds it. Not
+# a published framework -- in a real repository this is NIST SP 800-53 or the
+# organisation's own catalogue.
+
+name: Ferrous control catalogue
+version: "1.0"
+source: Authored for eval/fixtures/secco/; not a published control framework
+
+nodes:
+  - id: fc-identity
+    name: Identity and access
+    kind: domain
+  - id: fc-strong-authentication
+    name: Strong authentication for privileged and account-changing actions
+    kind: control
+    parent: fc-identity
+  - id: fc-service-authentication
+    name: Service-to-service authentication
+    kind: control
+    parent: fc-identity
+  - id: fc-data
+    name: Data protection
+    kind: domain
+  - id: fc-encryption-at-rest
+    name: Encryption of restricted data at rest
+    kind: control
+    parent: fc-data

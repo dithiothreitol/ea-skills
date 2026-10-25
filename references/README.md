@@ -10,6 +10,8 @@ here** — everything in this directory is either public domain or public law, w
 | [`nist-csf-2.0/`](nist-csf-2.0/) | functions + categories | NIST CSWP 29 (2024) | public domain (17 U.S.C. §105) | **verified 2026-08-07** against the cited edition, see its [NOTICE](nist-csf-2.0/NOTICE.md) |
 | [`nist-ai-rmf-1.0/`](nist-ai-rmf-1.0/) | functions + categories | NIST AI 100-1 (2023) | public domain (17 U.S.C. §105) | **structure not yet verified** — cross-checked mechanically against the primary PDF 2026-08-08 (all matched), awaiting the human reading its [NOTICE](nist-ai-rmf-1.0/NOTICE.md) describes |
 | [`knf-rek-d-2013/`](knf-rek-d-2013/) | areas + recommendations | Uchwała 7/2013 KNF (Dz. Urz. KNF 2013 poz. 5) | public law (art. 4 polskiego prawa autorskiego) | **structure not yet verified** — heading-to-recommendation correspondence checked against the document body 2026-08-08 (all matched), awaiting the human reading its [NOTICE](knf-rek-d-2013/NOTICE.md) describes |
+| [`nist-sp-800-53-r5/`](nist-sp-800-53-r5/) | families + base controls | NIST SP 800-53 Rev. 5, OSCAL catalog 5.2.0 | public domain (17 U.S.C. §105) | **structure not yet verified** — generated 2026-10-25 from NIST's own OSCAL catalog by `tools/oscal_to_pack.py`, awaiting the human reading its [NOTICE](nist-sp-800-53-r5/NOTICE.md) describes |
+| [`nist-sp-800-207/`](nist-sp-800-207/) | the seven zero-trust tenets | NIST SP 800-207 (2020), §2.1 | public domain (17 U.S.C. §105) | **structure not yet verified** — lead sentences extracted mechanically from the primary PDF 2026-10-25 (all matched; two dashes the PDF cannot encode are inferred), awaiting the human reading its [NOTICE](nist-sp-800-207/NOTICE.md) describes |
 
 ## Using one
 

@@ -58,7 +58,9 @@ against one dated edition — which a later edition of the framework silently in
 
 There is no security layer in this model and none is missing: ArchiMate deliberately has
 none, and everything a security architecture consists of already has a governed home
-here. Use the homes; do not invent a parallel structure.
+here. Use the homes; do not invent a parallel structure. The working discipline --
+classification, exposure, trust zones, threat assessments, the SEC rules, SBOM checks --
+is [`ea-security`](../ea-security/SKILL.md); this section is where it meets regulation.
 
 * **Posture is measured by control packs.** NIST CSF 2.0 (verified) and KNF
   Rekomendacja D for banks are the shipped yardsticks; an unexamined area is a named

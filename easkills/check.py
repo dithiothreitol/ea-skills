@@ -33,7 +33,11 @@ from lxml import etree
 from . import dsl, govern, ui
 from .validate import SEVERITY_ERROR, SEVERITY_INFO, SEVERITY_WARNING, Finding
 
-MANIFEST_KINDS = ("package.json", "pom.xml", "requirements.txt")
+# Manifests discovered by name in the consuming repository, and the kinds a `detect:` rule
+# may name -- the same list plus `sbom`, for a CycloneDX or SPDX document passed with
+# `--sbom` (an SBOM has no conventional file name worth guessing at).
+MANIFEST_FILES = ("package.json", "pom.xml", "requirements.txt", "pyproject.toml")
+MANIFEST_KINDS = MANIFEST_FILES + ("sbom",)
 
 # Directories that hold *installed* or built code rather than declared dependencies.
 SKIP_DIRS = frozenset(
@@ -128,8 +132,10 @@ def _rel(repo: Path, path: Path) -> str:
 
 def normalize(name: str, manifest: str) -> str:
     """Compare dependency names the way each ecosystem does."""
-    if manifest == "requirements.txt":  # PEP 503-ish
+    if manifest in ("requirements.txt", "pyproject.toml"):  # PEP 503-ish
         return re.sub(r"[-_.]+", "-", name).strip().lower()
+    if manifest == "sbom":
+        return purl_key(name)
     if manifest == "pom.xml":
         return name.strip().lower()
     return name.strip()  # npm names are case-sensitive by convention
@@ -191,28 +197,126 @@ def _pom_xml(path: Path, repo: Path) -> tuple[list[Dependency], str]:
     return found, ""
 
 
+def purl_key(value: str) -> str:
+    """A package URL without version, qualifiers or subpath, for comparison.
+
+    `pkg:npm/pg@8.11.3?arch=x64` and `pkg:npm/pg` name the same package; a `detect:` rule
+    states the latter. A bare name (an SBOM component with no purl) is returned as-is, so a
+    rule naming the package without a purl still has something to match.
+    """
+    text = value.strip().split("#", 1)[0].split("?", 1)[0]
+    head, _, last = text.rpartition("/")
+    if "@" in last:
+        last = last.split("@", 1)[0]
+    return (f"{head}/{last}" if head else last).lower()
+
+
+def _pyproject_toml(path: Path, repo: Path) -> tuple[list[Dependency], str]:
+    import tomllib
+
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (tomllib.TOMLDecodeError, UnicodeDecodeError, OSError) as exc:
+        return [], str(exc)
+    declared: list[str] = []
+    project = data.get("project") if isinstance(data.get("project"), dict) else {}
+    declared += [d for d in project.get("dependencies") or [] if isinstance(d, str)]
+    for group in (project.get("optional-dependencies") or {}).values():
+        declared += [d for d in group or [] if isinstance(d, str)]
+    found: list[Dependency] = []
+    for spec in declared:
+        match = _REQUIREMENT_RE.match(spec.split(";", 1)[0])
+        if match:
+            found.append(Dependency(match.group(1), match.group(2).strip(), "pyproject.toml", _rel(repo, path)))
+    # Poetry keeps dependencies as a table of name -> constraint, outside [project].
+    tool = data.get("tool") if isinstance(data.get("tool"), dict) else {}
+    poetry = tool.get("poetry") if isinstance(tool.get("poetry"), dict) else {}
+    tables = [poetry.get("dependencies") or {}]
+    tables += [(group or {}).get("dependencies") or {} for group in (poetry.get("group") or {}).values()]
+    for table in tables:
+        if not isinstance(table, dict):
+            continue
+        for name, constraint in sorted(table.items()):
+            if name.lower() == "python":
+                continue
+            version = constraint if isinstance(constraint, str) else str((constraint or {}).get("version", ""))
+            found.append(Dependency(str(name), version, "pyproject.toml", _rel(repo, path)))
+    return found, ""
+
+
+def _sbom(path: Path, repo: Path) -> tuple[list[Dependency], str]:
+    """Components of a CycloneDX or SPDX JSON document, named by package URL where given."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
+        return [], str(exc)
+    if not isinstance(data, dict):
+        return [], "top level of an SBOM must be an object"
+    found: list[Dependency] = []
+    rel = _rel(repo, path)
+    if data.get("bomFormat") == "CycloneDX":
+        stack = list(data.get("components") or [])
+        while stack:
+            component = stack.pop(0)
+            if not isinstance(component, dict):
+                continue
+            name = str(component.get("purl") or "")
+            if not name:
+                group = str(component.get("group") or "")
+                name = f"{group}:{component.get('name', '')}" if group else str(component.get("name", ""))
+            if name:
+                found.append(Dependency(name, str(component.get("version", "")), "sbom", rel))
+            stack.extend(component.get("components") or [])
+        return found, ""
+    if "spdxVersion" in data:
+        for package in data.get("packages") or []:
+            if not isinstance(package, dict):
+                continue
+            purls = [
+                ref.get("referenceLocator", "")
+                for ref in package.get("externalRefs") or []
+                if isinstance(ref, dict) and ref.get("referenceType") == "purl"
+            ]
+            name = str(purls[0] if purls else package.get("name", ""))
+            if name:
+                found.append(Dependency(name, str(package.get("versionInfo", "")), "sbom", rel))
+        return found, ""
+    return [], "not a CycloneDX or SPDX JSON document (no bomFormat, no spdxVersion)"
+
+
 _READERS = {
     "package.json": _package_json,
     "pom.xml": _pom_xml,
     "requirements.txt": _requirements_txt,
+    "pyproject.toml": _pyproject_toml,
+    "sbom": _sbom,
 }
 
 
-def read_dependencies(repo: Path) -> tuple[list[Dependency], list[Finding], int]:
-    """Every declared dependency in the repository, plus findings for what would not read."""
+def read_dependencies(
+    repo: Path, sboms: list[Path] | None = None
+) -> tuple[list[Dependency], list[Finding], int]:
+    """Every declared dependency in the repository (and the SBOMs passed), plus findings
+    for what would not read."""
     dependencies: list[Dependency] = []
     findings: list[Finding] = []
     manifests = 0
     candidates = sorted(
-        path
+        (path, path.name)
         for path in repo.rglob("*")
         if path.is_file()
-        and path.name in MANIFEST_KINDS
+        and path.name in MANIFEST_FILES
         and not (SKIP_DIRS & set(path.relative_to(repo).parts))
     )
-    for path in candidates:
+    candidates += [(path, "sbom") for path in sboms or []]
+    for path, kind in candidates:
         manifests += 1
-        found, problem = _READERS[path.name](path, repo)
+        if not path.is_file():
+            findings.append(
+                Finding("CHK000", SEVERITY_ERROR, f"cannot read SBOM: {path} does not exist", file=_rel(repo, path))
+            )
+            continue
+        found, problem = _READERS[kind](path, repo)
         if problem:
             findings.append(
                 Finding(
@@ -228,13 +332,15 @@ def read_dependencies(repo: Path) -> tuple[list[Dependency], list[Finding], int]
     return dependencies, findings, manifests
 
 
-def check(ea_root: Path, repo: Path, scope: str, today: date | None = None) -> CheckReport:
+def check(
+    ea_root: Path, repo: Path, scope: str, today: date | None = None, sboms: list[Path] | None = None
+) -> CheckReport:
     """Check one consuming repository against the standards its EA element claims."""
     today = today or date.today()
     model, _documents, _config = dsl.load(ea_root, "approved")
     governance = govern.load(ea_root)
 
-    dependencies, findings, manifests = read_dependencies(repo)
+    dependencies, findings, manifests = read_dependencies(repo, sboms)
     report = CheckReport(ea_root=ea_root, repo=repo, scope=scope)
 
     element = model.elements.get(scope)
@@ -257,7 +363,8 @@ def check(ea_root: Path, repo: Path, scope: str, today: date | None = None) -> C
             Finding(
                 "CHK007",
                 SEVERITY_WARNING,
-                f"no dependency manifests ({', '.join(MANIFEST_KINDS)}) found in {repo} -- "
+                f"no dependency manifests ({', '.join(MANIFEST_FILES)}) found in {repo} and no "
+                "SBOM passed with --sbom -- "
                 "the check ran but proved nothing about this repository",
                 concept=scope,
             )

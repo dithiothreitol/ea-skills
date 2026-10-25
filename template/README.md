@@ -48,6 +48,8 @@ python -m easkills roadmap        --root .            # plateaus, gaps, unschedu
 python -m easkills delta          --root .            # what the facts know, the model doesn't
 python -m easkills impact  --root . --scope <id>      # blast radius + Phase H count
 python -m easkills context --root . --scope <id>      # agent context pack (AD-09)
+python -m easkills exposure --root .                  # reach from every public element
+python -m easkills propose --root . --from threats --as-of <date>   # assessments for trust-boundary crossings
 ```
 
 **Is it done?**

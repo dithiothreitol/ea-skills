@@ -360,7 +360,40 @@ combination in alphabetical order, still a closed enum — and appears in both r
 AI-risk gaps ride `align --reference nist-ai-rmf-1.0`; all of it is
 [`ea-ai-governance`](../skills/ea-ai-governance/SKILL.md)'s subject.
 
-## 5e. Turn the findings into work
+## 5e. Security architecture, in the model you already have
+
+There is no security layer to add. Record what a security architect needs on the
+elements that already exist — from evidence, never by guess:
+
+```yaml
+properties:
+  exposure: public              # internal | partner | public
+  trustZone: dmz                # your own label; zones are compared, never interpreted
+  dataClassification: restricted   # public | internal | confidential | restricted
+  personalData: personal        # none | personal | special-category
+  secConfidentiality: high      # low | moderate | high (FIPS 199), also secIntegrity, secAvailability
+```
+
+`validate` then asks three questions, each silent until you use the property it reads:
+is a public element holding confidential or restricted data — its own, or data it
+accesses — with nothing governing it (`SEC001`); does a relationship cross trust zones
+with neither end governed (`SEC002`); is personal data outside the GDPR scope (`SEC003`).
+"Governed" means a requirement, constraint or principle binds the element, or it claims a
+standard.
+
+```bash
+python -m easkills exposure --root .                                   # what an attacker at each public element could reach
+python -m easkills propose --root . --from threats --as-of 2026-08-07  # an assessment skeleton per boundary crossing
+python -m easkills align --root . --reference nist-sp-800-53-r5        # control gaps, and high-rated systems no control anchors
+```
+
+`exposure` walks a declared reach table — a consumer reaches the service it uses, an
+accessor its data — and names the sensitive data, high-rated and ungoverned elements on
+each path. Copy `nist-sp-800-53-r5` or `nist-sp-800-207` from `references/` to measure
+control coverage; check each pack's NOTICE for its verification status first.
+[`ea-security`](../skills/ea-security/SKILL.md) is the discipline.
+
+## 5f. Turn the findings into work
 
 Every report above ends in a list somebody has to act on. `propose` writes the *shape* of
 the action into staging — and nothing else:
@@ -444,7 +477,7 @@ someone asks EA for something → record it in `governance-log/requests/`
 
 ## Working with the agent skills
 
-Everything above is what the 25 [agent skills](../skills/) instruct an agent to do —
+Everything above is what the 26 [agent skills](../skills/) instruct an agent to do —
 with the judgement calls (what is a capability, which concern a view frames, when to
 decline a request) spelled out per skill. Point your agent at this repository, start
 with `ea-run` (it checks repo state and routes), and keep one rule in view: **the

@@ -49,7 +49,7 @@ from . import (
 )
 from .validate import SEVERITY_WARNING
 
-SOURCES = ("align", "readiness", "overlap", "time", "coverage")
+SOURCES = ("align", "readiness", "overlap", "time", "coverage", "threats")
 
 STAGING_FILENAME = {
     "align": "proposed-requirements.yaml",
@@ -57,6 +57,7 @@ STAGING_FILENAME = {
     "overlap": "proposed-work-packages.yaml",
     "time": "proposed-scheduling.yaml",
     "coverage": "proposed-questions.yaml",
+    "threats": "proposed-threat-assessments.yaml",
 }
 
 # Where each source's skeletons go. Model elements are proposals in staging; questions are
@@ -411,6 +412,61 @@ def _from_time(root: Path, today: date) -> list[Proposal]:
     return proposals
 
 
+STRIDE = (
+    "spoofing",
+    "tampering",
+    "repudiation",
+    "information disclosure",
+    "denial of service",
+    "elevation of privilege",
+)
+
+
+def _from_threats(root: Path, today: date) -> list[Proposal]:
+    """One `Assessment` skeleton per relationship that crosses a trust boundary.
+
+    The crossing is mechanical: two ends, two different `trustZone` values. The threat is
+    not -- which of STRIDE's six categories applies, and what treats it, is the assessment
+    a security architect writes. So the skeleton names the crossing, binds both ends
+    (`Assessment` is a Motivation element, so `appliesTo` is legal), and leaves every
+    judgement to the placeholder. An assessment is not a control: it does not satisfy
+    `SEC002`, which keeps asking until a requirement binds an end or a standard is claimed.
+    """
+    from . import security  # local: only this source needs it
+
+    model, _documents, _config = dsl.load(root, "approved")
+    proposals: list[Proposal] = []
+    for relationship in security.crossings(model):
+        source = model.elements[relationship.source]
+        target = model.elements[relationship.target]
+        zone_a = source.properties.get("trustZone", "")
+        zone_b = target.properties.get("trustZone", "")
+        name = f"Threats across {relationship.type} {source.name} to {target.name}"
+        proposals.append(
+            Proposal(
+                id=f"asm-threats-{_slug(relationship.id)}",
+                type="Assessment",
+                name=name if len(name) <= 120 else name[:117] + "...",
+                documentation=(
+                    f"{PLACEHOLDER} assess the {relationship.type} from '{source.name}' ({zone_a}) to "
+                    f"'{target.name}' ({zone_b}) against STRIDE -- {', '.join(STRIDE)}. For each "
+                    "category that applies, name the treatment: a Requirement or Constraint bound "
+                    "to one end, a standard the end claims, or accepted risk as a dispensation with "
+                    "an expiry. A category that does not apply needs one sentence saying why."
+                ),
+                rationale=(
+                    f"Derived from {relationship.type} '{relationship.id}' crossing trust zones "
+                    f"'{zone_a}' -> '{zone_b}' as of {today.isoformat()}. Complete or delete before "
+                    "promotion."
+                ),
+                applies_to=[relationship.source, relationship.target],
+                properties={"trustBoundary": f"{zone_a} -> {zone_b}", "relationship": relationship.id},
+                origin=f"crossing:{relationship.id}",
+            )
+        )
+    return proposals
+
+
 def _verbatim(original: str, normalized: str) -> str | None:
     """The source's own characters for a sentence the coverage report normalized.
 
@@ -594,6 +650,8 @@ def propose(
         candidates = _from_overlap(root, as_of)
     elif source == "coverage":
         candidates, unrecoverable = _from_coverage(root, as_of)
+    elif source == "threats":
+        candidates = _from_threats(root, as_of)
     else:
         candidates = _from_time(root, as_of)
 
@@ -670,6 +728,7 @@ _ROLE = {
     "overlap": "Work packages proposed for rationalization candidates",
     "time": "Work packages proposed for portfolio decisions nothing schedules",
     "coverage": "Clarification questions proposed for source statements no fact cites",
+    "threats": "Threat assessments proposed for relationships that cross a trust boundary",
 }
 
 

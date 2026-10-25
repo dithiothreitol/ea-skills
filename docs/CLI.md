@@ -33,10 +33,10 @@ parser; `python -m easkills <command> --help` is the same information, per comma
 | Flag | What it does | Commands |
 |---|---|---|
 | `--root <path>` | Repository root (default: cwd) | all except `gen-schema`, `pin-oracle`, `oracle-info` |
-| `--zone approved\|staging` | Which zone to read; governance metadata is mandatory in `approved` | `validate`, `compile`, `render`, `impact`, `align`, `readiness`, `rtm` |
+| `--zone approved\|staging` | Which zone to read; governance metadata is mandatory in `approved` | `validate`, `compile`, `render`, `impact`, `align`, `readiness`, `rtm`, `exposure` |
 | `--strict` | Warnings fail too (on `conformance`: any failed clause fails; on `align`: gaps fail; on `readiness`: any open checkpoint fails) | `validate`, `validate-facts`, `validate-gov`, `conformance`, `check`, `align`, `readiness`, `dora-register`, `ai-act-register` |
 | `--as-of YYYY-MM-DD` | Evaluate date-dependent checks against a fixed date, for reproducibility | `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `roadmap`, `context`, `check`, `impact`, `dora-register`, `ai-act-register`, `maturity`, `propose` (**required** there) |
-| `--json <file>` | Write the machine-readable report alongside the rendered one. On `chunk` it takes **no argument** and prints JSON to stdout instead | `validate`, `validate-facts`, `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `delta`, `roadmap`, `coverage`, `score`, `chunk`, `check`, `import`, `impact`, `intake-csv`, `intake-doc`, `align`, `readiness`, `dora-register`, `ai-act-register`, `maturity`, `propose`, `rtm`, `glossary` |
+| `--json <file>` | Write the machine-readable report alongside the rendered one. On `chunk` it takes **no argument** and prints JSON to stdout instead | `validate`, `validate-facts`, `validate-gov`, `staleness`, `kpi`, `debt`, `conformance`, `correspondences`, `delta`, `roadmap`, `coverage`, `score`, `chunk`, `check`, `import`, `impact`, `intake-csv`, `intake-doc`, `align`, `readiness`, `dora-register`, `ai-act-register`, `maturity`, `propose`, `rtm`, `glossary`, `exposure` |
 | `--out <path>` | Output file (or directory, for `render`) instead of the default location; on `rtm` and `glossary` a `.csv` suffix writes CSV, anything else markdown | `compile`, `render`, `docs`, `context`, `import`, `intake-csv`, `intake-doc`, `dora-register`, `ai-act-register`, `propose`, `rtm`, `glossary` |
 | `--skip-validation` | Build from a model with validation errors (not recommended) | `compile`, `docs` |
 | `--scope <element-id>` | The element the command is about | `context`, `check`, `impact` |
@@ -231,7 +231,7 @@ something the rest of the tooling also agrees improved.
 
 | Command | Does |
 |---|---|
-| `propose --from align\|readiness\|overlap\|time\|coverage --as-of <date> [--reference NAME] [--out] [--json] [--dry-run]` | Turns one report's findings into **staging skeletons**: a reference gap becomes a `Requirement` (a `Constraint` for a `kind: control` node), an open readiness checkpoint (warning severity — what `readiness --strict` gates on) becomes a `Constraint` bound to its element via `appliesTo`, a rationalization candidate becomes a `WorkPackage` *naming* its realizers, and a TIME disposition no plateau carries (`PLAT005`) becomes a `WorkPackage` for scheduling it — ordered by blast radius, then id. Writes `model/staging/proposed-*.yaml`. `--from coverage` is the one source that writes outside the model: every source statement no fact cites becomes a clarification-question skeleton in `facts/questions/proposed-questions.yaml`, pointing at the file, the lines and the statement's own text (so it validates under `QST002`), with the question itself left to a human. |
+| `propose --from align\|readiness\|overlap\|time\|coverage\|threats --as-of <date> [--reference NAME] [--out] [--json] [--dry-run]` | Turns one report's findings into **staging skeletons**: a reference gap becomes a `Requirement` (a `Constraint` for a `kind: control` node), an open readiness checkpoint (warning severity — what `readiness --strict` gates on) becomes a `Constraint` bound to its element via `appliesTo`, a rationalization candidate becomes a `WorkPackage` *naming* its realizers, and a TIME disposition no plateau carries (`PLAT005`) becomes a `WorkPackage` for scheduling it — ordered by blast radius, then id. Writes `model/staging/proposed-*.yaml`. `--from coverage` is the one source that writes outside the model: every source statement no fact cites becomes a clarification-question skeleton in `facts/questions/proposed-questions.yaml`, pointing at the file, the lines and the statement's own text (so it validates under `QST002`), with the question itself left to a human. `--from threats` proposes one `Assessment` per relationship that crosses a trust boundary (two different `trustZone` values), bound to both ends, with STRIDE's six categories in the placeholder; an assessment does not govern, so `SEC002` keeps asking until a requirement or standard does. |
 
 Everything it writes is `assumed: true` with a rationale naming the finding and the date
 it came from, and **every documentation field opens with `PROPOSED --`** — a loud,
@@ -304,11 +304,22 @@ Control-framework gaps are not part of this command. A control framework is a ta
 so it rides the reference mechanism: a pack with `kind: control` nodes, and an unmapped
 control is `ALN004`. See [`ea-regulatory`](../skills/ea-regulatory/SKILL.md).
 
+## Security
+
+| Command | Does |
+|---|---|
+| `exposure [--zone] [--depth N] [--json]` | From every element with `exposure: public`, what an attacker holding it could reach: each element with its hop count and the relationship it was reached by, then the sensitive data (`dataClassification` confidential or restricted), the elements rated high, the personal data, the trust boundaries crossed and the **ungoverned** elements on the way. Reach follows a declared table (`security.REACH`), not change impact: a consumer reaches the service it uses, an accessor its data, a flow its destination, wholes and parts each other; `Association` is never walked. A report, never a gate. |
+
+The security vocabulary (`dataClassification`, `personalData`, `secConfidentiality`,
+`secIntegrity`, `secAvailability`, `exposure`, `trustZone`) is read by `validate`
+(`SEC001`–`SEC003`), by `align` (`ALN009`) and by `propose --from threats`. Every rule is
+silent until a repository uses the property it reads.
+
 ## Consuming repositories
 
 | Command | Does |
 |---|---|
-| `check --scope <element-id> [--repo <path>] [--strict] [--as-of] [--json]` | Runs in a *product* repository's CI: reads its dependency manifests (`package.json`, `pom.xml`, `requirements.txt`) and reports them against the standards its EA element claims — retired without a waiver is an error, deprecated warns, a covering dispensation is reported with its expiry, and a governed dependency the model does not record comes back as drift. Detection is declared by each SIB entry (`detect:`), never inferred, and the consuming repository maintains no integration manifest: `--scope` is the whole convention. |
+| `check --scope <element-id> [--repo <path>] [--sbom <file>]... [--strict] [--as-of] [--json]` | Runs in a *product* repository's CI: reads its dependency manifests (`package.json`, `pom.xml`, `requirements.txt`, `pyproject.toml` — PEP 621 and Poetry) and any SBOM passed with `--sbom` (CycloneDX or SPDX JSON; a `detect:` rule names the package by URL without its version) and reports them against the standards its EA element claims — retired without a waiver is an error, deprecated warns, a covering dispensation is reported with its expiry, and a governed dependency the model does not record comes back as drift. Detection is declared by each SIB entry (`detect:`), never inferred, and the consuming repository maintains no integration manifest: `--scope` is the whole convention. |
 
 ## Evaluation
 

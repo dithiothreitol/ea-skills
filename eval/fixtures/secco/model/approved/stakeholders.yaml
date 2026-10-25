@@ -1,0 +1,28 @@
+# ISO 42010 apparatus, kept minimal -- a fixture that skipped it would not pass its own
+# gate, and a fixture that cannot pass the gate teaches people to bypass it.
+
+stakeholders:
+  - id: stakeholder-ciso
+    name: CISO
+    description: Accountable for the security architecture and its exceptions.
+    concerns: [concern-public-reach]
+
+concerns:
+  - id: concern-public-reach
+    statement: What could an attacker reach from the public portal, and what governs each step?
+
+views:
+  - id: public-reach
+    name: Public Reach
+    viewpoint: Layered
+    concerns: [concern-public-reach]
+    documentation: >
+      The public portal, the internal service behind it and the restricted record that
+      service reads -- the path the exposure report walks.
+    include:
+      - app-customer-portal
+      - app-account-service
+      - data-customer-account
+      - req-account-change-mfa
+      - req-account-record-encryption
+      - principle-authenticated-communication

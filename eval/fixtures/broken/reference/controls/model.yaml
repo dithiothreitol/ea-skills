@@ -1,0 +1,16 @@
+# A well-formed control pack, so ALN009 has a framework to ask the question against: an
+# element rated high that no control anchors. Authored for eval/fixtures/broken/; not a
+# published control framework.
+
+name: Fixture controls
+version: "1.0"
+source: Authored for eval/fixtures/broken/; not a published control framework
+
+nodes:
+  - id: c-domain
+    name: Integrity controls
+    kind: domain
+  - id: c-tamper-evidence
+    name: Postings are tamper evident
+    kind: control
+    parent: c-domain

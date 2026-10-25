@@ -1,0 +1,81 @@
+# NIST SP 800-207 Zero Trust Architecture -- the seven basic tenets (Section 2.1).
+#
+# Public domain (a work of the U.S. federal government); see NOTICE.md for the citation.
+# Each tenet's lead sentence is carried verbatim in `description`, extracted mechanically
+# from the PDF of the cited edition; `name` is that sentence where it fits the schema's
+# 200 characters, and its own opening words, up to the first dash, where it does not
+# (tenet 4). The paragraphs that follow each lead sentence are the authority on what a
+# tenet means and are deliberately not reproduced.
+#
+# The tenets are typed `control` so that `align` answers them with local Requirements,
+# Constraints and Principles -- a zero-trust principle in the motivation layer is exactly
+# what answers one.
+
+name: NIST SP 800-207 Zero Trust Architecture
+version: "August 2020"
+source: NIST SP 800-207, Section 2.1 Tenets of Zero Trust
+
+nodes:
+  - id: zero-trust-tenets
+    name: Tenets of Zero Trust
+    kind: domain
+    externalId: "2.1"
+  - id: zt-tenet-1
+    name: All data sources and computing services are considered resources.
+    kind: control
+    parent: zero-trust-tenets
+    externalId: Tenet 1
+    description: All data sources and computing services are considered resources.
+  - id: zt-tenet-2
+    name: All communication is secured regardless of network location.
+    kind: control
+    parent: zero-trust-tenets
+    externalId: Tenet 2
+    description: All communication is secured regardless of network location.
+  - id: zt-tenet-3
+    name: Access to individual enterprise resources is granted on a per-session basis.
+    kind: control
+    parent: zero-trust-tenets
+    externalId: Tenet 3
+    description: Access to individual enterprise resources is granted on a per-session basis.
+  - id: zt-tenet-4
+    name: Access to resources is determined by dynamic policy
+    kind: control
+    parent: zero-trust-tenets
+    externalId: Tenet 4
+    description: >-
+      Access to resources is determined by dynamic policy—including the observable state
+      of client identity, application/service, and the requesting asset—and may include
+      other behavioral and environmental attributes.
+  - id: zt-tenet-5
+    name: >-
+      The enterprise monitors and measures the integrity and security posture of all owned
+      and associated assets.
+    kind: control
+    parent: zero-trust-tenets
+    externalId: Tenet 5
+    description: >-
+      The enterprise monitors and measures the integrity and security posture of all owned
+      and associated assets.
+  - id: zt-tenet-6
+    name: >-
+      All resource authentication and authorization are dynamic and strictly enforced
+      before access is allowed.
+    kind: control
+    parent: zero-trust-tenets
+    externalId: Tenet 6
+    description: >-
+      All resource authentication and authorization are dynamic and strictly enforced
+      before access is allowed.
+  - id: zt-tenet-7
+    name: >-
+      The enterprise collects as much information as possible about the current state of
+      assets, network infrastructure and communications and uses it to improve its
+      security posture.
+    kind: control
+    parent: zero-trust-tenets
+    externalId: Tenet 7
+    description: >-
+      The enterprise collects as much information as possible about the current state of
+      assets, network infrastructure and communications and uses it to improve its
+      security posture.

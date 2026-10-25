@@ -95,6 +95,9 @@ EXPECTED_WARNING_CODES = [
     "ISO005",  # view frames no declared concern
     "ISO006",  # concern held by no stakeholder
     "STD003",  # references a deprecated standard
+    "SEC001",  # public, holding restricted data, governed by nothing
+    "SEC002",  # crosses a trust boundary, neither end governed
+    "SEC003",  # personal data outside the GDPR scope
 ]
 
 

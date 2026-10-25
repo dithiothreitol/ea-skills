@@ -1,0 +1,68 @@
+# The estate, with the security vocabulary on every element it applies to. Each rule the
+# vocabulary feeds is satisfied here the honest way -- by an obligation or a standard that
+# governs the element, never by leaving a property out.
+
+elements:
+  - id: app-customer-portal
+    type: ApplicationComponent
+    name: Customer Portal
+    documentation: The public web front end customers sign in to.
+    owner: web-team@ferrous.example
+    lastReviewed: 2026-07-01
+    properties:
+      lifecycle: active
+      timeDisposition: Invest
+      exposure: public
+      trustZone: dmz
+      secIntegrity: moderate
+    # Governed by the web-application baseline (SEC001), and the principle below.
+    standards: [std-webapp-baseline]
+    assumed: true
+    rationale: Fixture content authored for the security rules, not extracted from a source.
+
+  - id: app-account-service
+    type: ApplicationComponent
+    name: Account Service
+    documentation: Customer accounts and their changes, behind the portal.
+    owner: accounts-team@ferrous.example
+    lastReviewed: 2026-07-01
+    properties:
+      lifecycle: active
+      timeDisposition: Tolerate
+      trustZone: internal
+      secIntegrity: high
+    assumed: true
+    rationale: Fixture content authored for the security rules, not extracted from a source.
+
+  - id: data-customer-account
+    type: DataObject
+    name: Customer Account Record
+    documentation: Identity, contact details and account state of one customer.
+    owner: accounts-team@ferrous.example
+    lastReviewed: 2026-07-01
+    properties:
+      dataClassification: restricted
+      personalData: personal
+      regulatoryScope: gdpr
+      secConfidentiality: high
+      trustZone: internal
+    assumed: true
+    rationale: Fixture content authored for the security rules, not extracted from a source.
+
+relationships:
+  # Crosses internal -> dmz: a trust boundary. The portal claims a standard, so SEC002 is
+  # satisfied -- and `propose --from threats` still proposes the assessment, because a
+  # governed crossing is still a crossing somebody should have assessed.
+  - id: rel-accounts-serve-portal
+    type: Serving
+    source: app-account-service
+    target: app-customer-portal
+    assumed: true
+    rationale: Fixture content authored for the security rules, not extracted from a source.
+
+  - id: rel-accounts-access-record
+    type: Access
+    source: app-account-service
+    target: data-customer-account
+    assumed: true
+    rationale: Fixture content authored for the security rules, not extracted from a source.
