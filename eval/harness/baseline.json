@@ -1,6 +1,7 @@
 {
-  "model": "claude-sonnet-5",
+  "model": "claude-sonnet-5-5",
   "runs": 3,
+  "candidates": 1,
   "cases": {
     "clinic": {
       "runs": 3,
@@ -8,8 +9,8 @@
       "failures": [],
       "repairs": [
         {
-          "intake": 1,
-          "modelling": 2,
+          "intake": 0,
+          "modelling": 0,
           "apparatus": 0
         },
         {
@@ -29,45 +30,49 @@
       "f1": {
         "elements": {
           "min": 0.4583,
-          "median": 0.5556,
-          "max": 0.6
+          "median": 0.4783,
+          "max": 0.4783
         },
         "entities": {
-          "min": 0.7143,
-          "median": 0.7143,
-          "max": 0.8
+          "min": 0.6,
+          "median": 0.6316,
+          "max": 0.6667
         },
         "facts": {
-          "min": 0.7778,
-          "median": 0.9217,
-          "max": 0.9217
+          "min": 0.7517,
+          "median": 0.7636,
+          "max": 0.8019
         },
         "relationships": {
-          "min": 0.2609,
-          "median": 0.3164,
-          "max": 0.3419
+          "min": 0.1905,
+          "median": 0.25,
+          "max": 0.3636
         }
       },
       "minF1": [
-        0.3419,
-        0.3164,
-        0.2609
+        0.1905,
+        0.25,
+        0.3636
       ],
       "apparatus": {
         "clausesFailed": 1,
         "clausesPassed": 7,
-        "concerns": 3,
-        "stakeholders": 2,
+        "concerns": 1,
+        "stakeholders": 1,
         "views": 2
       },
       "apparatusClauseFailures": [
-        "6.10",
-        "6.8"
+        "6.10"
       ],
       "tokens": {
-        "input": 90001,
-        "output": 65667
-      }
+        "input": 36,
+        "output": 28682,
+        "cacheWrite": 35731,
+        "cacheRead": 28036
+      },
+      "servedBy": [
+        "claude-sonnet-5-5"
+      ]
     },
     "contested": {
       "runs": 3,
@@ -95,46 +100,50 @@
       "gaveUp": [],
       "f1": {
         "elements": {
-          "min": 0.5,
+          "min": 0.45,
           "median": 0.5556,
-          "max": 0.5882
+          "max": 0.6875
         },
         "entities": {
-          "min": 0.75,
-          "median": 0.75,
-          "max": 0.8
+          "min": 0.6316,
+          "median": 0.6667,
+          "max": 0.7059
         },
         "facts": {
-          "min": 0.6117,
+          "min": 0.6422,
           "median": 0.6731,
           "max": 0.6731
         },
         "relationships": {
-          "min": 0.0952,
-          "median": 0.1111,
-          "max": 0.1429
+          "min": 0.1176,
+          "median": 0.125,
+          "max": 0.1333
         }
       },
       "minF1": [
-        0.1429,
-        0.1111,
-        0.0952
+        0.1333,
+        0.125,
+        0.1176
       ],
       "apparatus": {
         "clausesFailed": 1,
         "clausesPassed": 7,
-        "concerns": 3,
-        "stakeholders": 3,
-        "views": 2
+        "concerns": 4,
+        "stakeholders": 2,
+        "views": 3
       },
       "apparatusClauseFailures": [
-        "6.10",
-        "6.8"
+        "6.10"
       ],
       "tokens": {
-        "input": 57342,
-        "output": 64352
-      }
+        "input": 36,
+        "output": 32986,
+        "cacheWrite": 21732,
+        "cacheRead": 41705
+      },
+      "servedBy": [
+        "claude-sonnet-5-5"
+      ]
     }
   }
 }

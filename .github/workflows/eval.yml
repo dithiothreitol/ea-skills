@@ -19,7 +19,11 @@ on:
       model:
         description: "Model id"
         required: false
-        default: "claude-sonnet-5"
+        default: "claude-sonnet-5-5"
+      candidates:
+        description: "Modelling candidates per run, the most-agreed-on kept (1 = off, else >= 3)"
+        required: false
+        default: "1"
       contracts:
         description: "Also run the governance contract harness (true/false)"
         required: false
@@ -46,6 +50,7 @@ jobs:
             ${{ github.event.inputs.case && format('--case {0}', github.event.inputs.case) || '--all' }} \
             --runs ${{ github.event.inputs.runs }} \
             --model ${{ github.event.inputs.model }} \
+            --candidates ${{ github.event.inputs.candidates }} \
             --out run-records.json
 
       - name: Run the governance contracts

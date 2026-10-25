@@ -63,11 +63,13 @@ jobs:
             --threshold ${{ github.event.inputs.threshold }} \
             --max-cost-usd ${{ github.event.inputs.max_cost_usd }} \
             --no-publish \
+            --keep-temp \
             --allow-tools Write Edit "Bash(easkills *)" "Bash(python -m easkills *)" \
             --json plugin-eval.json
 
       # Uploaded rather than committed: a number from a non-deterministic run becomes a
-      # documented result only when a human has read it.
+      # documented result only when a human has read it. The traces are kept (--keep-temp)
+      # because the first run's numbers could not be explained without them.
       - name: Keep the results
         if: always()
         uses: actions/upload-artifact@v7
@@ -76,4 +78,5 @@ jobs:
           path: |
             plugin-eval.json
             evals/results/
+            /tmp/claude-eval-*/out/trace.jsonl
           if-no-files-found: ignore

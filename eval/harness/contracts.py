@@ -466,6 +466,8 @@ def render(results: list[ContractResult]) -> str:
             f"  repairs: {[result.repairs for result in of_contract]}  tokens in/out: "
             f"{sum(r.usage.get('inputTokens', 0) for r in of_contract)}/"
             f"{sum(r.usage.get('outputTokens', 0) for r in of_contract)}"
+            f"  cache write/read: {sum(r.usage.get('cacheWriteTokens', 0) for r in of_contract)}/"
+            f"{sum(r.usage.get('cacheReadTokens', 0) for r in of_contract)}"
         )
         lines.append("")
     return "\n".join(lines)

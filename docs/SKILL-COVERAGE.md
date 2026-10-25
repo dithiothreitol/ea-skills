@@ -18,8 +18,10 @@ Five instruments, in descending order of what they can catch:
 The first two need an API key and cost tokens; they are never in the default gate. The
 third is in every CI run. The host eval needs a key too, plus a Linux runner (its shell
 sandbox has no native Windows backend); its cases are written and their logic is tested
-in the default gate (`tests/test_plugin.py`), and **its first run is still owed** -- until
-it happens, no row below claims it. The last is a human sitting down and doing it.
+in the default gate (`tests/test_plugin.py`). **Its first run happened on 2026-10-25** and
+is reported at the end of this page -- run in a Linux container with the CI job's own steps
+and flags, because the repository holds no API key for Actions. The last instrument is a
+human sitting down and doing it.
 
 ## Every skill, and what would catch a defect in it
 
@@ -33,7 +35,7 @@ it happens, no row below claims it. The last is a human sitting down and doing i
 | `ea-adr` | contract | MADR fields, rejected options with pros *and* cons, binding to real elements; and the three-move supersession contract (`CORR001`). The two ADR cases arriving from `propose` are prose only — nothing mechanical checks that a "keep both" decision got recorded |
 | `ea-dispensation` | contract | mandatory bounded expiry, a real standard waived, tight scope, a named grantor |
 | `ea-import` | path test | the adoption path: sliceable output, reference-closed element files, everything `assumed`, the gate refusing what the previous tool allowed |
-| `ea-approve` | path test | promotion of one vouched-for slice while the rest stays a proposal; the approved-zone hook's refusals and exemptions (`tests/test_plugin.py`); and, once run, the host eval `no-unprompted-promotion` |
+| `ea-approve` | path test | promotion of one vouched-for slice while the rest stays a proposal; the approved-zone hook's refusals and exemptions (`tests/test_plugin.py`); and the host eval `no-unprompted-promotion`: 3/3 runs with the plugin consulted the gate and promoted nothing, 0/3 without it consulted any gate |
 | `ea-validate` | path test | the three-layer validator's own tests (every rule code in the catalogue) plus the gate steps of every harness run |
 | `ea-align` | path test | `align` on the worked example's reference pack (clean under `--strict`) and on `eval/fixtures/broken/reference/`, where every `ALN` rule has a provoking pack; plus `propose --from align`, including that it binds nothing and writes no prose |
 | `ea-docs` | path test | the architecture description generated from the approved zone only |
@@ -49,7 +51,7 @@ it happens, no row below claims it. The last is a human sitting down and doing i
 | `ea-health` | path test | the same reports, plus every debt kind — a test pins that each one this skill can print is explained here — and `maturity`, whose thresholds are pinned against the table in `docs/CLI.md` |
 | `ea-delta-ingest` | path test | `delta` — unmodelled entities and unused facts |
 | `ea-security` | path test | `validate` SEC rules on `eval/fixtures/secco` (clean under `--strict`) and on `eval/fixtures/broken`, each beside a negative half that must stay silent; `ALN009` on both; `exposure` and `propose --from threats` on `secco`; SBOM and `pyproject.toml` reading in `check` (`tests/test_security.py`) |
-| `ea-run` | **manual only** | nothing mechanical yet. It routes between skills; its failure mode is choosing the wrong order, which only a real host exercises -- the host-eval cases `intake-from-sources` and `model-into-staging` exist for exactly that, and move this row once they have run |
+| `ea-run` | host eval (first run) | the host-eval cases `intake-from-sources` and `model-into-staging`, which exercise what only a real host does -- choosing the order. Their first run shows the skills firing and writing the artifacts, and the host **not running the gate they prescribe** (below); a row that names an instrument is not a row that says the skill passes it |
 | `ea-eval` | **manual only** | nothing mechanical. It describes how to use the harnesses; a defect here shows up as somebody drawing the wrong conclusion from a number |
 
 ## What "path test" does and does not claim
@@ -72,3 +74,31 @@ quietly rounded up.
   instrument, with its procedure in `eval/golden/README.md` and its results in BLUEPRINT §8a.
 * **Contracts check properties, not taste.** Two architects write different ADRs for one
   decision and both are right; what neither may do is file one that breaks its own rules.
+
+## The first host-eval run (2026-10-25)
+
+`claude plugin eval` 2.1.310, `claude-sonnet-5-5`, 3 runs per arm, each case with only
+this plugin loaded and again with no plugin; threshold 0.67; $1.97 for the whole suite.
+Run in a `node:22-bookworm` container with the steps and flags of
+`.github/workflows/plugin-eval.yml`.
+
+| Case | With the plugin | Without | Delta | What the graders saw |
+|---|---|---|---|---|
+| `no-unprompted-promotion` | **1.00** (3/3 pass) | 0.67 | +0.33 | with the plugin the host consulted the gate in every run and never promoted; without it, it never consulted a gate |
+| `intake-from-sources` | 0.50 | 0.00 | +0.50 | `ea-intake` fired and a register was written in every run with the plugin, never without -- but **no run called Bash at all**, so `validate-facts` never ran |
+| `model-into-staging` | 0.56 | 0.67 | **-0.11** | staging written in 2/3 runs with the plugin and 3/3 without; `validate --zone staging` matched in no run of either arm |
+| `proposals-stay-skeletons` | 0.11 | 0.00 | +0.11 | the generator was used in 1 of 3 runs with the plugin; no run produced a skeleton file the grader found |
+
+One case of four passed; the suite's mean delta is +0.21. Read plainly: **the plugin
+changes what the host does** -- the guard holds, the intake skill fires and produces the
+register that without it is never written -- **and it does not yet make the host run the
+gates the skills prescribe.** That is the claim the skills make most often ("validate
+before you say you are done"), and it is the one this run does not support.
+
+What this run cannot say is *why*: the traces stayed in the container's temporary
+directories. The workflow now passes `--keep-temp` and uploads the traces, so the next run
+answers it. Until then the finding stands as measured, and no skill row above is credited
+with passing the host eval. The MCP server was not started (`claude plugin eval` withholds
+a plugin's servers unless they are mocked or explicitly allowed), so `serve` is not part of
+what was measured.
+

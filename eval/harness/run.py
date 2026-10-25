@@ -21,13 +21,21 @@ the core computes, reported and never gated.
 
 **What it does not measure.** A host like Claude Code executing the same skills with its
 own tools, multi-turn, with its own planning. The number here is a regression signal for
-the skill *text*, not a benchmark of an agent. Runs use the API default temperature, so
+the skill *text*, not a benchmark of an agent. Runs use the API default sampling, so
 several runs per case are the point: the spread is the honest part.
+
+**``--candidates k``** (k >= 3; default 1, off) produces k independent models from the same
+fact register, each through its own repair loop, and keeps the one the others agree with
+most -- the medoid by element and relationship F1 against each other. That is majority
+voting at the level of a whole model: voting element by element would assemble a model no
+candidate wrote, with dangling relationships the gate never saw. It multiplies the
+modelling cost by k, which is why it is off and why a baseline records the k it ran with.
 
 Usage::
 
     python eval/harness/run.py --case clinic --runs 3
-    python eval/harness/run.py --case contested --runs 3 --model claude-opus-5
+    python eval/harness/run.py --case contested --runs 3 --model claude-opus-5-5
+    python eval/harness/run.py --all --candidates 3
     python eval/harness/run.py --all --baseline   # rewrite eval/harness/baseline.json
 """
 
@@ -92,7 +100,10 @@ class RunResult:
     # The apparatus phase is judged by contract, not by matching gold: ISO 42010's loop
     # either closes or it does not. Reported, never gated.
     apparatus: dict[str, Any] = field(default_factory=dict)
-    usage: dict[str, int] = field(default_factory=dict)
+    usage: dict[str, Any] = field(default_factory=dict)
+    # Present only under --candidates: every candidate's gate, repairs and agreement, and
+    # which one the run kept.
+    candidates: dict[str, Any] = field(default_factory=dict)
     error: str = ""
     seconds: float = 0.0
 
@@ -135,7 +146,35 @@ def measure_apparatus(scratch: Path, workdir: Path) -> dict[str, Any]:
     }
 
 
-def run_case(client: Any, case: str, model: str, workdir: Path) -> RunResult:
+def agreement(roots: list[Path]) -> list[float]:
+    """How much each candidate model agrees with the others: the mean, over the others,
+    of the average of element F1 and relationship F1 -- the same matching the score uses
+    against gold, with each other candidate standing in for gold."""
+    from easkills import dsl, facts as facts_mod, score as score_mod  # the harness reads the core
+
+    models = [dsl.load_zone(root, "staging")[0] for root in roots]
+    classes = score_mod._alias_classes(*(facts_mod.load(root)[0] for root in roots))
+    out: list[float] = []
+    for index, mine in enumerate(models):
+        values = []
+        for other_index, other in enumerate(models):
+            if other_index == index:
+                continue
+            elements, element_map = score_mod._score_elements(other, mine, classes)
+            relationships = score_mod._score_relationships(other, mine, element_map)
+            values.append((elements.f1 + relationships.f1) / 2)
+        out.append(round(sum(values) / len(values), 4) if values else 0.0)
+    return out
+
+
+def choose(gates: list[int], scores: list[float]) -> int:
+    """The candidate to keep: highest agreement among those that passed their gate (all
+    of them if none did), the earliest on a tie so the choice is reproducible."""
+    eligible = [i for i, gate in enumerate(gates) if gate == 0] or list(range(len(gates)))
+    return max(eligible, key=lambda i: (scores[i], -i))
+
+
+def run_case(client: Any, case: str, model: str, workdir: Path, candidates: int = 1) -> RunResult:
     started = time.monotonic()
     gold = CASES[case]
     usage = Usage()
@@ -164,10 +203,7 @@ def run_case(client: Any, case: str, model: str, workdir: Path) -> RunResult:
         with transcript.open("a", encoding="utf-8", newline="\n") as handle:
             handle.write(f"\n\n## {phase}\n\n{text}\n")
 
-    def write(files: dict[str, str]) -> None:
-        write_files(scratch, files)
-
-    def phase(label: str, session: Session, prompt: str, gate: list[str]) -> int:
+    def phase(label: str, session: Session, prompt: str, gate: list[str], root: Path | None = None) -> int:
         """Ask, write the files, then repair against the real gate until it passes.
 
         One shape for all three phases: the skills prescribe exactly this loop, capped at
@@ -178,12 +214,13 @@ def run_case(client: Any, case: str, model: str, workdir: Path) -> RunResult:
         the cap and converging on the last attempt produce the same number, and a run that
         gave up must not be reported beside one that succeeded.
         """
+        target = root or scratch
         reply = session.ask(prompt)
         record(label, reply)
         files = extract_files(reply)
         if not files:
             raise ValueError(f"{label} produced no parseable file")
-        write(files)
+        write_files(target, files)
         repairs = 0
         while repairs < MAX_REPAIRS:
             checked = easkills(*gate)
@@ -198,7 +235,7 @@ def run_case(client: Any, case: str, model: str, workdir: Path) -> RunResult:
             files = extract_files(reply)
             if not files:
                 raise ValueError(f"{label} repair produced no parseable file")
-            write(files)
+            write_files(target, files)
         result.repairs[label] = repairs
         result.gates[label] = easkills(*gate).returncode
         return repairs
@@ -229,10 +266,7 @@ def run_case(client: Any, case: str, model: str, workdir: Path) -> RunResult:
         )
         from easkills import oracle  # local: the harness reads the same vocabulary the gate does
 
-        modelling = Session(client, model, phase_system("modelling"), usage)
-        phase(
-            "modelling",
-            modelling,
+        modelling_prompt = (
             "Model this fact register. Write the ArchiMate model into files under "
             "`model/staging/` (elements by layer, relationships in "
             "`model/staging/relations.yaml`).\n\n"
@@ -240,9 +274,46 @@ def run_case(client: Any, case: str, model: str, workdir: Path) -> RunResult:
             "citing a fact id, because these files will be promoted to the approved zone.\n\n"
             f"Permitted element types: {', '.join(sorted(oracle.element_types()))}\n"
             f"Permitted relationship types: {', '.join(sorted(oracle.relationship_types()))}\n\n"
-            f"The register:\n{register}",
-            ["validate", "--root", str(scratch), "--zone", "staging"],
+            f"The register:\n{register}"
         )
+        if candidates == 1:
+            modelling = Session(client, model, phase_system("modelling"), usage)
+            phase("modelling", modelling, modelling_prompt, ["validate", "--root", str(scratch), "--zone", "staging"])
+        else:
+            roots: list[Path] = []
+            gates: list[int] = []
+            repairs: list[int] = []
+            for index in range(candidates):
+                root = workdir / f"{case}-candidate{index + 1}"
+                if root.exists():
+                    shutil.rmtree(root)
+                shutil.copytree(scratch, root)
+                label = f"modelling candidate {index + 1}"
+                session = Session(client, model, phase_system("modelling"), usage)
+                try:
+                    phase(label, session, modelling_prompt, ["validate", "--root", str(root), "--zone", "staging"], root=root)
+                except Exception as exc:  # noqa: BLE001 - one failed candidate is a vote lost, not a run lost
+                    record(label, f"failed: {type(exc).__name__}: {exc}")
+                    continue
+                roots.append(root)
+                gates.append(result.gates.pop(label))
+                repairs.append(result.repairs.pop(label))
+            if not roots:
+                raise ValueError(f"none of the {candidates} modelling candidates produced a model")
+            scores = agreement(roots)
+            kept = choose(gates, scores)
+            shutil.rmtree(scratch / "model" / "staging")
+            shutil.copytree(roots[kept] / "model" / "staging", scratch / "model" / "staging")
+            result.gates["modelling"] = gates[kept]
+            result.repairs["modelling"] = repairs[kept]
+            result.candidates = {
+                "requested": candidates,
+                "completed": len(roots),
+                "gates": gates,
+                "repairs": repairs,
+                "agreement": scores,
+                "kept": kept + 1,
+            }
 
         # ---------------------------------------------------------------- apparatus
         # Stakeholders, concerns and views: the ISO 42010 loop. Gold holds none of these,
@@ -352,7 +423,12 @@ def summarise(runs: list[RunResult]) -> dict[str, Any]:
         entry["tokens"] = {
             "input": sum(run.usage.get("inputTokens", 0) for run in of_case),
             "output": sum(run.usage.get("outputTokens", 0) for run in of_case),
+            "cacheWrite": sum(run.usage.get("cacheWriteTokens", 0) for run in of_case),
+            "cacheRead": sum(run.usage.get("cacheReadTokens", 0) for run in of_case),
         }
+        entry["servedBy"] = sorted({m for run in of_case for m in run.usage.get("servedBy", [])})
+        if any(run.candidates for run in of_case):
+            entry["candidates"] = [run.candidates for run in of_case]
         out[case] = entry
     return out
 
@@ -388,10 +464,18 @@ def render(summary: dict[str, Any], model: str) -> str:
             )
         if entry["failures"]:
             lines.append("  failures: " + "; ".join(entry["failures"]))
+        tokens = entry["tokens"]
         lines.append(
-            f"  repairs: {entry['repairs']}  tokens in/out: "
-            f"{entry['tokens']['input']}/{entry['tokens']['output']}"
+            f"  repairs: {entry['repairs']}  tokens in/out: {tokens['input']}/{tokens['output']}"
+            + (
+                f"  cache write/read: {tokens.get('cacheWrite', 0)}/{tokens.get('cacheRead', 0)}"
+                if "cacheWrite" in tokens
+                else ""
+            )
         )
+        if entry.get("candidates"):
+            kept = [c.get("kept") for c in entry["candidates"]]
+            lines.append(f"  candidates: kept {kept} of {entry['candidates'][0].get('requested')} per run")
         lines.append("")
     return "\n".join(lines)
 
@@ -432,6 +516,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--all", action="store_true", help="every case")
     parser.add_argument("--runs", type=int, default=3, help="runs per case (default: 3)")
     parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument(
+        "--candidates",
+        type=int,
+        default=1,
+        help="model k candidates per run and keep the one the others agree with most "
+        "(k >= 3; default 1, off -- it multiplies the modelling cost by k)",
+    )
     parser.add_argument("--out", type=Path, help="write the raw run records here")
     parser.add_argument(
         "--baseline", action="store_true", help="rewrite eval/harness/baseline.json from this run"
@@ -446,6 +537,8 @@ def main(argv: list[str] | None = None) -> int:
         "--workdir", type=Path, help="scratch directory (default: a temp dir, kept for inspection)"
     )
     args = parser.parse_args(argv)
+    if args.candidates != 1 and args.candidates < 3:
+        parser.error("--candidates is 1 (off) or at least 3: two candidates always tie")
 
     if args.from_records:
         records = json.loads(args.from_records.read_text(encoding="utf-8"))
@@ -458,6 +551,7 @@ def main(argv: list[str] | None = None) -> int:
                 repairs=record["repairs"],
                 apparatus=record.get("apparatus") or {},  # absent in pre-v2 record files
                 usage=record["usage"],
+                candidates=record.get("candidates") or {},
                 error=record["error"],
             )
             for record in records
@@ -466,7 +560,12 @@ def main(argv: list[str] | None = None) -> int:
         print(render(summary, replayed[0].model if replayed else args.model))
         BASELINE_PATH.write_text(
             json.dumps(
-                {"model": replayed[0].model if replayed else args.model, "runs": args.runs, "cases": summary},
+                {
+                    "model": replayed[0].model if replayed else args.model,
+                    "runs": args.runs,
+                    "candidates": args.candidates,
+                    "cases": summary,
+                },
                 indent=2,
             )
             + "\n",
@@ -486,7 +585,7 @@ def main(argv: list[str] | None = None) -> int:
     for case in cases:
         for index in range(args.runs):
             print(f"[{case} {index + 1}/{args.runs}] running...", flush=True)
-            run = run_case(client, case, args.model, workdir / f"run{index + 1}")
+            run = run_case(client, case, args.model, workdir / f"run{index + 1}", candidates=args.candidates)
             status = "ok" if run.ok else f"FAILED ({run.error})"
             print(f"[{case} {index + 1}/{args.runs}] {status} in {run.seconds}s", flush=True)
             runs.append(run)
@@ -505,7 +604,11 @@ def main(argv: list[str] | None = None) -> int:
     baseline = json.loads(BASELINE_PATH.read_text(encoding="utf-8")) if BASELINE_PATH.is_file() else {}
     if args.baseline:
         BASELINE_PATH.write_text(
-            json.dumps({"model": args.model, "runs": args.runs, "cases": summary}, indent=2) + "\n",
+            json.dumps(
+                {"model": args.model, "runs": args.runs, "candidates": args.candidates, "cases": summary},
+                indent=2,
+            )
+            + "\n",
             encoding="utf-8",
             newline="\n",
         )

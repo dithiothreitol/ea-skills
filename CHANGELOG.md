@@ -5,6 +5,76 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
+## [Unreleased]
+
+Phase 8.6 — the measurement, retaken once against the final text of Phase 8. 163 rules,
+26 skills, 42 commands, 14 schemas — unchanged; this release changes the instrument and
+what it reports.
+
+### Changed — the harness request contract (harness v3)
+
+- **The output contract is a JSON schema the API enforces.** Replies were `FILE:` lines
+  and fenced YAML found by regular expressions, so a model that wrapped one block
+  differently lost a file and the score measured the parser. Now `output_config.format`
+  carries a schema (`{"files": [{"path", "content"}]}`) and a malformed reply cannot
+  happen. **Not a tool call, as the plan had it:** forcing a tool is a 400 on the current
+  models, and an unforced one adds "the model did not call the tool" — a failure of the
+  API surface, not of the skill being measured.
+- **The system prompt is cached** with the one-hour TTL (it is the skills' prose, the same
+  bytes for every run of a phase, and runs of a phase start more than five minutes apart),
+  and the conversation behind it automatically. Records count cache writes and reads
+  beside the uncached input.
+- **The history is append-only**, thinking blocks included: the whole assistant turn goes
+  back, because the current models bind thinking to the conversation that produced it.
+- **The default model is `claude-sonnet-5-5`**, the current generation of the tier every
+  earlier baseline used. Replies are streamed with a 64k ceiling. A refusal or a truncated
+  reply is a failed run, named; no fallback model is configured, because a reply rescued by
+  another model would be scored as this one; and each record names the model that answered.
+- **`--candidates k`** (k ≥ 3, default off) models the same register k times and keeps the
+  candidate the others agree with most — the medoid by element and relationship F1 among
+  candidates whose gate passed. Majority voting at the level of a whole model, because
+  voting element by element would assemble a model no candidate wrote. `eval.yml` gains
+  the input; `requirements-eval.txt` now requires the SDK release the contract was
+  verified against.
+
+### Measured — the fourth baseline (claude-sonnet-5-5, 3 runs per case)
+
+Six of six runs green, every phase gate passed, **no repair in any of the eighteen
+phases**, output about half of the third baseline's. **No category is comparable with the
+third baseline**: the model generation, the output contract and the prose of all five
+measured skills changed together.
+
+| Case | facts | entities | elements | relationships |
+|---|---|---|---|---|
+| `clinic` | 92% → 76% | 71% → 63% | 56% → 48% | 32% → 25% |
+| `contested` | 67% → 67% | 75% → 67% | 56% → 56% | 11% → 12% |
+
+Read off the named items: entity recall is 100% in every run and precision fell because
+more entities are named; no gold fact is missed, more are cut at different boundaries;
+and **clinic's capability layer is absent in all three runs** — the same three gold
+capabilities unmatched, no `Capability` written — which accounts for the element and
+relationship drop (`contested` has no capability layer in gold and did not move). The
+baseline was accepted because the default model changed, which made the old one a
+yardstick for no default run; the capability layer is recorded as the open question for
+the next measurement, not tuned against the run that raised it
+([`eval/harness/README.md`](eval/harness/README.md)).
+
+The governance contracts held nine of nine runs with no repair, comparable with the
+earlier runs because their checks are properties rather than similarities.
+
+### Measured — the first host eval (`claude plugin eval`, claude-sonnet-5-5, 3 runs per arm)
+
+Run once, in a Linux container with the CI job's own steps and flags, because the
+repository holds no API key for Actions; $1.97 for the suite. One case of four passed and
+the mean delta over a no-plugin arm is +0.21. **`no-unprompted-promotion` holds** — 3/3
+with the plugin consulted the gate and promoted nothing — and the intake skill fires and
+writes the register a plain host never writes. **The host does not yet run the gates the
+skills prescribe**: no `validate-facts` in any intake run, no `validate --zone staging` in
+any modelling run of either arm, and `model-into-staging` scores lower with the plugin
+than without (-0.11). The traces that would say why stayed in the container, so the
+workflow now keeps and uploads them (`--keep-temp`). Results and the per-case table:
+[`docs/SKILL-COVERAGE.md`](docs/SKILL-COVERAGE.md).
+
 ## [0.20.0] — 2026-10-25 — the time release
 
 Phase 8.5 — the architect's questions about time, the ones no report was written for, and a

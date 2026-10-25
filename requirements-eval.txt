@@ -1,3 +1,5 @@
 # Evaluation harness only -- never imported by the deterministic core, never in
 # requirements.txt, never run by the default CI gate. See eval/harness/README.md.
-anthropic>=0.40
+# 0.120 is the release the v3 request contract was verified against (output_config,
+# top-level cache_control, streaming); 1.x moved the HTTP layer and is not yet verified here.
+anthropic>=0.120,<1

@@ -5,6 +5,7 @@ pip install -r requirements-eval.txt
 export ANTHROPIC_API_KEY=...        # or put it in .env, which is gitignored
 python eval/harness/run.py --case clinic --runs 3
 python eval/harness/run.py --all --runs 3 --baseline    # rewrite baseline.json
+python eval/harness/run.py --all --candidates 3        # keep the most-agreed-on of 3 models per run
 ```
 
 Runs the extraction and modelling skills against a golden case and scores the result,
@@ -28,6 +29,27 @@ Then the pipeline the skills describe, driven by the model:
 5. `promote` → `score --gold <case>` + `conformance` for the apparatus
 
 Every gate is the real command, run as a subprocess exactly as a user would run it.
+
+**The request contract (harness v3, 0.21.0).** The model's reply is a JSON object,
+`{"files": [{"path", "content"}]}`, enforced by a JSON schema on `output_config.format`
+— not `FILE:` lines and fenced YAML found by regular expressions, where a model that
+wrapped one block differently lost a file and the score measured the parser. It is not a
+tool call: the current models refuse a forced tool, and an unforced one adds "the model
+did not call the tool", a failure of the API surface rather than of the skill. The system
+prompt — the skills' prose, identical for every run of a phase — is cached with the
+one-hour TTL and the conversation behind it automatically, so a repair re-reads its
+history instead of paying for it. The history is append-only, thinking blocks included.
+Sampling and effort are the API defaults. A refusal or a reply cut off at `max_tokens` is
+a failed run, named as such, and no fallback model is configured: a reply rescued by
+another model would be scored as this one. Each record names the model that answered.
+
+**`--candidates k`** (k ≥ 3; default 1, off) models the same fact register k times, each
+candidate through its own repair loop, and keeps the one the others agree with most — the
+medoid by element and relationship F1, each other candidate standing in for gold, among
+the candidates whose gate passed. That is majority voting at the level of a whole model;
+voting element by element would assemble a model no candidate wrote, with relationships
+the gate never saw. It multiplies the modelling cost by k, so it is off, and a baseline
+records the k it was measured with.
 
 ## What the number means, and what it does not
 
@@ -61,7 +83,7 @@ tools, planning and multi-turn behaviour. This harness scripts the loop; a real 
 decides it. Treat the two as different instruments: this one is repeatable and cheap,
 the other is faithful and manual (the end-to-end runs recorded in BLUEPRINT §8a).
 
-Runs use the API default temperature, so `--runs 3` is the default and the report shows
+Runs use the API default sampling, so `--runs 3` is the default and the report shows
 **min / median / max** per category. A single run tells you almost nothing about the
 skills and quite a lot about that particular sample.
 
@@ -83,9 +105,9 @@ rebuilds it from a saved `--out` file, so accepting a number never costs another
 
 Between 2026-08-06 and 2026-08-07 the committed baseline was knowingly stale for `clinic`'s
 element and relationship categories, because gold gained its capability layer before the
-harness could be rerun. The warning is gone because the rerun happened; **the third
-baseline below is current**, and what it may and may not be compared against is stated
-there rather than here.
+harness could be rerun. The warning is gone because the rerun happened. **The fourth
+baseline (0.21.0) is current**; what it may and may not be compared against is stated in
+its section rather than here.
 
 The measured-skill prose also moved in 7.2 (`ea-model` and `ea-capability-map` gained a
 "When is this layer done" section), which is the other reason a rerun is owed. Until it
@@ -263,6 +285,62 @@ element and relationship categories — the two that stopped being comparable in
 change. The next rerun on an unmoved gold is the first one that can answer it, and until
 then the honest position is that their effect is unmeasured, not zero.
 
+## The fourth baseline (2026-10-25, claude-sonnet-5-5, 3 runs/case, harness v3)
+
+**No category is comparable with the third baseline.** Three things changed at once, as
+the Phase 8 plan said they would: the model generation (`claude-sonnet-5` →
+`claude-sonnet-5-5`, the same tier), the output contract (JSON under a schema instead of
+parsed YAML blocks), and the prose of every measured skill (0.16.0 changed how each one
+names the CLI; 0.17.0 added question records and value streams to `ea-intake`, `ea-model`,
+`ea-capability-map` and `ea-stakeholders`; 0.18.0 security guidance to `ea-model`; 0.20.0
+export and heatmaps to `ea-views`). A number that moved cannot be credited to any one
+of them from this run, and this section does not try.
+
+| Case | facts | entities | elements | relationships |
+|---|---|---|---|---|
+| `clinic` | 92% → 76% | 71% → 63% | 56% → 48% | 32% → 25% |
+| `contested` | 67% → 67% | 75% → 67% | 56% → 56% | 11% → 12% |
+
+Medians; spreads in `baseline.json`. Against the third baseline the harness reports four
+categories below its old minimum (`clinic` elements fell inside its old spread), and the run exits 1 — the gate doing its job on an
+instrument that changed.
+
+**What the run says about the instrument.** Six of six runs green on their own gates,
+every phase gate passed, and **no repair anywhere** — none in eighteen phases, where every
+earlier baseline needed some. Output fell to roughly half (clinic 66k → 29k tokens, three
+runs), and uncached input to almost nothing: 36 tokens per case, with 57k written to the
+cache and 70k read from it across both cases. The governance contracts (below) show the
+same: nine of nine runs held every check, no repair.
+
+**What moved, read off the named items rather than the percentages.**
+
+- **Entities: finer, not worse.** Recall is 100% in every run of both cases (clinic had
+  83% in two of its three runs before). Precision fell because the candidate names more entities — 12 to 14 for
+  clinic's 6, where it named 8 or 9 — so the drop is the granularity effect this README
+  has described since the first baseline, in the other direction.
+- **Facts: nothing missed, more split differently.** No gold fact is unmatched in any run.
+  Three or four of clinic's nine are matched only partially (one before), because the
+  candidate cuts the same statements at different boundaries — `fact-ehr-role`,
+  `fact-no-separate-billing`, `fact-portal-ehr-integration` — and partial matches earn half
+  credit.
+- **Elements: clinic's capability layer is gone, in every run.** All three runs miss the
+  same three gold capabilities (`Appointment Booking`, `Billing`, `Patient Records
+  Management`) and write no `Capability` at all — data objects, a business process and an
+  assessment instead. `contested` has no capability layer in gold and its elements did not
+  move, which is consistent with this being the whole effect. Relationships fall with it:
+  the realizations onto those capabilities cannot match what does not exist.
+
+**Why it was accepted, and what it leaves open.** The default model changed, so the third
+baseline stopped being a yardstick for any run the harness makes by default: every future
+run would be compared with another model's numbers. Accepting this one is what makes the
+regression gate mean something again; it is not a claim that the drop is fine. **The open
+question is the capability layer:** `ea-capability-map` says the capability map comes
+first, and on this model, under this contract, the modelling phase does not write one for
+clinic. Whether that is the model, the contract or the prose is the next measurement — the
+same model on the old contract, or the old model on the new one, separates them — and the
+convention this repository keeps is to record the question in the release that measured
+it and act in a later one, not to tune the prose against the run that raised it.
+
 ## Across model tiers (2026-08-06, `clinic`, 3 runs each, informational)
 
 The baseline is defined for the default model; these runs answer a different question —
@@ -291,6 +369,20 @@ Informational, not a gate: `--min-f1` thresholds and `baseline.json` stay define
 the default model, and a run under `--model` something-else compares against a baseline it
 was not measured with (the harness will happily print a "regression" that is a tier
 difference — read the model line in the header).
+
+## The governance contracts (2026-10-25, claude-sonnet-5-5, 3 runs each, harness v3)
+
+| Contract | Runs holding every check | Repairs |
+|---|---|---|
+| `decision` (`ea-adr`) | 3/3 | 0, 0, 0 |
+| `dispensation` (`ea-dispensation`) | 3/3 | 0, 0, 0 |
+| `supersede` (`ea-adr`) | 3/3 | 0, 0, 0 |
+
+36 uncached input tokens across nine runs, 10k written to the cache and 25k read, 15k out.
+The checks are deterministic properties rather than a similarity, so unlike the golden-set
+categories these results are comparable with the 2026-08-06 runs below: the same contracts
+held on a new model and a new output contract, and the one repair of the earlier runs did
+not recur.
 
 ## The governance contracts (2026-08-06, claude-sonnet-5, 2 runs each)
 
