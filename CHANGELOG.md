@@ -5,7 +5,7 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
-## [Unreleased]
+## [0.17.0] — 2026-10-25 — the analyst release
 
 Phase 8.2 — the analyst's inputs and tables. 154 rules (+8), 35 commands.
 

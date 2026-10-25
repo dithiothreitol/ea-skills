@@ -367,7 +367,7 @@ argued with.
 | 5 | Evaluation: golden-set regression harness, capability comparison | **done** |
 | 6 | Service layer: offering catalog with SLAs, demand ledger, demand-weighted maintenance | **done** |
 | 7 | Reference, regulation, proposal: alignment to reference architectures, per-layer readiness, rationalization, cost, regulatory reporting, generated proposals, maturity | **done** |
-| 8 | Host, analyst, security, registers, time, measurement: the plugin and its guard, document intake and question records, security vocabulary and exposure, further registers and Polish output, diff/query/serve, a host eval | 8.1 **done** |
+| 8 | Host, analyst, security, registers, time, measurement: the plugin and its guard, document intake and question records, security vocabulary and exposure, further registers and Polish output, diff/query/serve, a host eval | 8.1–8.2 **done** |
 
 Deliberately open (decisions, not backlog): the **network facade** (MCP/HTTP) over the
 read-only commands stays deferred until the demand ledger shows someone asking for it —
