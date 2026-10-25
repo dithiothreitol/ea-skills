@@ -6,4 +6,4 @@ and the Open Group exchange schemas), never by a language model.
 """
 
 __all__ = ["oracle", "dsl", "genschema", "validate", "aoef", "cli"]
-__version__ = "0.19.0"
+__version__ = "0.20.0"

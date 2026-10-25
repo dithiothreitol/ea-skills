@@ -5,7 +5,7 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
-## [Unreleased]
+## [0.20.0] — 2026-10-25 — the time release
 
 Phase 8.5 — the architect's questions about time, the ones no report was written for, and a
 surface for other agents. 163 rules (unchanged), 26 skills, 42 commands, 14 schemas.
