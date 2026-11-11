@@ -337,7 +337,7 @@ agents. What is not otherwise available is the *combination*:
 
 | Capability | ea-skills | mcp-archimate | 7bots / archimate-deep-agent | Transitrix | ArcKit | Ardoq |
 |---|---|---|---|---|---|---|
-| Packaged as agent skills | ✓ | — (MCP server) | — (platform) | partial (plugins) | ✓ | — (SaaS) |
+| Packaged as agent skills | ✓ | — (MCP server) | — (platform) | partial (plugins) | ✓ | — (SaaS; an MCP server and its own agents) |
 | Unstructured-input ingestion | ✓ verified quotes (documents *and* spreadsheets) | — | ✓ | ✓ | partial | ✓ |
 | Real ArchiMate model files (Open Exchange) | ✓ XSD-validated, both directions (compile + brownfield import) | ✓ | ✓ | — (custom YAML) | — (markdown) | — |
 | Generated views | ✓ deterministic SVG, parts nested, connections routed | ✓ | — | ✓ own notation (SVG/PNG) | partial (Mermaid / PlantUML, no ArchiMate notation) | ✓ |
@@ -359,7 +359,9 @@ generates Mermaid and PlantUML diagrams and carries `impact`, `roadmap`, `health
 `conformance` commands and quoted citation markers; Transitrix grew into an editor family
 with text-first diagram previews, a traceability matrix, compliance and gap views and a
 CLI that validates in CI; mcp-archimate is active and unchanged in kind; 7bots and
-archimate-deep-agent show no activity since 2026-07-31. A neighbour the table does not
+archimate-deep-agent show no activity since 2026-07-31; Ardoq, which has no public
+repository, was read off its own announcements: its MCP server is generally available
+and it ships agents of its own, with no Open Exchange support found. A neighbour the table does not
 yet carry: `fanievh/archi-mcp-server`, an Archi plugin exposing a live model over MCP
 for querying and editing. Neighbours move fast, so this table carries a standing
 obligation: **re-check quarterly, and correct it when a claim stops being true** — it is
