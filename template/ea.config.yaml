@@ -18,7 +18,7 @@ sourcesDir: facts/sources
 # The oldest ea-skills release that may read this repository. An older tool refuses it by
 # name instead of misreading content written for a newer one; `easkills init` writes the
 # release that scaffolded it. Raise it when the repository adopts something newer.
-toolingVersion: "0.23.0"
+toolingVersion: "0.23.1"
 
 # Optional. Unit rates that turn the debt register's exposure into money.
 #
