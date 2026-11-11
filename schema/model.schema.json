@@ -136,6 +136,13 @@
               ],
               "description": "Gartner TIME portfolio quadrant; read by 'docs' and 'kpi'."
             },
+            "junctionType": {
+              "enum": [
+                "and",
+                "or"
+              ],
+              "description": "On a Junction: the exchange format's AndJunction or OrJunction (default and). The 3.2 matrix knows one Junction; the exchange file does not, so the kind is carried here and survives import and compile."
+            },
             "plateauDate": {
               "type": "string",
               "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
@@ -445,6 +452,13 @@
               ],
               "description": "Gartner TIME portfolio quadrant; read by 'docs' and 'kpi'."
             },
+            "junctionType": {
+              "enum": [
+                "and",
+                "or"
+              ],
+              "description": "On a Junction: the exchange format's AndJunction or OrJunction (default and). The 3.2 matrix knows one Junction; the exchange file does not, so the kind is carried here and survives import and compile."
+            },
             "plateauDate": {
               "type": "string",
               "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
@@ -676,6 +690,32 @@
             "$ref": "#/$defs/slug"
           },
           "description": "ISO 42010: the declared concerns this view frames (ISO001/ISO005)."
+        },
+        "layout": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Layout hints, never coordinates: geometry is computed, so diffs stay about content. Nesting follows Composition and Aggregation on its own.",
+          "properties": {
+            "groupBy": {
+              "type": "string",
+              "minLength": 1,
+              "description": "'layer' (default) or an element property: one band per value."
+            },
+            "columns": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12,
+              "description": "Where a band wraps (default 6)."
+            },
+            "order": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/slug"
+              },
+              "description": "Reading order of the elements named; the rest follow by id (VIEW001)."
+            }
+          }
         }
       }
     },

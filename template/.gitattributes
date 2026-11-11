@@ -1,0 +1,11 @@
+# Normalize line endings for authored text.
+* text=auto eol=lf
+
+# Source documents are evidence. A converted document's header records the SHA-256 of the
+# original it came from, and quotes are verified against the bytes: git must not rewrite a
+# line ending in either, or the digest stops matching on the next clone.
+facts/sources/** -text
+*.pdf -text
+*.docx -text
+*.pptx -text
+*.xlsx -text

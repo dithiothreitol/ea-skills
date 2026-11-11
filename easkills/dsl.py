@@ -119,6 +119,8 @@ class View:
     include: list[str] = field(default_factory=list)
     # ISO 42010: the concerns this view frames. Checked by the ISO* rules.
     concerns: list[str] = field(default_factory=list)
+    # Layout hints (D12): groupBy, columns, order -- content-shaped, never coordinates.
+    layout: dict[str, Any] = field(default_factory=dict)
     source_path: Path | None = None
     locator: str = ""
 
@@ -362,6 +364,7 @@ def build_model(root: Path, zone: str, documents: list[Document], config: dict[s
                 documentation=str(item.get("documentation", "") or ""),
                 include=[str(x) for x in include if isinstance(x, (str, int))],
                 concerns=[str(x) for x in concerns if isinstance(x, (str, int))],
+                layout=dict(item["layout"]) if isinstance(item.get("layout"), dict) else {},
                 source_path=doc.path,
                 locator=f"views[{index}]",
             )

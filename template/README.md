@@ -1,8 +1,21 @@
 # <Organisation> enterprise architecture
 
-Model repository scaffolded from the `ea-skills` template. Copy this directory, edit
-`ea.config.yaml`, and start with intake — or, if you already have a model somewhere
-else, with the import.
+Model repository scaffolded from the `ea-skills` template by `python -m easkills init`
+(or a copy of the directory). Edit `ea.config.yaml` and `.github/CODEOWNERS`, check the
+machine and the repository, and start with intake — or, if you already have a model
+somewhere else, with the import.
+
+```bash
+python -m easkills doctor --root .                 # what would make a gate wrong, one line each
+```
+
+`.github/workflows/ea-gates.yml` runs the gates on every push and pull request and the
+date-dependent rules every night, opening an issue when they fail. Sources that must not
+enter git history live in `facts/sources-private/` (ignored); commit a redacted copy:
+
+```bash
+python -m easkills intake-redact --root . --file facts/sources-private/interview.md --map facts/sources-private/redact.yaml
+```
 
 **Bring what you already have**
 
@@ -20,8 +33,9 @@ python -m easkills validate-facts --root .            # the fact register gate
 python -m easkills coverage       --root .            # what the facts do not cover yet
 python -m easkills propose --root . --from coverage --as-of <date>   # a question skeleton per uncited statement
 python -m easkills validate --root . --zone staging   # proposals, overlaid on approved
+python -m easkills review   --root . --out review.md  # every staged claim beside its evidence
 python -m easkills promote  --root . --dry-run        # the promotion gate, no move
-python -m easkills promote  --root .                  # staging -> approved (on human sign-off)
+python -m easkills promote  --root . --approved-by <who> --as-of <date>   # staging -> approved, sealed
 python -m easkills validate --root . --zone approved  # the published model
 ```
 
@@ -136,6 +150,7 @@ no document, which is the right answer when the regulation does not apply to you
 | `governance-log/decisions/` | Architecture decision records (MADR). |
 | `governance-log/compliance/` | Compliance assessments, recorded with TOGAF's six conformance levels rather than pass/fail. |
 | `governance-log/metrics/` | KPI snapshots (`kpi --snapshot --as-of <date>`), one JSON file per date, committed as records; `trend` reads them. |
+| `governance-log/approvals/` | Approval records `promote` writes: who signed, when, and the digest of every file moved into `model/approved/`. `validate` checks the approved zone against them (`APR001`-`APR003`). Never edited by hand. |
 | `governance-log/dispensations/` | Time-bounded waivers. **An expiry date is mandatory** -- a dispensation without one is not governance. |
 | `docs/` | Generated architecture description and audience-facing outputs. |
 | `build/` | Compiled artifacts. Reproducible; not committed. |

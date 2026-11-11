@@ -940,6 +940,50 @@ def check_iso_alignment(model: dsl.Model) -> list[Finding]:
     return findings
 
 
+VIEW_SIZE_LIMIT = 30
+
+
+def check_views(model: dsl.Model) -> list[Finding]:
+    """VIEW001-VIEW002: layout hints that name nothing, and views nobody can read (D12)."""
+    findings: list[Finding] = []
+    for view in sorted(model.views.values(), key=lambda v: v.id):
+        rel_file = _rel(model.root, view.source_path)
+        included = set(view.include)
+        order = view.layout.get("order") if isinstance(view.layout, dict) else None
+        stray = [e for e in order or [] if e not in included]
+        if stray:
+            findings.append(
+                Finding(
+                    "VIEW001",
+                    SEVERITY_WARNING,
+                    f"layout order names {', '.join(sorted(stray))}, which the view does not include -- a "
+                    "hint about nothing on the page; include them or drop them from the order",
+                    file=rel_file,
+                    locator=view.locator,
+                    concept=view.id,
+                )
+            )
+        shown = [e for e in view.include if e in model.elements]
+        if len(shown) > VIEW_SIZE_LIMIT:
+            by_layer: dict[str, int] = {}
+            for element_id in shown:
+                layer = oracle.layer_of(model.elements[element_id].type)
+                by_layer[layer] = by_layer.get(layer, 0) + 1
+            split = ", ".join(f"{layer} {by_layer[layer]}" for layer in oracle.LAYER_ORDER if layer in by_layer)
+            findings.append(
+                Finding(
+                    "VIEW002",
+                    SEVERITY_INFO,
+                    f"{len(shown)} elements -- past the {VIEW_SIZE_LIMIT} a reader takes in at once. Split it, "
+                    f"for instance by layer ({split}), or by the concern each part answers",
+                    file=rel_file,
+                    locator=view.locator,
+                    concept=view.id,
+                )
+            )
+    return findings
+
+
 def check_smells(model: dsl.Model) -> list[Finding]:
     """Starter subset of the EA smells catalogue, as deterministic graph queries."""
     findings: list[Finding] = []
@@ -1244,10 +1288,18 @@ def _run_checks(
     findings += check_motivation(model)
     findings += check_standards(model, today=today)
     findings += check_iso_alignment(model)
+    findings += check_views(model)
     findings += check_naming(model)
     findings += check_smells(model)
     findings += check_roadmap(model, today=today)
     findings += check_security(model)
+    if zone == "approved":
+        # The seal is about the files the approved zone holds, so it belongs to this zone's
+        # gate alone: the promotion gate judges a merge that is not on disk yet, and a
+        # staging overlay is not signed content.
+        from . import seal  # local: seal imports Finding from here
+
+        findings += seal.check_seal(root)
 
     severity_rank = {SEVERITY_ERROR: 0, SEVERITY_WARNING: 1, SEVERITY_INFO: 2}
     findings.sort(key=lambda f: (severity_rank.get(f.severity, 3), f.code, f.file, f.concept))

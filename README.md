@@ -10,7 +10,7 @@ and living governance out. All of it in git.
 [![CI](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Validation rules](https://img.shields.io/badge/validation%20rules-165-brightgreen.svg)](docs/RULES.md)
+[![Validation rules](https://img.shields.io/badge/validation%20rules-170-brightgreen.svg)](docs/RULES.md)
 [![ArchiMate 3.2](https://img.shields.io/badge/ArchiMate-3.2-orange.svg)](oracle/NOTICE.md)
 [![ISO/IEC/IEEE 42010](https://img.shields.io/badge/ISO%2FIEC%2FIEEE-42010%3A2022-lightgrey.svg)](docs/RULES.md)
 
@@ -99,9 +99,12 @@ python -m easkills impact  --root eval/example --scope app-erp-core   # blast ra
 python -m easkills roadmap --root eval/example                        # plateaus, gaps, unscheduled intent
 ```
 
-To start your own architecture repository, copy [`template/`](template/) and follow
-the [Getting-started tutorial](docs/GETTING-STARTED.md) — from a raw interview to a
-validated model, rendered views and a generated architecture description.
+To start your own architecture repository, `python -m easkills init <directory>` (or
+`easkills init` with the plugin) and follow the
+[Getting-started tutorial](docs/GETTING-STARTED.md) — from a raw interview to a validated
+model, rendered views and a generated architecture description. The scaffold brings its
+own CI: the gates on every push, the date-dependent rules every night, code owners on the
+signed zone, all pinned to the release that wrote it.
 
 ### Use the skills from Claude Code
 
@@ -166,7 +169,7 @@ and keeps the stage order honest.
 |---|---|---|
 | Ingest | `ea-intake`, `ea-delta-ingest`, `ea-import` | `validate-facts`, `coverage --min-coverage`; `intake-csv` and `intake-doc` make a spreadsheet, PDF, Word, PowerPoint or Excel file citable; clarification questions are records (`QST*`); `import` lands in staging, all `assumed` |
 | Model | `ea-capability-map`, `ea-model`, `ea-validate` | `validate` (staging as overlay), 3-repair cap |
-| Publish | `ea-approve` | `promote` — the only write path into `approved/` |
+| Publish | `ea-approve` | `review` — every staged claim beside its evidence, weakest first; `promote --approved-by --as-of` — the only write path into `approved/`, writing the approval record that seals what it moved (`APR*`) |
 | Document | `ea-stakeholders`, `ea-views`, `ea-docs` | `docs`, `render`, ISO loop rules, freshness CI check; `rtm` and `glossary` derive the traceability matrix and the glossary, as CSV for a spreadsheet when asked; `export` writes views as PlantUML (ArchiMate notation) or Mermaid; `render --heatmap` colours any view by a property |
 | Govern | `ea-standards-base`, `ea-dispensation`, `ea-adr`, `ea-compliance`, `ea-service` | `validate-gov` — expiry and SLA are enforced, not filed |
 | Maintain | `ea-health`, `ea-change-triage`, `ea-board`, `ea-context` | `kpi`, `debt`, `staleness`, `conformance`, `correspondences`, `roadmap`, `delta`, `context`, `impact`; `kpi --snapshot` commits the KPIs as a dated record and `trend` names what regressed; `diff` says what a plateau changes or what changed since a commit; `query` answers the questions no report was written for |
@@ -190,8 +193,10 @@ human-signed content. Staging validates as an *overlay* on approved (a proposal 
 reference approved elements; re-using an id proposes an update), so skills model the
 delta rather than copying the world. The only way into `approved` is
 `python -m easkills promote`, whose gate validates the merged result by approved-zone
-standards — ownership and review dates, advisory while drafting, block there. The git
-commit of the move is the approval record. With the plugin enabled, the rule is a
+standards — ownership and review dates, advisory while drafting, block there. The move
+writes an approval record carrying the digest of every file it moved, and the model gate
+checks the approved zone against the records from then on: approved content that changes
+by any other route fails it. The git commit of the move is who signed. With the plugin enabled, the rule is a
 mechanism and not only a sentence: a hook refuses writes into `approved/` by any other
 route — exactly for the file-editing tools, by pattern for shell commands — and asks the
 person before `promote` itself runs.
@@ -407,7 +412,9 @@ schema/          JSON Schemas -- all generated, never hand-edited
 skills/          the 26 agent skills (this is the product)
 .claude-plugin/  plugin and marketplace manifests -- the repository root is the plugin
 bin/             `easkills`, on the Bash tool's PATH while the plugin is enabled
-hooks/           the PreToolUse guard: approved/ changes only through `promote`
+action.yml       the composite action an architecture repository's own CI uses
+constraints.txt  the runtime closure, pinned with every file's hash
+hooks/           the guard (approved/ only through `promote`, which asks) and the gate hooks
 evals/           `claude plugin eval` cases: host behaviour with and without the plugin
 template/        scaffold to copy for a new enterprise
 eval/example/    worked example, clean (doubles as the largest golden case)
@@ -425,7 +432,7 @@ docs/            GETTING-STARTED, CLI reference, RULES catalogue, BLUEPRINT (des
 |---|---|
 | [Getting started](docs/GETTING-STARTED.md) | Tutorial: from a raw interview to a validated, documented architecture |
 | [CLI reference](docs/CLI.md) | Every command, flag and exit-code contract |
-| [Rule catalogue](docs/RULES.md) | All 165 validation rules with severities and rationale |
+| [Rule catalogue](docs/RULES.md) | All 170 validation rules with severities and rationale |
 | [Blueprint](docs/BLUEPRINT.md) | The research-verified design: decisions, evidence, per-phase log |
 | [Golden set](eval/golden/README.md) | How pipeline quality is measured |
 | [Skill coverage](docs/SKILL-COVERAGE.md) | Which instrument measures which skill — including where nothing does |

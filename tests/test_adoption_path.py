@@ -56,8 +56,10 @@ def _approved(root: Path) -> list[str]:
 @pytest.fixture(scope="module")
 def adopted(tmp_path_factory) -> Adoption:
     root = tmp_path_factory.mktemp("adoption") / "meridian-ea"
-    shutil.copytree(REPO_ROOT / "template", root)
     walk = Adoption(root=root)
+
+    # 0. The repository, scaffolded the way a plugin user does it -- not a copy of a clone.
+    walk.exits["init"] = cli.main(["init", str(root)])
 
     # 1. The spreadsheet somebody e-mailed, turned into a citable source document.
     walk.exits["intake-csv"] = cli.main(
@@ -95,7 +97,8 @@ def adopted(tmp_path_factory) -> Adoption:
 
     # 4. Promote that one file. Everything else stays a proposal.
     walk.exits["promote"] = cli.main(
-        ["promote", "--root", str(root), "--file", "model/staging/application.yaml"]
+        ["promote", "--root", str(root), "--file", "model/staging/application.yaml",
+         "--approved-by", "architecture-board@example.test", "--as-of", "2026-08-05"]
     )
     walk.files["approved"] = _approved(root)
     walk.files["staging"] = _staging(root)
@@ -104,6 +107,8 @@ def adopted(tmp_path_factory) -> Adoption:
     walk.reports["impactApproved"] = impact.analyse(root, "crm-suite", zone="approved")
     walk.reports["impactStaging"] = impact.analyse(root, "crm-suite", zone="staging")
     walk.exits["docs"] = cli.main(["docs", "--root", str(root)])
+    # 6. What the promotion left behind: a record vouching for the file it moved.
+    walk.reports["seal"] = [f for f in validate.validate(root).findings if f.code.startswith("APR")]
     return walk
 
 
@@ -111,7 +116,15 @@ def adopted(tmp_path_factory) -> Adoption:
 
 
 def test_every_command_on_the_path_succeeds(adopted):
-    assert adopted.exits == {"intake-csv": 0, "import": 0, "promote": 0, "docs": 0}
+    assert adopted.exits == {"init": 0, "intake-csv": 0, "import": 0, "promote": 0, "docs": 0}
+
+
+def test_the_first_promotion_seals_what_it_moved(adopted):
+    """The scaffold starts unsealed; the first promotion writes the first record, and the
+    file it moved is vouched for -- an adopter never runs --seal-existing at all."""
+    assert adopted.reports["seal"] == []
+    records = sorted((adopted.root / "governance-log" / "approvals").glob("*.yaml"))
+    assert [r.name for r in records] == ["approval-2026-08-05-01.yaml"]
 
 
 # --------------------------------------------------------------------- the spreadsheet
@@ -236,7 +249,7 @@ def test_the_walk_is_repeatable(tmp_path):
     outputs = []
     for index in range(2):
         root = tmp_path / f"run{index}"
-        shutil.copytree(REPO_ROOT / "template", root)
+        assert cli.main(["init", str(root)]) == 0
         assert cli.main(["intake-csv", "--root", str(root), "--file", str(HANDOVER)]) == 0
         assert cli.main(
             ["import", "--root", str(root), "--file", str(EXPORT), "--ids", "names"]

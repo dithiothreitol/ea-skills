@@ -16,8 +16,17 @@ This tooling is built to be safe to run in CI on untrusted content:
   tampered matrix cannot reach an artifact or a generated schema. Only `pin-oracle`
   rewrites the pins, and it exists for deliberate, reviewed oracle upgrades.
 - **No code execution from content.** Model repositories are YAML + Markdown; they
-  are parsed with `yaml.safe_load` and never evaluated. Generated outputs (XML, SVG,
-  Markdown) are built from sanitized/escaped values.
+  are parsed with a safe loader (libyaml's where available) and never evaluated.
+  Generated outputs (XML, SVG, Markdown) are built from sanitized/escaped values. The
+  plugin's `bin/easkills` and the gate hook's child process run Python with `-P`, so a
+  module planted in an architecture repository (a `yaml.py`, an `lxml` package) is never imported
+  in place of the real dependency -- before 0.22.0 the wrapper's `python -c` put the
+  working directory first on the import path.
+- **Approved content is sealed.** `promote` records the SHA-256 of every file it moves
+  into the approved zone (an approval record per promotion, as in
+  `eval/example/governance-log/approvals/`), and `validate` fails on approved
+  content that changed, appeared or disappeared outside it (`APR001`-`APR003`). A record
+  proves consistency, not identity: the commit and its review are who signed.
 - **Reads stay inside the repository.** Provenance and evidence references resolve
   against the repository root and are refused if they escape it (`PROV008`/`FACT008`),
   so validation cannot be pointed at files outside the checkout — which would also

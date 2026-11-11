@@ -1,0 +1,7 @@
+# Approval is a person. In a team, the pull request that carries a promotion -- the moved
+# files and the approval record `easkills promote` writes -- is the signature, and these
+# owners are who must sign it. Replace the team below with your architecture board, then
+# turn on "Require review from Code Owners" in the branch protection rule for main.
+/model/approved/            @your-org/architecture-board
+/governance-log/approvals/  @your-org/architecture-board
+/standards/                 @your-org/architecture-board

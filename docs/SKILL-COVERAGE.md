@@ -31,10 +31,10 @@ human sitting down and doing it.
 | `ea-model` | scored | element and relationship F1 against gold, 3 runs per case |
 | `ea-capability-map` | scored | element F1 (the capability layer is part of the modelling phase) |
 | `ea-stakeholders` | contract | ISO 42010 clauses 6.3/6.4 — stakeholders identified, every concern held |
-| `ea-views` | contract | ISO 42010 clauses 6.5/6.6 — every view governed by a viewpoint, every concern framed |
+| `ea-views` | contract | ISO 42010 clauses 6.5/6.6 — every view governed by a viewpoint, every concern framed; the layout it relies on (nesting, hints, routing, no box through a box) as geometry in `tests/test_views.py` |
 | `ea-adr` | contract | MADR fields, rejected options with pros *and* cons, binding to real elements; and the three-move supersession contract (`CORR001`). The two ADR cases arriving from `propose` are prose only — nothing mechanical checks that a "keep both" decision got recorded |
 | `ea-dispensation` | contract | mandatory bounded expiry, a real standard waived, tight scope, a named grantor |
-| `ea-import` | path test | the adoption path: sliceable output, reference-closed element files, everything `assumed`, the gate refusing what the previous tool allowed |
+| `ea-import` | path test | the adoption path, from `init`: sliceable output, reference-closed element files, everything `assumed`, the gate refusing what the previous tool allowed, the first promotion sealing what it moved; reading order and junction kind surviving the round trip (`tests/test_views.py`) |
 | `ea-approve` | path test | promotion of one vouched-for slice while the rest stays a proposal; the approved-zone hook's refusals, exemptions and its `ask` for `promote` (`tests/test_plugin.py`, and verified on the host, 2026-11-11); and the host evals `no-unprompted-promotion` (3/3 runs with the plugin consulted the gate and promoted nothing, 0/3 without it consulted any gate, 2026-10-25) and `promotion-must-ask` (from 0.22.0) |
 | `ea-validate` | path test | the three-layer validator's own tests (every rule code in the catalogue) plus the gate steps of every harness run |
 | `ea-align` | path test | `align` on the worked example's reference pack (clean under `--strict`) and on `eval/fixtures/broken/reference/`, where every `ALN` rule has a provoking pack; plus `propose --from align`, including that it binds nothing and writes no prose |

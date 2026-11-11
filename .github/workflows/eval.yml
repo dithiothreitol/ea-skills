@@ -1,7 +1,9 @@
 # The golden-set harness calls a language-model API, so it is **never** part of the
 # push gate: it costs tokens and it is not deterministic, and a gate that is both is
 # neither trustworthy nor affordable. Run it deliberately, from the Actions tab or
-# locally, when skill prose changes.
+# locally, when skill prose changes -- and monthly on its own, so a prose regression
+# cannot stay invisible between hand-run sessions. Without an ANTHROPIC_API_KEY
+# repository secret the scheduled run says so and does nothing else.
 
 name: Evaluate skills against the golden set
 
@@ -28,48 +30,60 @@ on:
         description: "Also run the governance contract harness (true/false)"
         required: false
         default: "false"
+  schedule:
+    - cron: "0 6 1 * *"
 
 jobs:
   evaluate:
     runs-on: ubuntu-latest
+    env:
+      HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+      RUNS: ${{ github.event.inputs.runs || '3' }}
+      MODEL: ${{ github.event.inputs.model || 'claude-sonnet-5-5' }}
+      CANDIDATES: ${{ github.event.inputs.candidates || '1' }}
+      CASE: ${{ github.event.inputs.case || '' }}
+      CONTRACTS: ${{ github.event.inputs.contracts || (github.event_name == 'schedule' && 'true') || 'false' }}
     steps:
+      - name: No key, no measurement
+        if: env.HAS_KEY != 'true'
+        run: echo "::notice::the repository holds no ANTHROPIC_API_KEY secret, so nothing was measured (docs/SKILL-COVERAGE.md)"
+
       - uses: actions/checkout@v7
+        if: env.HAS_KEY == 'true'
       - uses: actions/setup-python@v7
+        if: env.HAS_KEY == 'true'
         with:
           python-version: "3.12"
       - name: Install
+        if: env.HAS_KEY == 'true'
         run: |
-          python -m pip install -r requirements.txt
+          python -m pip install --require-hashes -r constraints.txt
           python -m pip install -r requirements-eval.txt
 
       - name: Run the harness
+        if: env.HAS_KEY == 'true'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          python eval/harness/run.py \
-            ${{ github.event.inputs.case && format('--case {0}', github.event.inputs.case) || '--all' }} \
-            --runs ${{ github.event.inputs.runs }} \
-            --model ${{ github.event.inputs.model }} \
-            --candidates ${{ github.event.inputs.candidates }} \
-            --out run-records.json
+          if [ -n "$CASE" ]; then selection="--case $CASE"; else selection="--all"; fi
+          python eval/harness/run.py $selection --runs "$RUNS" --model "$MODEL" \
+            --candidates "$CANDIDATES" --out run-records.json
 
       - name: Run the governance contracts
-        if: ${{ github.event.inputs.contracts == 'true' }}
+        if: env.HAS_KEY == 'true' && env.CONTRACTS == 'true'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          python eval/harness/contracts.py \
-            --runs ${{ github.event.inputs.runs }} \
-            --model ${{ github.event.inputs.model }} \
-            --out contract-records.json
+          python eval/harness/contracts.py --runs "$RUNS" --model "$MODEL" --out contract-records.json
 
       # Uploaded rather than committed: a number produced by a non-deterministic run
       # becomes the baseline only when a human has read it and decided it should.
       - name: Keep the records
-        if: always()
+        if: always() && env.HAS_KEY == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: eval-records
           path: |
             run-records.json
             contract-records.json
+          if-no-files-found: ignore

@@ -13,8 +13,11 @@ comes in:
   with an import rationale, so ``PROV006`` lists it and the fact-register work starts
   from an honest zero. A ``provenance`` property from a previous export is kept as
   information, never trusted as verification.
-* **Geometry is discarded.** Layout is computed deterministically at render time; the
-  import keeps a view's *content* (which elements it shows) and drops the pixels.
+* **Coordinates are discarded; what is content-shaped is kept.** Layout is computed
+  deterministically at render time, so the import drops the pixels and keeps a view's
+  content: which elements it shows, its reading order (as ``layout.order``), and -- because
+  nesting is derived from Composition and Aggregation -- every nesting the model backs with
+  one. A nesting the source drew with no such relationship is named in the report.
 * **What cannot be imported is named.** Unsupported types, skipped relationships and
   every identifier that had to be renamed are in the report -- a migration summary
   that quietly drops content is how models lose limbs.
@@ -45,8 +48,11 @@ LIFTED_LISTS = {"appliesTo": "appliesTo", "standards": "standards"}
 
 # The exchange format models a junction as a typed element; the 3.2 matrix (and this
 # DSL) knows the one concept `Junction`. Mapped, not dropped: junctions sit on
-# relationship chains, and removing one silently severs the chain.
+# relationship chains, and removing one silently severs the chain. The kind survives as
+# the closed property `junctionType`, which the compiler turns back into the exchange type
+# -- before 0.22.0 an imported OrJunction came back out as an AndJunction.
 TYPE_ALIASES = {"AndJunction": "Junction", "OrJunction": "Junction"}
+JUNCTION_KINDS = {"AndJunction": "and", "OrJunction": "or"}
 
 SLUG_CHARS = set("abcdefghijklmnopqrstuvwxyz0123456789._-")
 
@@ -230,7 +236,10 @@ def read_exchange(xml: bytes, ids: str, report: ImportReport) -> dict[str, Any]:
         documentation = _text_of(node, "documentation")
         if documentation:
             item["documentation"] = documentation
-        _lift_governance(item, _properties_of(node, definitions), source_name)
+        properties = _properties_of(node, definitions)
+        if declared in JUNCTION_KINDS:
+            properties["junctionType"] = JUNCTION_KINDS[declared]
+        _lift_governance(item, properties, source_name)
         elements.append(item)
 
     relationships: list[dict[str, Any]] = []
@@ -267,11 +276,15 @@ def read_exchange(xml: bytes, ids: str, report: ImportReport) -> dict[str, Any]:
 
     views: list[dict[str, Any]] = []
     dropped_geometry = False
+    containment = {
+        (r["source"], r["target"]) for r in relationships if r["type"] in ("Composition", "Aggregation")
+    }
     for node in root.findall("{*}views/{*}diagrams/{*}view"):
         identifier = node.get("identifier", "")
         name = _text_of(node, "name")
         slug = allocator.allocate(identifier, name)
         include: list[str] = []
+        positioned: list[tuple[float, float, str]] = []
         for visual in node.iter("{*}node"):
             ref = visual.get("elementRef", "")
             mapped_ref = id_map.get(ref)
@@ -279,6 +292,19 @@ def read_exchange(xml: bytes, ids: str, report: ImportReport) -> dict[str, Any]:
                 include.append(mapped_ref)
             if visual.get("x") is not None:
                 dropped_geometry = True
+                try:
+                    if mapped_ref:
+                        positioned.append((float(visual.get("y", "0")), float(visual.get("x", "0")), mapped_ref))
+                except ValueError:
+                    pass  # an unreadable coordinate orders nothing; the element is still included
+            container = visual.getparent()
+            outer = id_map.get(container.get("elementRef", "")) if etree.QName(container).localname == "node" else None
+            if outer and mapped_ref and (outer, mapped_ref) not in containment:
+                report.notes.append(
+                    f"view '{slug}': '{mapped_ref}' is drawn inside '{outer}' with no composition or "
+                    "aggregation between them -- nesting is derived from those relationships here, so "
+                    "it is not kept"
+                )
         item = {"id": slug, "name": name or slug}
         viewpoint = node.get("viewpoint", "")
         if viewpoint:
@@ -288,10 +314,15 @@ def read_exchange(xml: bytes, ids: str, report: ImportReport) -> dict[str, Any]:
             item["documentation"] = documentation
         if include:
             item["include"] = include
+        order = list(dict.fromkeys(ref for _y, _x, ref in sorted(positioned)))
+        if len(order) > 1:
+            # The diagram's reading order is content: top to bottom, left to right.
+            item["layout"] = {"order": order}
         views.append(item)
     if dropped_geometry:
         report.notes.append(
-            "diagram geometry discarded: layout is computed deterministically at render time"
+            "diagram coordinates discarded: layout is computed deterministically at render time; "
+            "each view's reading order is kept as its layout order"
         )
 
     # Lifted `appliesTo` values are the *exporting* repository's slugs; the elements
@@ -320,9 +351,9 @@ def _header(report: ImportReport, part: str) -> str:
     return (
         f"# {part}, imported from {report.source} (sha256 {report.sha256[:16]}) by\n"
         "# `python -m easkills import`. This file is a *proposal* in staging: every\n"
-        "# concept without verified evidence is marked `assumed`, diagram geometry was\n"
-        "# discarded (layout is computed at render time), and promotion still runs the\n"
-        "# gate. Identifier changes are listed in the import report.\n"
+        "# concept without verified evidence is marked `assumed`, diagram coordinates were\n"
+        "# discarded (layout is computed at render time; reading order is kept as a layout\n"
+        "# hint), and promotion still runs the gate. Identifier changes are in the report.\n"
         "#\n"
         "# Split the way this repository authors models: elements by ArchiMate layer,\n"
         "# relationships together. That is what makes a slice promotable on its own --\n"

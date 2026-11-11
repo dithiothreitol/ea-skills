@@ -1,0 +1,25 @@
+# Written by `easkills promote`. Do not edit: the model gate checks every approved file
+# against these digests (APR001-APR003), and the commit adding this file is who signed.
+id: approval-2026-07-30-01
+kind: seal
+approvedBy: architecture-board@aurorafoods.example
+date: '2026-07-30'
+files:
+  - path: model/approved/application.yaml
+    sha256: 50e950871bc4ee09530bbd27846a85ca9db16176d77f0db3c468b54173f5dbda
+  - path: model/approved/business.yaml
+    sha256: 7feac7e898cbdb2932c10922a93aaf46a50d874a771ce43688b7e88f328e8b28
+  - path: model/approved/migration.yaml
+    sha256: a09afca4f5edd1ab9cd6765fd4c1c501126784660df06e5c54800a6c5fead1cf
+  - path: model/approved/motivation.yaml
+    sha256: 8d1af0924c022467e24c28e7c13996990289bbabe05fce4dc6b04aea0ce26bbb
+  - path: model/approved/relations.yaml
+    sha256: a945ec33649387de248224b324ccfde6d2ddba8e4510088a9c65675666c96872
+  - path: model/approved/stakeholders.yaml
+    sha256: 0070b4a8ae323389a5f684a709da06c6f3129765c0368a68c009fb7482a741e5
+  - path: model/approved/strategy.yaml
+    sha256: 09055dd2868de15bdf366acbe49928bbc5d8da5b8ef471a3b0e1f655e2b6dbcf
+  - path: model/approved/technology.yaml
+    sha256: aec0e46c99a55c1abaf83fcf942d993a39f49d8d03534f47ab0eccb88ff1c75b
+  - path: model/approved/views.yaml
+    sha256: accee2fb7920746910d77adbab28d0976b2b068f8ecdf04f5c2c206356b6ba4e

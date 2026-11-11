@@ -109,8 +109,14 @@ def test_views_have_geometry_and_derived_connections(compiled):
     root = etree.fromstring(compiled.xml)
     view = root.find(".//a:views/a:diagrams/a:view[@identifier='id-view-layered-overview']", NS)
     assert view is not None
-    nodes = view.findall("a:node", NS)
+    nodes = view.findall(".//a:node", NS)
     assert len(nodes) == 14
+    # The ERP application server composes PostgreSQL: the part is drawn inside its whole
+    # (nested node), and the composition is not drawn again as a connection.
+    server = view.find("a:node[@elementRef='id-node-erp-app-server']", NS)
+    assert [n.get("elementRef") for n in server.findall("a:node", NS)] == ["id-sysswt-postgresql"]
+    refs = {c.get("relationshipRef") for c in view.findall("a:connection", NS)}
+    assert "id-rel-erp-server-composes-postgresql" not in refs
     for node in nodes:
         for attribute in ("x", "y", "w", "h"):
             assert int(node.get(attribute)) >= 0

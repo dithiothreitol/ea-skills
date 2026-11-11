@@ -5,7 +5,9 @@ disable-model-invocation: true
 argument-hint: "[staging-file]"
 allowed-tools:
   - Bash(easkills promote *)
+  - Bash(easkills review *)
   - Bash(python -m easkills promote *)
+  - Bash(python -m easkills review *)
 ---
 
 # Promoting staging to approved
@@ -41,24 +43,41 @@ standards*: ownership and review dates become errors, every semantic rule is on.
 This is stricter than a plain staging validation -- content that warns in staging
 blocks here, by design.
 
-2. **Present what would change.** List the files that would move, the concepts they
-   add or update (a same-path file replaces the approved one -- that is the update
-   flow), and every open `PROV006` assumption riding along. Assumptions do not block
-   promotion, but promoting one means the human accepts it -- say so explicitly
-   rather than letting it slide through in a file list.
-
-3. **On explicit confirmation, promote:**
+2. **Put the review sheet in front of the person.**
 
 ```bash
-easkills promote --root <repo>                          # everything
-easkills promote --root <repo> --file model/staging/x.yaml  # selected files
+easkills review --root <repo> --out review.md
 ```
 
-Partial promotion is normal: promote what was reviewed, leave the rest staged.
+The sheet lists every staged claim beside its evidence -- each quote with its file and
+line, through which fact -- weakest first: no evidence (`assumed`), disputed, implied,
+approximate, verbatim. It opens with what the promotion changes on disk, replaced files
+and deleted concepts included. Walk the person through the top of it: promoting an
+assumption means they accept it, and a deletion is a signed decision too. Do not
+summarise the sheet into "looks good" -- the point is that they read the weak claims.
 
-4. **Commit immediately.** The move is a plain file rename; the git commit is the
-   approval record (who, when, what). Suggest a message naming what was approved and
-   on whose decision. Do not batch unrelated changes into it.
+3. **On explicit confirmation, promote, naming who signs and when:**
+
+```bash
+easkills promote --root <repo> --approved-by <who signs> --as-of <YYYY-MM-DD>
+easkills promote --root <repo> --file model/staging/x.yaml --approved-by <who> --as-of <date>
+```
+
+`--approved-by` is the person or board who decided -- ask them; never put your own name
+or a guess there. The host asks the person to confirm the command itself as it runs; if
+it is refused, the person has not confirmed -- stop and say so. Partial promotion is
+normal: promote what was reviewed, leave the rest staged.
+
+The promotion writes an **approval record** into `governance-log/approvals/` with the
+digest of every file it moved. From then on `validate` holds the approved zone to the
+records: an approved file changed by any other route fails the gate (`APR001`). A
+repository with approved content and no record yet is sealed once, on the person's
+decision, with `easkills promote --root <repo> --seal-existing --approved-by <who> --as-of
+<date>`.
+
+4. **Commit immediately**, the moved files and the record together. The commit is who
+   signed; the record is what the gate checks. Suggest a message naming what was
+   approved and on whose decision. Do not batch unrelated changes into it.
 
 ## When the gate blocks
 

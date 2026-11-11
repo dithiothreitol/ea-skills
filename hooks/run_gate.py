@@ -69,6 +69,8 @@ GOVERNED: tuple[tuple[tuple[str, ...], str], ...] = (
     (("facts", "entities.yaml"), "validate-facts"),
     (("model", "staging"), "validate --zone staging"),
     (("model", "approved"), "validate"),
+    # Approval records vouch for approved files, so the model gate is theirs (APR*).
+    (("governance-log", "approvals"), "validate"),
     (("standards",), "validate-gov"),
     (("governance-log",), "validate-gov"),
     (("services",), "validate-gov"),

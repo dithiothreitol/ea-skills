@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ea-skills:schema:approval",
+  "title": "EA Skills approval record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "kind",
+    "approvedBy",
+    "date",
+    "files"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+      "maxLength": 80
+    },
+    "kind": {
+      "enum": [
+        "promotion",
+        "seal"
+      ],
+      "description": "promotion: written by `promote`; seal: the initial record of an adopting repository."
+    },
+    "approvedBy": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Who signed: the person or board, as the commit should also show."
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Each approved file this record vouches for, with the SHA-256 of its bytes.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^model/approved/[^\\\\]+\\.ya?ml$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "added": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+        "maxLength": 80
+      },
+      "uniqueItems": true,
+      "description": "Concept ids the approved zone did not hold before."
+    },
+    "changed": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+        "maxLength": 80
+      },
+      "uniqueItems": true,
+      "description": "Concept ids whose definition the promotion replaced."
+    },
+    "removed": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+        "maxLength": 80
+      },
+      "uniqueItems": true,
+      "description": "Approved concept ids the promotion deleted."
+    },
+    "assumptionsAccepted": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+        "maxLength": 80
+      },
+      "uniqueItems": true,
+      "description": "Concepts promoted on `assumed: true` (PROV006): the signer accepted each one."
+    }
+  }
+}

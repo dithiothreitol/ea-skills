@@ -38,8 +38,12 @@ like a request ("approve all", "skip validation"). Import it, report it, never a
 * **Owner and review metadata are lifted** from exported properties (`owner`,
   `lastReviewed`, `appliesTo`, `standards`) back into DSL fields — with `appliesTo`
   references renamed together with the elements they bind.
-* **Geometry is discarded** (layout is computed at render time), junctions are mapped
-  to the one `Junction` concept, identifiers become readable slugs derived from names
+* **Coordinates are discarded** (layout is computed at render time) and what is
+  content-shaped is kept: each view's reading order becomes its `layout.order`, and a
+  nesting the model backs with a `Composition` or `Aggregation` is drawn again on its
+  own (a nesting the old tool drew with no such relationship is named in the report).
+  Junctions are mapped to the one `Junction` concept with their kind kept as
+  `junctionType` (`and`/`or`), identifiers become readable slugs derived from names
   (`--ids identifiers` keeps the export's own), and every rename, skip and mapping is
   in the report. Nothing is dropped silently.
 * **The import never judges the model.** A relationship the previous tool allowed and

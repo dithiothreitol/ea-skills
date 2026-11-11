@@ -202,7 +202,7 @@ def test_nested_view_nodes_are_walked_and_dropped_elements_excluded(foreign_repo
     model, _docs, _config = dsl.load(repo, "staging")
     view = model.views["sales-overview"]
     assert set(view.include) == {"crm-suite", "sales-rep"}
-    assert any("geometry discarded" in note for note in report.notes)
+    assert any("coordinates discarded" in note for note in report.notes)
 
 
 def test_the_import_does_not_judge_but_the_gate_does(foreign_repo):

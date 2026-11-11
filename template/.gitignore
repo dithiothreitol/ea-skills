@@ -1,0 +1,7 @@
+# Compiled artifacts are reproducible from the model; they are not committed.
+build/
+
+# Originals that must not enter git history -- an interview with names in it, before
+# `easkills intake-redact` writes the copy that is committed. Git history is permanent:
+# a file committed once is in every clone, even after it is deleted.
+facts/sources-private/

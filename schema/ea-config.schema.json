@@ -34,6 +34,11 @@
       "type": "string",
       "description": "Directory holding the raw source documents."
     },
+    "toolingVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "The oldest ea-skills release this repository may be read with. An older tool refuses by name instead of misreading content written for a newer one; `easkills init` writes the running version here."
+    },
     "costModel": {
       "type": "object",
       "additionalProperties": false,

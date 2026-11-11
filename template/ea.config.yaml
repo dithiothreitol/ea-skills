@@ -15,6 +15,11 @@ factsRoot: .
 # Raw source documents that ea-intake ingests (chunking, coverage, SRC001).
 sourcesDir: facts/sources
 
+# The oldest ea-skills release that may read this repository. An older tool refuses it by
+# name instead of misreading content written for a newer one; `easkills init` writes the
+# release that scaffolded it. Raise it when the repository adopts something newer.
+toolingVersion: "0.21.0"
+
 # Optional. Unit rates that turn the debt register's exposure into money.
 #
 # The tool computes the exposure; the operator prices it. No rate is defaulted,

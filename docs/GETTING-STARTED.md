@@ -25,16 +25,32 @@ repository is a git repository from its first minute.
 
 ## 0. Scaffold a repository
 
-Copy [`template/`](../template/) somewhere and make it yours:
+`init` writes a new repository from the tooling's own template, pinned to the release
+that wrote it -- with the plugin installed it is `easkills init`, from a clone `python -m
+easkills init`, and `cp -r template` still works:
 
 ```bash
-cp -r template ~/my-ea && cd ~/my-ea
-git init && git add -A && git commit -m "Scaffold from ea-skills template"
+python -m easkills init ~/my-ea && cd ~/my-ea
+git init && git add -A && git commit -m "Scaffold the architecture repository"
+python -m easkills doctor --root .   # one line per thing that would make a gate wrong
 ```
 
 Edit `ea.config.yaml` — set the `name` and a one-paragraph `documentation` stating
 what this model exists to decide. A model with no stated audience goes unused; the
-ISO 42010 conformance check (6.2) will hold you to it.
+ISO 42010 conformance check (6.2) will hold you to it. `toolingVersion` there is the
+oldest ea-skills release that may read the repository; an older tool refuses it by name,
+and `doctor` says when a newer one has changed what the gates check.
+
+The scaffold is also the CI. `.github/workflows/ea-gates.yml` runs the model, evidence
+and governance gates and the documentation freshness check on every push and pull request
+(with the model diff of a pull request in its summary), and every night runs the
+date-dependent rules against today, opening one issue when they fail -- so a dispensation
+that expired yesterday is an issue this morning, not a surprise at the next board. It uses
+the composite action from this repository at a pinned release, which installs the runtime
+dependencies with their hashes (`constraints.txt`). `.github/CODEOWNERS` names who must
+review a change to `model/approved/`, `governance-log/approvals/` and `standards/`: put your
+board's team there and require code-owner review on `main`, and the pull request that
+carries a promotion becomes its signature.
 
 The scaffold also brings `.github/ISSUE_TEMPLATE/change_request.md`: in your repository
 the issue *is* the change-request record (step 6), which is why the form asks for ids
@@ -44,7 +60,24 @@ from `model/approved/`, `standards/` and `governance-log/decisions/`.
 
 Put raw material into `facts/sources/` — an interview transcript, a systems-inventory
 export, meeting notes. **Never edit sources**; they are the evidence everything else
-points into. Then split them into extraction chunks:
+points into.
+
+**Before you commit a source, decide whether it may be in git at all.** Git history is
+permanent: a file committed once is in every clone, even after it is deleted. An interview
+that names people, quotes opinions about colleagues or holds detail a supplier must not
+see belongs in `facts/sources-private/` (the scaffold's `.gitignore` keeps it out), and
+what is committed is a redacted copy made by code -- a replacement map you write, applied
+mechanically, the original's digest recorded and the map not:
+
+```bash
+python -m easkills intake-redact --root . --file facts/sources-private/interview.md --map facts/sources-private/redact.yaml
+```
+
+The map is a list of `{find, replace}` pairs, applied in order; a rule that matched nothing
+is reported, because a name spelled differently in the source is a name left in. Quotes are
+then verified against the redacted copy like any other source.
+
+Then split the sources into extraction chunks:
 
 ```bash
 python -m easkills chunk --root .
@@ -162,11 +195,24 @@ rounds; unresolved findings are review questions, not grinding material.
 
 ## 3. Promote — the human gate
 
+Read before you sign. The review sheet puts every staged claim beside its evidence --
+each quote with its file and line, through which fact -- weakest first, opened by what the
+promotion changes on disk:
+
 ```bash
-python -m easkills promote --root . --dry-run   # the gate + the plan
-python -m easkills promote --root .             # move staging -> approved
+python -m easkills review --root . --out review.md   # what you are about to sign
+python -m easkills promote --root . --dry-run        # the gate + the plan
+python -m easkills promote --root . --approved-by architecture-board@example.test --as-of 2026-07-30
 git add -A && git commit -m "Approve initial capability map and application layer"
 ```
+
+A promotion writes an **approval record** into `governance-log/approvals/`: who signed,
+when, and the SHA-256 of every file it moved. From then on the approved zone is sealed --
+`validate` checks every approved file against the records, so content that changes by any
+other route (an editor, a script, a merge resolved by hand) fails the gate (`APR001`), and a
+file deleted outside `promote` too (`APR003`). A repository that already has approved
+content seals it once with `promote --seal-existing --approved-by <who> --as-of <date>`;
+until then `validate` only says, as information, that the zone is not sealed.
 
 With the plugin enabled, this is also the only route the host allows: its hook refuses
 an agent's direct edit of an approved file, asks *you* before an agent's `promote` runs —
@@ -201,7 +247,22 @@ views:
 ```
 
 The `ISO*` rules keep the loop closed: every concern held by someone, framed by some
-view; every view answering a declared question. Then generate everything:
+view; every view answering a declared question.
+
+A view never holds coordinates. The layout is computed -- a part is drawn inside its whole
+wherever the model has the `Composition` or `Aggregation` for it, and connections run along
+the gutters between rows instead of through boxes -- and three hints are yours to give:
+
+```yaml
+    layout:
+      groupBy: timeDisposition   # one band per value; default: one per ArchiMate layer
+      columns: 4                 # where a band wraps; default 6
+      order: [app-erp-core, app-wms]   # reading order of the elements named
+```
+
+`VIEW001` reports an `order` entry the view does not include, and `VIEW002` says, as
+information, when a view is past the thirty elements a reader takes in at once. Then
+generate everything:
 
 ```bash
 python -m easkills docs --root .      # ISO 42010 description + SVG views into docs/

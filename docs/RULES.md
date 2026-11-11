@@ -155,6 +155,38 @@ checkable fact. An `Assessment` does not govern: it is the question, not the tre
 | `SEC002` | warning | A `Flow`, `Access`, `Serving` or `Triggering` relationship between two elements whose `trustZone` values differ, and neither end is governed. A trust boundary crossed with no recorded control on either side. `propose --from threats` writes the assessment the crossing needs. |
 | `SEC003` | warning | An element holding `personalData` (personal or special-category) is outside the GDPR scope -- `regulatoryScope` does not include `gdpr`. The record of processing activities would silently omit it, and under-inclusion is the failure mode of a register. |
 
+## Layer 2 -- views (the VIEW family)
+
+Views declare content and a few layout hints, never coordinates (D12): a part is drawn
+inside its whole when the model says so, bands follow `groupBy`, rows wrap at `columns`,
+and `order` sets the reading order. These rules keep the hints honest and the pages readable.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `VIEW001` | warning | The view's `layout.order` names an element the view does not include. A hint about nothing on the page is either a typo or an element dropped from `include` without its hint. |
+| `VIEW002` | info | The view shows more than 30 elements -- past what a reader takes in at once. The message suggests a split (by layer, with the counts, or by the concern each part answers). Information, never a gate: a large overview can be deliberate. |
+
+## The approval seal (the APR family, D4)
+
+`easkills promote` writes an approval record (`governance-log/approvals/`) carrying the
+SHA-256 of every file it moved into `model/approved/`; `promote --seal-existing` writes the
+one initial record for what an adopting repository already holds. The model gate checks the
+approved zone against the records, the way every consuming command checks the oracle against
+its pins. **The ramp is state-based:** while a repository holds no record at all, one
+information finding says the zone is not sealed; from the first record on, every finding is
+an error. The checks run on the approved zone only -- the promotion gate judges a merge that
+is not on disk yet, and staging is not signed content.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `APR001` | error (info while unsealed) | An approved file whose current bytes no approval record vouches for: changed, or added, outside `promote`. Put the change in `model/staging/` and promote it, so a person signs it. Before the first record: one info finding naming the command that seals the zone. |
+| `APR002` | error | An approval record that cannot be read, does not satisfy `schema/approval.schema.json`, or repeats another record's id. An unreadable record vouches for nothing. |
+| `APR003` | error | A record vouches for a file the approved zone no longer holds: deleted outside `promote`. Promotion never deletes a file; retiring one is promoting an empty replacement, which a person signs. |
+
+What a record proves is consistency, not identity -- anybody can write a YAML file. The
+commit that adds it is who signed, and in a team the pull request carrying it, reviewed by
+the code owners of `governance-log/approvals/`, is the signature.
+
 ## Zone semantics, and what promotion actually does
 
 `staging` is validated as an **overlay on `approved`**: staging is a proposed delta,

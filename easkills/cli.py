@@ -41,7 +41,10 @@ from . import (
     readiness as readiness_mod,
     reference as reference_mod,
     render as render_mod,
+    redact as redact_mod,
     reports,
+    review as review_mod,
+    scaffold,
     score as score_mod,
     security as security_mod,
     serve as serve_mod,
@@ -224,6 +227,37 @@ def build_parser() -> argparse.ArgumentParser:
         "--out", type=Path, help="write the glossary as a table (.csv for a spreadsheet, else markdown)"
     )
 
+    p_redact = sub.add_parser(
+        "intake-redact", help="the committable copy of a sensitive text source, by a human-authored replacement map"
+    )
+    p_redact.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_redact.add_argument("--file", type=Path, required=True, help="the original .md or .txt (kept outside git)")
+    p_redact.add_argument("--map", dest="mapping", type=Path, required=True, help="YAML with `replacements: [{find, replace}]`")
+    p_redact.add_argument("--out", type=Path, help="target file (default: <sourcesDir>/<name>.md)")
+    p_redact.add_argument("--overwrite", action="store_true", help="replace an existing redacted copy")
+    p_redact.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
+
+    p_init = sub.add_parser("init", help="scaffold a new architecture repository, pinned to this release")
+    p_init.add_argument("directory", type=Path, help="where to write it (absent or empty)")
+
+    p_doctor = sub.add_parser("doctor", help="what this machine and repository are missing, one line each")
+    p_doctor.add_argument(
+        "--root", type=Path, default=None, help="also check this architecture repository (default: the machine only)"
+    )
+
+    p_review = sub.add_parser(
+        "review", help="the review sheet: every staged claim beside its evidence, weakest first"
+    )
+    p_review.add_argument("--root", type=Path, default=Path.cwd(), help="model repository root (default: cwd)")
+    p_review.add_argument(
+        "--file",
+        dest="files",
+        type=Path,
+        action="append",
+        help="a staging file to review (repeatable; default: everything promote would move)",
+    )
+    p_review.add_argument("--out", type=Path, help="write the sheet to this markdown file instead of stdout")
+
     p_promote = sub.add_parser(
         "promote", help="move staging files into approved after the promotion gate passes"
     )
@@ -236,6 +270,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="a staging file to promote (repeatable; default: everything in model/staging/)",
     )
     p_promote.add_argument("--dry-run", action="store_true", help="run the gate and show the plan, move nothing")
+    p_promote.add_argument(
+        "--approved-by",
+        help="who signs this promotion (required unless --dry-run): written into the approval record",
+    )
+    p_promote.add_argument(
+        "--as-of",
+        help="the signing date, YYYY-MM-DD (required unless --dry-run): the record's date and the gate's",
+    )
+    p_promote.add_argument(
+        "--seal-existing",
+        action="store_true",
+        help="write the initial approval record for what model/approved/ already holds; moves nothing, runs once",
+    )
 
     p_gov = sub.add_parser(
         "validate-gov", help="validate the governance log and standards base (SIB/DEC/DISP/COMP rules)"
@@ -749,12 +796,130 @@ def cmd_glossary(args: argparse.Namespace) -> int:
 
 def cmd_promote(args: argparse.Namespace) -> int:
     try:
-        result = promote_mod.promote(args.root.resolve(), files=args.files, dry_run=args.dry_run)
+        today = _parse_as_of(args.as_of)
+    except ValueError:
+        print(_error(f"--as-of must be a real date in YYYY-MM-DD form, got {args.as_of!r}"))
+        return 1
+    try:
+        if args.seal_existing:
+            if args.files:
+                print(_error("--seal-existing seals what the approved zone already holds; it takes no --file"))
+                return 1
+            result = promote_mod.seal_existing(
+                args.root.resolve(), args.approved_by, args.as_of, dry_run=args.dry_run, today=today
+            )
+        else:
+            result = promote_mod.promote(
+                args.root.resolve(),
+                files=args.files,
+                dry_run=args.dry_run,
+                today=today,
+                approved_by=args.approved_by,
+                as_of=args.as_of,
+            )
     except promote_mod.PromoteError as exc:
         print(_error(str(exc)))
         return 1
     print(result.render())
     return 0 if result.ok else 1
+
+
+def cmd_intake_redact(args: argparse.Namespace) -> int:
+    root = args.root.resolve()
+    config = dsl.load_config(root)
+    sources_dir = root / str(config.get("sourcesDir", "facts/sources"))
+    target = args.out or (sources_dir / f"{args.file.stem}.md")
+    try:
+        report = redact_mod.redact(args.file, args.mapping, target, overwrite=args.overwrite)
+    except (redact_mod.RedactError, UnicodeDecodeError) as exc:
+        print(_error(str(exc)))
+        return 1
+    lines = [
+        _ok(f"Redacted {report.replacements} occurrence(s) by {report.rules} rule(s) -> {ui.bold(report.target)}"),
+        ui.dim(f"original: sha256 {report.sha256[:16]}; neither its name nor the map is recorded in the copy"),
+    ]
+    if args.out is None:
+        lines.append(
+            ui.yellow(
+                f"note: the copy is named after the original ({target.name}); if that name is itself "
+                "sensitive, re-run with --out and delete this file before committing"
+            )
+        )
+    for number in report.unmatched:
+        lines.append(
+            ui.yellow(f"note: rule {number} matched nothing -- a name spelled differently in the source is a name left in")
+        )
+    lines += [
+        "",
+        ui.dim(
+            "Commit the redacted copy, never the original or the map. Quotes are verified against the copy; "
+            "the digest in its header is what ties it to the original."
+        ),
+    ]
+    _emit_report(args, report.as_dict(), "\n".join(lines))
+    return 0
+
+
+def cmd_init(args: argparse.Namespace) -> int:
+    target = args.directory.resolve()
+    try:
+        written = scaffold.init(target)
+    except scaffold.ScaffoldError as exc:
+        print(_error(str(exc)))
+        return 1
+    from . import __version__
+
+    print(_ok(f"Scaffolded {len(written)} file(s) into {ui.bold(str(target))}, pinned to ea-skills {__version__}"))
+    print(
+        "\n".join(
+            [
+                "",
+                "Next:",
+                f"  cd {target}",
+                "  git init && git add -A && git commit -m \"Scaffold the architecture repository\"",
+                "  edit ea.config.yaml (name, documentation) and .github/CODEOWNERS (your board)",
+                "  easkills doctor --root .",
+                "",
+                ui.dim(
+                    "The workflow in .github/workflows/ runs the gates on every push and a nightly "
+                    "check against today's date; CODEOWNERS makes the signed zone need a reviewer."
+                ),
+            ]
+        )
+    )
+    return 0
+
+
+def cmd_doctor(args: argparse.Namespace) -> int:
+    root = args.root.resolve() if args.root else None
+    checks = scaffold.doctor(root)
+    marks = {"ok": ui.green("ok  "), "warn": ui.yellow("warn"), "fail": ui.red("FAIL")}
+    from . import __version__
+
+    print(ui.bold(f"ea-skills {__version__} doctor") + (f" -- {root}" if root else ""))
+    for check in checks:
+        print(f"  {marks[check.status]}  {check.name:<15} {check.detail}")
+    failed = sum(1 for c in checks if c.status == "fail")
+    warned = sum(1 for c in checks if c.status == "warn")
+    print("")
+    print(f"{failed} failure(s), {warned} warning(s)" + ("" if failed else " -- nothing that makes a gate wrong"))
+    return 1 if failed else 0
+
+
+def cmd_review(args: argparse.Namespace) -> int:
+    try:
+        sheet = review_mod.review(args.root.resolve(), files=args.files)
+    except review_mod.ReviewError as exc:
+        print(_error(str(exc)))
+        return 1
+    document = review_mod.markdown(sheet)
+    if args.out:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(document, encoding="utf-8", newline="\n")
+        print(_ok(f"Review sheet for {len(sheet.claims)} staged claim(s) written to {args.out}"))
+    else:
+        print(document, end="")
+    return 0
 
 
 def cmd_validate_gov(args: argparse.Namespace) -> int:
@@ -1249,6 +1414,10 @@ HANDLERS = {
     "rtm": cmd_rtm,
     "glossary": cmd_glossary,
     "promote": cmd_promote,
+    "review": cmd_review,
+    "init": cmd_init,
+    "intake-redact": cmd_intake_redact,
+    "doctor": cmd_doctor,
     "validate-gov": cmd_validate_gov,
     "staleness": cmd_staleness,
     "kpi": cmd_kpi,
@@ -1291,7 +1460,46 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.reconfigure(errors="replace")
     ui.enable_windows_vt()
     args = build_parser().parse_args(argv)
+    refusal = _tooling_version_refusal(args)
+    if refusal:
+        print(_error(refusal))
+        return 1
     return HANDLERS[args.command](args)
+
+
+# Commands that must run whatever a repository's toolingVersion says: `doctor` reports the
+# mismatch instead of refusing it, and `init` writes the version in the first place.
+VERSION_EXEMPT = {"doctor", "init", "gen-schema", "pin-oracle", "oracle-info"}
+
+
+def _version_tuple(text: str) -> tuple[int, ...] | None:
+    try:
+        return tuple(int(part) for part in str(text).split("."))
+    except ValueError:
+        return None
+
+
+def _tooling_version_refusal(args: argparse.Namespace) -> str:
+    """Refuse, by name, to read a repository written for a newer release than this one.
+
+    Content written for a newer release can use keys, rules or record kinds this release
+    does not know; reading it anyway produces findings about what it misunderstands and
+    silence about what it cannot see. An unparseable value is SCHEMA002's to report.
+    """
+    from . import __version__
+
+    root = getattr(args, "root", None)
+    if args.command in VERSION_EXEMPT or root is None:
+        return ""
+    required = dsl.load_config(Path(root).resolve()).get("toolingVersion")
+    needed, running = _version_tuple(required) if required else None, _version_tuple(__version__)
+    if needed and running and needed > running:
+        return (
+            f"this repository needs ea-skills {required} or later (toolingVersion in ea.config.yaml); "
+            f"this is {__version__}. Upgrade the plugin (`/plugin update ea-skills`) or the clone, "
+            "rather than read content written for a release this one does not know."
+        )
+    return ""
 
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ from pathlib import Path
 from lxml import etree
 
 from . import dsl, oracle
+from . import layout as layout_mod
 
 NS = oracle.AOEF_NS
 XSI = oracle.XSI_NS
@@ -26,13 +27,14 @@ SCHEMA_LOCATION = (
     "http://www.opengroup.org/xsd/archimate/3.1/archimate3_Diagram.xsd"
 )
 
-# Deterministic grid layout parameters (pixels, matching Archi's default node size).
-NODE_WIDTH = 145
-NODE_HEIGHT = 60
-GAP_X = 25
-GAP_Y = 45
-MARGIN = 20
-COLUMNS = 6
+# Deterministic layout parameters, defined once in layout.py and re-exported here for
+# the callers that read them from the compiler.
+NODE_WIDTH = layout_mod.NODE_WIDTH
+NODE_HEIGHT = layout_mod.NODE_HEIGHT
+GAP_X = layout_mod.GAP_X
+GAP_Y = layout_mod.GAP_Y
+MARGIN = layout_mod.MARGIN
+COLUMNS = layout_mod.COLUMNS
 
 
 class CompileError(RuntimeError):
@@ -114,26 +116,28 @@ def _governance_properties(concept: dsl.Concept) -> dict[str, str]:
     return props
 
 
-def _layout(model: dsl.Model, element_ids: list[str]) -> dict[str, tuple[int, int]]:
-    """Layered grid: one band per ArchiMate layer, top to bottom."""
-    by_layer: dict[str, list[str]] = {}
-    for element_id in element_ids:
-        element = model.elements[element_id]
-        by_layer.setdefault(oracle.layer_of(element.type), []).append(element_id)
+def exchange_type(element: dsl.Element) -> str:
+    """The exchange format's type for an element: a Junction is AndJunction or OrJunction there."""
+    if element.type == "Junction":
+        return "OrJunction" if element.properties.get("junctionType") == "or" else "AndJunction"
+    return element.type
 
-    positions: dict[str, tuple[int, int]] = {}
-    y = MARGIN
-    for layer in oracle.LAYER_ORDER:
-        members = sorted(by_layer.get(layer, []))
-        if not members:
-            continue
-        for index, element_id in enumerate(members):
-            row, column = divmod(index, COLUMNS)
-            x = MARGIN + column * (NODE_WIDTH + GAP_X)
-            positions[element_id] = (x, y + row * (NODE_HEIGHT + GAP_Y))
-        rows = (len(members) + COLUMNS - 1) // COLUMNS
-        y += rows * (NODE_HEIGHT + GAP_Y) + GAP_Y
-    return positions
+
+def _append_node(parent: etree._Element, view_id: str, element_id: str, plan: layout_mod.Layout, node_ids: dict[str, str]) -> None:
+    box = plan.boxes[element_id]
+    node_identifier = concept_id(f"node-{view_id}-{element_id}")
+    node_ids[element_id] = node_identifier
+    visual = etree.SubElement(parent, _qn("node"))
+    visual.set("identifier", node_identifier)
+    visual.set(f"{{{XSI}}}type", "Element")
+    visual.set("elementRef", concept_id(element_id))
+    # Absolute coordinates for nested nodes too, as the exchange format and Archi use them.
+    visual.set("x", str(box.x))
+    visual.set("y", str(box.y))
+    visual.set("w", str(box.w))
+    visual.set("h", str(box.h))
+    for child_id in sorted(box.children):
+        _append_node(visual, view_id, child_id, plan, node_ids)
 
 
 def build_tree(model: dsl.Model) -> etree._ElementTree:
@@ -157,7 +161,7 @@ def build_tree(model: dsl.Model) -> etree._ElementTree:
             element = model.elements[element_id]
             node = etree.SubElement(container, _qn("element"))
             node.set("identifier", concept_id(element.id))
-            node.set(f"{{{XSI}}}type", element.type)
+            node.set(f"{{{XSI}}}type", exchange_type(element))
             _append_text(node, "name", element.name)
             _append_text(node, "documentation", element.documentation)
             _append_properties(node, _governance_properties(element), definitions)
@@ -225,32 +229,28 @@ def build_tree(model: dsl.Model) -> etree._ElementTree:
             _append_text(node, "name", view.name)
             _append_text(node, "documentation", view.documentation)
 
-            positions = _layout(model, included)
+            plan = layout_mod.compute(model, view)
             node_ids: dict[str, str] = {}
-            for element_id in sorted(included):
-                x, y = positions[element_id]
-                node_identifier = concept_id(f"node-{view.id}-{element_id}")
-                node_ids[element_id] = node_identifier
-                visual = etree.SubElement(node, _qn("node"))
-                visual.set("identifier", node_identifier)
-                visual.set(f"{{{XSI}}}type", "Element")
-                visual.set("elementRef", concept_id(element_id))
-                visual.set("x", str(x))
-                visual.set("y", str(y))
-                visual.set("w", str(NODE_WIDTH))
-                visual.set("h", str(NODE_HEIGHT))
+            for element_id in sorted(e for e, box in plan.boxes.items() if box.parent is None):
+                _append_node(node, view.id, element_id, plan, node_ids)
 
             shown = set(included)
             for relationship_id in relationship_ids:
                 relationship = model.relationships[relationship_id]
                 if relationship.source not in shown or relationship.target not in shown:
                     continue
+                if relationship.id in plan.nested:
+                    continue  # drawn as nesting: the part sits inside its whole
                 connection = etree.SubElement(node, _qn("connection"))
                 connection.set("identifier", concept_id(f"conn-{view.id}-{relationship.id}"))
                 connection.set(f"{{{XSI}}}type", "Relationship")
                 connection.set("relationshipRef", concept_id(relationship.id))
                 connection.set("source", node_ids[relationship.source])
                 connection.set("target", node_ids[relationship.target])
+                for x, y in plan.route(relationship.source, relationship.target)[1:-1]:
+                    bend = etree.SubElement(connection, _qn("bendpoint"))
+                    bend.set("x", str(int(round(x))))
+                    bend.set("y", str(int(round(y))))
 
     return etree.ElementTree(root)
 

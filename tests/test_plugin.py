@@ -733,3 +733,21 @@ def test_the_gate_graders_read_the_property_not_the_mechanism():
         if spec["type"] == "tool_used" and spec.get("tool") == "Bash" and "max" not in spec:
             pattern = str(spec.get("input_match", ""))
             assert "validate" not in pattern, f"{path}: demands a gate call instead of reading the verdict"
+
+
+@pytest.mark.parametrize(
+    ("tool", "tool_input", "refused"),
+    [
+        ("Write", {"file_path": "governance-log/approvals/approval-2026-08-01-02.yaml"}, True),
+        ("Edit", {"file_path": "governance-log/approvals/approval-2026-07-30-01.yaml"}, True),
+        ("Bash", {"command": "echo id: x > governance-log/approvals/forged.yaml"}, True),
+        ("Write", {"file_path": "governance-log/decisions/adr-1.yaml"}, False),
+    ],
+)
+def test_the_guard_holds_the_approval_records_to_promote(ea_repo, tool, tool_input, refused):
+    """Found by the session review: a record written by hand would vouch for an edit nobody
+    promoted, so the records get the approved zone's single write path."""
+    message = _guard().decide({"tool_name": tool, "tool_input": tool_input, "cwd": str(ea_repo)})
+    assert bool(message) is refused
+    if refused:
+        assert "approval" in message and "easkills promote" in message

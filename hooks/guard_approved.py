@@ -50,6 +50,10 @@ import sys
 from pathlib import Path
 
 APPROVED = ("model", "approved")
+# Since 0.22.0 the approval records decide whether approved content counts as signed: a
+# record written by hand would vouch for an edit nobody promoted, so the guard holds the
+# records to the same single write path as the zone they seal.
+SEALED = (APPROVED, ("governance-log", "approvals"))
 EDIT_TOOLS = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
 SHELL_TOOLS = {"Bash", "PowerShell"}
 
@@ -97,10 +101,10 @@ def _is_tooling_repository(path: Path) -> bool:
 
 
 def _approved_root(path: Path) -> Path | None:
-    """The architecture repository whose approved zone ``path`` is in, or None."""
+    """The architecture repository whose approved zone (or approval records) ``path`` is in."""
     parts = path.parts
     for index in range(len(parts) - 1):
-        if (parts[index], parts[index + 1]) == APPROVED:
+        if (parts[index], parts[index + 1]) in SEALED:
             root = Path(*parts[:index]) if index else Path(path.anchor or ".")
             if (root / "ea.config.yaml").is_file():
                 return root
@@ -110,7 +114,7 @@ def _approved_root(path: Path) -> Path | None:
 def protected(raw: str, cwd: Path) -> bool:
     """Whether writing ``raw`` (as given to a tool, relative or absolute) hits a guarded zone."""
     text = raw.strip().strip("\"'")
-    if not text or "approved" not in text:
+    if not text or ("approved" not in text and "approvals" not in text):
         return False
     candidate = Path(text.replace("\\", "/"))
     if not candidate.is_absolute():
@@ -118,6 +122,17 @@ def protected(raw: str, cwd: Path) -> bool:
     candidate = Path(os.path.normpath(str(candidate)))
     root = _approved_root(candidate)
     return root is not None and not _is_tooling_repository(candidate)
+
+
+def _refusal(path: str) -> str:
+    if "approvals" in path.replace("\\", "/").split("/"):
+        return (
+            f"ea-skills: refused a write into {path}. governance-log/approvals/ holds the approval "
+            "records that seal the approved zone, and only `easkills promote` writes them -- a record "
+            "written any other way would vouch for content nobody promoted. Put the change in "
+            "model/staging/ and ask the human to promote it."
+        )
+    return REFUSAL.format(path=path)
 
 
 def _tokens(segment: str, powershell: bool) -> list[str]:
@@ -223,12 +238,12 @@ def decide(payload: dict) -> str | None:
     cwd = Path(str(payload.get("cwd") or os.getcwd()))
     if tool in EDIT_TOOLS:
         raw = str(tool_input.get("file_path") or tool_input.get("notebook_path") or "")
-        return REFUSAL.format(path=raw) if protected(raw, cwd) else None
+        return _refusal(raw) if protected(raw, cwd) else None
     if tool in SHELL_TOOLS:
         command = str(tool_input.get("command") or "")
         for target in shell_targets(command, powershell=tool == "PowerShell"):
             if protected(target, cwd):
-                return REFUSAL.format(path=target)
+                return _refusal(target)
     return None
 
 

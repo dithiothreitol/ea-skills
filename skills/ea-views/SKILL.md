@@ -32,7 +32,14 @@ views:
 
 Rules that keep views honest:
 
-* **Never write coordinates.** There is no field for them; do not ask for one.
+* **Never write coordinates.** There is no field for them; do not ask for one. Three
+  layout *hints* are content and are yours to give: `layout.groupBy` (`layer`, the
+  default, or a property such as `timeDisposition` -- one band per value),
+  `layout.columns` (where a band wraps) and `layout.order` (the reading order of the
+  elements named). A part is drawn inside its whole wherever the model has the
+  `Composition` or `Aggregation` for it -- nest by modelling the relationship, not by
+  asking for a box inside a box. `VIEW001` reports an `order` entry the view does not
+  include; past thirty elements `VIEW002` suggests a split.
 * **`concerns` names why the view exists.** A view with no concern draws `ISO005` --
   either it answers a stakeholder question or it is decoration. Get the concern ids
   from the stakeholder register (`ea-stakeholders` owns that loop).

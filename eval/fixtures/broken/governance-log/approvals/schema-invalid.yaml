@@ -1,0 +1,7 @@
+# --- APR002: an approval record without who signed it ------------------------------
+id: approval-2026-07-20-03
+kind: promotion
+date: 2026-07-20
+files:
+  - path: model/approved/broken.yaml
+    sha256: '2222222222222222222222222222222222222222222222222222222222222222'

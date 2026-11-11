@@ -1,0 +1,52 @@
+# The ea-skills tooling for an architecture repository's own CI (D6, 0.22.0).
+#
+# A composite action, not a package: the oracle and the generated schemas are repository
+# data outside the Python package (pyproject.toml says why), so the action uses this
+# repository at the release it is pinned to, installs the runtime closure with every hash
+# checked (constraints.txt), and puts `easkills` on PATH. With `command` set it also runs
+# that one command line; without it, later steps call `easkills ...` themselves.
+name: ea-skills
+description: Put the ea-skills deterministic CLI on PATH in an architecture repository's workflow, optionally running one command.
+author: Dariusz Tyszka
+branding:
+  icon: check-circle
+  color: green
+
+inputs:
+  command:
+    description: "An easkills command line to run after installing, e.g. 'validate --root . --strict'. Empty: install only."
+    required: false
+    default: ""
+  python-version:
+    description: "The Python the tooling installs into (3.11 or later)."
+    required: false
+    default: "3.12"
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v7
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install the pinned runtime closure, hashes checked
+      shell: bash
+      run: python -m pip install --require-hashes -r "$GITHUB_ACTION_PATH/constraints.txt"
+
+    - name: Put easkills on PATH
+      shell: bash
+      run: |
+        echo "EASKILLS_PYTHON=$(command -v python)" >> "$GITHUB_ENV"
+        echo "$GITHUB_ACTION_PATH/bin" >> "$GITHUB_PATH"
+
+    - name: Run the command
+      if: ${{ inputs.command != '' }}
+      shell: bash
+      env:
+        # Passed through the environment, never interpolated into the script: an input is
+        # data, and a pull request title that reached it must not become shell code.
+        EASKILLS_ARGS: ${{ inputs.command }}
+      run: |
+        # Word splitting is intended: the input is a command line.
+        # shellcheck disable=SC2086
+        sh "$GITHUB_ACTION_PATH/bin/easkills" $EASKILLS_ARGS

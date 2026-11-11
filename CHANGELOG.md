@@ -7,8 +7,123 @@ project's build phases (design log with per-decision rationale:
 
 ## [Unreleased]
 
-Phase 9 (`docs/PHASE9-PLAN.md`), session 1 of 3: what the host does, and what the evidence
-gate accepts. 165 rules, 26 skills, 42 commands, 14 schemas.
+Phase 9 (`docs/PHASE9-PLAN.md`), sessions 1 and 2 of 3: what the host does, what the
+evidence gate accepts, and what an architecture repository carries. 170 rules, 26 skills,
+46 commands, 15 schemas.
+
+### Added — the approval seal (D4)
+
+- **`promote` writes an approval record** into `governance-log/approvals/`: who signed
+  (`--approved-by`), when (`--as-of`, never the clock), the SHA-256 of every file it moved,
+  and the concepts added, changed, removed and accepted on assumption. Both flags are
+  required for a real promotion. The fifteenth schema (`approval.schema.json`) closes the
+  record.
+- **The model gate checks the approved zone against the records.** `APR001`: an approved
+  file whose bytes no record vouches for -- changed or added outside `promote`. `APR002`:
+  an unreadable, schema-invalid or duplicate record. `APR003`: a record vouching for a file
+  the zone no longer holds -- deleted outside `promote`. The ramp is state-based: an
+  unsealed repository is told once, as information; from its first record on, every
+  finding is an error. The checks run on the approved zone only, never in the promotion
+  gate or a staging overlay.
+- **`promote --seal-existing`** writes the one initial record for what an adopting
+  repository already holds; it refuses an invalid zone and refuses to run twice, because
+  sealing again would vouch for whatever changed since. The worked example is sealed. The
+  golden cases are not, deliberately: gold is a measuring stick nobody promotes, and a seal
+  there would turn every degraded copy in the scorer's tests into a tampering.
+
+### Added — the review sheet (D5)
+
+- **`easkills review`** puts every staged claim beside its evidence -- each quote with its
+  file and line, through which fact, with the fact's confidence -- weakest first, opened by
+  what the promotion changes on disk, replaced files and deleted concepts included.
+  Deterministic markdown; decides nothing. `ea-approve` walks the person through it before
+  the promotion it asks them to confirm.
+
+### Added — what an adopter's repository is given (D6, D7)
+
+- **`easkills init <directory>`** writes a new architecture repository from the tooling's
+  own template -- a plugin user has no clone to copy -- with `toolingVersion` and the
+  composite action pinned to the running release.
+- **The scaffold is the CI.** `.github/workflows/ea-gates.yml` runs the model, evidence and
+  governance gates and the documentation freshness check on every push and pull request,
+  writes the model diff of a pull request into its summary, and every night runs the
+  date-dependent rules against today, opening or updating one issue when they fail.
+  `.github/CODEOWNERS` names who reviews `model/approved/`, the approval records and the
+  standards base; `.gitattributes` keeps sources byte-exact; `.gitignore` keeps
+  `facts/sources-private/` out of history.
+- **`action.yml`** -- a composite action at the repository root: installs the runtime
+  closure with every hash checked and puts `easkills` on PATH (optionally running one
+  command, passed through the environment, never interpolated into a script).
+- **`constraints.txt`** pins the runtime closure (8 packages) with every published file's
+  SHA-256. CI, the action and the scaffolded workflow install from it; `pyproject.toml`
+  and `requirements.txt` keep ranges, and a test holds every pin inside them. Proved to
+  install in a clean environment with `--require-hashes`.
+- **`toolingVersion`** in `ea.config.yaml` (closed key): an older tool refuses a repository
+  written for a newer one, by name, before reading anything.
+- **`easkills doctor [--root]`** -- one line per thing that can make a gate wrong or slow:
+  interpreter, dependencies against the constraints, oracle pins, hooks, git, and with a
+  root the repository's `toolingVersion` and seal. Exit 1 on a failure, never a warning.
+- The eval workflows run monthly on their own, and say so and do nothing while the
+  repository holds no `ANTHROPIC_API_KEY` secret.
+
+### Added — sources that must not enter git history
+
+- **`easkills intake-redact --file --map`** writes the committable copy of a sensitive text
+  source from a replacement map a person wrote: the original's SHA-256 and the replacement
+  count in the header, never the map; a rule that matched nothing is reported. Guidance in
+  GETTING-STARTED and `ea-intake` step 0: git history is permanent.
+
+### Changed — views (D12)
+
+- **One layout for the exchange file and the SVG** (`easkills/layout.py`). A part is drawn
+  inside its whole wherever the model has the `Composition` or `Aggregation` for it (and
+  that relationship is not drawn again); connections run orthogonally along the gutters
+  between bands and through vertical channels no box occupies, with the bend points
+  written into the exchange file; three hints are declared on the view -- `groupBy`
+  (layer, or any element property), `columns`, `order`. `VIEW001` (warning): an `order`
+  entry the view does not include. `VIEW002` (info): past thirty elements, with a split
+  suggested. The worked example's overview now draws PostgreSQL inside the ERP server.
+- **The importer keeps what is content-shaped**: each view's reading order as its
+  `layout.order`, and every nesting the model backs; a nesting drawn with no such
+  relationship is named in the report.
+
+### Fixed — a junction never compiled
+
+- **The compiler wrote `xsi:type="Junction"`, which the Open Group exchange schema does not
+  have** -- any model with a junction failed XSD validation -- and the importer folded
+  `OrJunction` into a plain junction, so the kind did not survive a round trip. The kind is
+  now the closed property `junctionType` (`and`/`or`), read on import and written back as
+  `AndJunction`/`OrJunction`.
+
+### Fixed — found by the second session review (each with its regression test)
+
+- **A first promotion into an unsealed zone with content locked the repository.** Its
+  record vouched for the moved files only, every other approved file failed `APR001`, and
+  `--seal-existing` then refused because a record existed. A first promotion now refuses,
+  naming `--seal-existing`, until what the zone already holds is sealed on purpose.
+- **Restoring an earlier signed version by hand passed the seal.** Any record's digest
+  counted; now only the latest record naming a file does.
+- **A line ending was a change.** Digests are taken over content with CRLF normalized, as
+  git stores it, so a Windows working tree and CI agree.
+- **A hand-written approval record could vouch for an unpromoted edit.** The guard now holds
+  `governance-log/approvals/` to `promote` too.
+- **A promotion that failed half-way left files in the approved zone unsigned.** The record
+  is written before any file moves, and a failed move reverses every rename, last first,
+  and removes the record -- a bug in the first version of the rollback, which restored the
+  approved file into staging, was found by the test written for it.
+- **Redaction could be undone by its own map, missed names across a CRLF line break, and
+  committed the original's file name.** A `find` surviving into the copy is now a refusal,
+  newlines are normalized before any rule runs, and the header records only the digest.
+- **A same-band connection in a view's last band was drawn off the canvas.** The canvas
+  keeps the last band's gutter.
+
+### Upgrading — what the seal and the signature change
+
+- **A real `promote` needs `--approved-by` and `--as-of`.** Scripts that promoted with
+  neither now get a refusal naming both.
+- **A sealed repository's approved zone changes only through `promote`.** After the first
+  approval record, a hand edit is an `APR001` error; seal an existing repository once with
+  `promote --seal-existing`, on the decision of whoever signs for it.
 
 ### Added — the gates run by the host (D1, D2)
 

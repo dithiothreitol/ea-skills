@@ -33,6 +33,7 @@ REFERENCE_MAPPINGS_SCHEMA_PATH = SCHEMA_DIR / "reference-mappings.schema.json"
 CONFIG_SCHEMA_PATH = SCHEMA_DIR / "ea-config.schema.json"
 QUESTION_SCHEMA_PATH = SCHEMA_DIR / "question.schema.json"
 METRICS_SCHEMA_PATH = SCHEMA_DIR / "metrics.schema.json"
+APPROVAL_SCHEMA_PATH = SCHEMA_DIR / "approval.schema.json"
 
 # A clarification question is open until a fact answers it or somebody withdraws it with
 # a reason. Closed, because `kpi` and the architecture description count by status.
@@ -220,6 +221,14 @@ def build_schema() -> dict[str, Any]:
                 "timeDisposition": {
                     "enum": list(TIME_DISPOSITIONS),
                     "description": "Gartner TIME portfolio quadrant; read by 'docs' and 'kpi'.",
+                },
+                "junctionType": {
+                    "enum": ["and", "or"],
+                    "description": (
+                        "On a Junction: the exchange format's AndJunction or OrJunction (default "
+                        "and). The 3.2 matrix knows one Junction; the exchange file does not, so "
+                        "the kind is carried here and survives import and compile."
+                    ),
                 },
                 "plateauDate": {
                     "type": "string",
@@ -444,6 +453,33 @@ def build_schema() -> dict[str, Any]:
                         "minItems": 1,
                         "items": {"$ref": "#/$defs/slug"},
                         "description": "ISO 42010: the declared concerns this view frames (ISO001/ISO005).",
+                    },
+                    "layout": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "description": (
+                            "Layout hints, never coordinates: geometry is computed, so diffs stay "
+                            "about content. Nesting follows Composition and Aggregation on its own."
+                        ),
+                        "properties": {
+                            "groupBy": {
+                                "type": "string",
+                                "minLength": 1,
+                                "description": "'layer' (default) or an element property: one band per value.",
+                            },
+                            "columns": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 12,
+                                "description": "Where a band wraps (default 6).",
+                            },
+                            "order": {
+                                "type": "array",
+                                "uniqueItems": True,
+                                "items": {"$ref": "#/$defs/slug"},
+                                "description": "Reading order of the elements named; the rest follow by id (VIEW001).",
+                            },
+                        },
                     },
                 },
             },
@@ -1227,6 +1263,15 @@ def build_config_schema() -> dict[str, Any]:
             },
             "factsRoot": {"type": "string", "description": "Directory provenance file references resolve against."},
             "sourcesDir": {"type": "string", "description": "Directory holding the raw source documents."},
+            "toolingVersion": {
+                "type": "string",
+                "pattern": VERSION_PATTERN,
+                "description": (
+                    "The oldest ea-skills release this repository may be read with. An older "
+                    "tool refuses by name instead of misreading content written for a newer "
+                    "one; `easkills init` writes the running version here."
+                ),
+            },
             "costModel": {
                 "type": "object",
                 "additionalProperties": False,
@@ -1249,6 +1294,66 @@ def build_config_schema() -> dict[str, Any]:
                     },
                     **rates,
                 },
+            },
+        },
+    }
+
+
+APPROVAL_PATH_PATTERN = r"^model/approved/[^\\]+\.ya?ml$"
+SHA256_PATTERN = "^[0-9a-f]{64}$"
+VERSION_PATTERN = r"^[0-9]+\.[0-9]+\.[0-9]+$"
+
+
+def build_approval_schema() -> dict[str, Any]:
+    """One approval record per promotion under governance-log/approvals/ (D4, 0.22.0).
+
+    ``promote`` writes it; nobody needs to. It carries the digest of every file the
+    promotion put into ``model/approved/``, so approved content that changes by any other
+    route -- an editor, a script, a merge -- no longer matches a record and the model gate
+    says so (``APR001``). The hook stops the accident; the seal detects the rest, on any
+    host, in any editor, in CI. ``kind: seal`` is the one initial record a repository
+    adopting the seal writes for what it already holds (``promote --seal-existing``).
+    """
+    ids = {"type": "array", "items": _slug_def(), "uniqueItems": True}
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:ea-skills:schema:approval",
+        "title": "EA Skills approval record",
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["id", "kind", "approvedBy", "date", "files"],
+        "properties": {
+            "id": _slug_def(),
+            "kind": {
+                "enum": ["promotion", "seal"],
+                "description": "promotion: written by `promote`; seal: the initial record of an adopting repository.",
+            },
+            "approvedBy": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Who signed: the person or board, as the commit should also show.",
+            },
+            "date": {"type": "string", "pattern": DATE_PATTERN},
+            "files": {
+                "type": "array",
+                "minItems": 1,
+                "description": "Each approved file this record vouches for, with the SHA-256 of its bytes.",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["path", "sha256"],
+                    "properties": {
+                        "path": {"type": "string", "pattern": APPROVAL_PATH_PATTERN},
+                        "sha256": {"type": "string", "pattern": SHA256_PATTERN},
+                    },
+                },
+            },
+            "added": {**ids, "description": "Concept ids the approved zone did not hold before."},
+            "changed": {**ids, "description": "Concept ids whose definition the promotion replaced."},
+            "removed": {**ids, "description": "Approved concept ids the promotion deleted."},
+            "assumptionsAccepted": {
+                **ids,
+                "description": "Concepts promoted on `assumed: true` (PROV006): the signer accepted each one.",
             },
         },
     }
@@ -1288,6 +1393,7 @@ SCHEMAS: tuple[tuple[Path, Callable[[], dict[str, Any]]], ...] = (
     (CONFIG_SCHEMA_PATH, build_config_schema),
     (QUESTION_SCHEMA_PATH, build_question_schema),
     (METRICS_SCHEMA_PATH, build_metrics_schema),
+    (APPROVAL_SCHEMA_PATH, build_approval_schema),
 )
 
 
@@ -1355,3 +1461,7 @@ def load_question_schema(path: Path | None = None) -> dict[str, Any]:
 
 def load_metrics_schema(path: Path | None = None) -> dict[str, Any]:
     return _load(path or METRICS_SCHEMA_PATH, build_metrics_schema)
+
+
+def load_approval_schema(path: Path | None = None) -> dict[str, Any]:
+    return _load(path or APPROVAL_SCHEMA_PATH, build_approval_schema)

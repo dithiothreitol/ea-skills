@@ -80,6 +80,9 @@ EXPECTED_ERROR_CODES = [
     "GOV003",  # unparseable review date
     "REL001",  # relationship not permitted by the matrix
     "REL002",  # structural cycle
+    "APR001",  # approved file changed, or added, outside promote
+    "APR002",  # unreadable or schema-invalid approval record
+    "APR003",  # a record vouches for a file the approved zone no longer holds
 ]
 
 EXPECTED_WARNING_CODES = [

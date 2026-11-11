@@ -10,6 +10,8 @@ import pytest
 from easkills import cli, dsl, promote, validate
 
 TODAY = date(2026, 8, 1)
+SIGNED = {"approved_by": "board@example.test", "as_of": "2026-08-01"}
+SIGNED_ARGS = ["--approved-by", "board@example.test", "--as-of", "2026-08-01"]
 
 
 @pytest.fixture()
@@ -103,7 +105,7 @@ def test_missing_governance_metadata_warns_in_staging_but_blocks_promotion(repo)
     assert staging_report.ok, staging_report.render()
     assert any(f.code == "GOV001" for f in staging_report.warnings)
 
-    result = promote.promote(repo, today=TODAY)
+    result = promote.promote(repo, today=TODAY, **SIGNED)
     assert not result.ok
     assert any(f.code == "GOV001" for f in result.report.errors)
     # Nothing moved: the file is still in staging.
@@ -116,7 +118,7 @@ def test_missing_governance_metadata_warns_in_staging_but_blocks_promotion(repo)
 
 def test_promote_moves_clean_staging_into_approved(repo):
     _stage(repo, "proposal.yaml", GOOD_STAGING)
-    result = promote.promote(repo, today=TODAY)
+    result = promote.promote(repo, today=TODAY, **SIGNED)
     assert result.ok and result.moved
     assert not (repo / "model" / "staging" / "proposal.yaml").exists()
     assert (repo / "model" / "approved" / "proposal.yaml").exists()
@@ -138,7 +140,7 @@ def test_promote_dry_run_moves_nothing(repo):
 def test_promote_subset_leaves_other_staging_files(repo):
     _stage(repo, "good.yaml", GOOD_STAGING)
     _stage(repo, "not-ready.yaml", UNGOVERNED_STAGING)
-    result = promote.promote(repo, files=[Path("model/staging/good.yaml")], today=TODAY)
+    result = promote.promote(repo, files=[Path("model/staging/good.yaml")], today=TODAY, **SIGNED)
     assert result.ok and result.moved, result.report.render()
     assert (repo / "model" / "approved" / "good.yaml").exists()
     assert (repo / "model" / "staging" / "not-ready.yaml").exists()
@@ -153,7 +155,7 @@ def test_promote_update_replaces_the_approved_file(repo):
     )
     assert updated != original
     _stage(repo, "application.yaml", updated)
-    result = promote.promote(repo, today=TODAY)
+    result = promote.promote(repo, today=TODAY, **SIGNED)
     assert result.ok and result.moved, result.report.render()
     promoted = (repo / "model" / "approved" / "application.yaml").read_text(encoding="utf-8")
     assert "Publishes prices" in promoted
@@ -172,7 +174,7 @@ def test_promotion_is_blocked_when_a_replacement_would_dangle_a_reference(repo):
     assert _sep, "the example's application.yaml should hold more than one component"
     _stage(repo, "application.yaml", kept)
 
-    result = promote.promote(repo, today=TODAY)
+    result = promote.promote(repo, today=TODAY, **SIGNED)
     assert not result.ok, "dropping a referenced element must block promotion"
     assert any(f.code == "REF001" for f in result.report.errors), result.report.render()
     assert not result.moved
@@ -196,7 +198,7 @@ elements:
       - fact: fact-manual-order-entry
 """,
     )
-    promote.promote(repo, today=TODAY)  # app-spare-tool is now approved, referenced by nothing
+    promote.promote(repo, today=TODAY, **SIGNED)  # app-spare-tool is now approved, referenced by nothing
 
     _stage(repo, "spare.yaml", "elements: []\n")
     result = promote.promote(repo, dry_run=True, today=TODAY)
@@ -218,12 +220,12 @@ def test_the_staging_view_shows_the_post_move_truth(repo):
 
 def test_promote_refuses_files_outside_staging(repo):
     with pytest.raises(promote.PromoteError):
-        promote.promote(repo, files=[Path("model/approved/application.yaml")], today=TODAY)
+        promote.promote(repo, files=[Path("model/approved/application.yaml")], today=TODAY, **SIGNED)
 
 
 def test_promote_with_empty_staging_is_an_error(repo):
     with pytest.raises(promote.PromoteError):
-        promote.promote(repo, today=TODAY)
+        promote.promote(repo, today=TODAY, **SIGNED)
 
 
 # ------------------------------------------------------------------------------- CLI
@@ -231,7 +233,7 @@ def test_promote_with_empty_staging_is_an_error(repo):
 
 def test_cli_promote_happy_path(repo, capsys):
     _stage(repo, "proposal.yaml", GOOD_STAGING)
-    assert cli.main(["promote", "--root", str(repo)]) == 0
+    assert cli.main(["promote", "--root", str(repo), *SIGNED_ARGS]) == 0
     out = capsys.readouterr().out
     assert "promoted" in out
     assert not (repo / "model" / "staging" / "proposal.yaml").exists()
@@ -239,5 +241,5 @@ def test_cli_promote_happy_path(repo, capsys):
 
 def test_cli_promote_blocked_exits_one(repo, capsys):
     _stage(repo, "proposal.yaml", UNGOVERNED_STAGING)
-    assert cli.main(["promote", "--root", str(repo)]) == 1
+    assert cli.main(["promote", "--root", str(repo), *SIGNED_ARGS]) == 1
     assert "blocked" in capsys.readouterr().out

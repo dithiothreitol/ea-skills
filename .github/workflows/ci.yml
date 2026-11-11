@@ -31,8 +31,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      # The runtime closure from constraints.txt, every hash checked -- the versions the
+      # committed artifacts are byte-stable under -- then the test runner on its own.
       - name: Install dependencies
-        run: python -m pip install -r requirements.txt
+        run: |
+          python -m pip install --require-hashes -r constraints.txt
+          python -m pip install "pytest>=8.0"
 
       # The document converters are an optional extras group; installed here so their
       # tests run. A separate test proves the core imports none of them at module level.
@@ -74,7 +78,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: python -m pip install -r requirements.txt
+        run: python -m pip install --require-hashes -r constraints.txt
 
       # The worked example is part of the contract: it must stay clean, warnings
       # included, or the documented "0 errors, 0 warnings" claim is stale.

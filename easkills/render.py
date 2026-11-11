@@ -1,13 +1,15 @@
 """Deterministic SVG rendering of views.
 
-No rendering toolchain is required: the same layered-grid layout the compiler uses
-for the exchange file is drawn directly as SVG. That keeps rendering dependency-free,
+No rendering toolchain is required: the same layout the compiler writes into the
+exchange file (``layout.py``: bands, nesting, hints, gutter routing) is drawn directly as
+SVG. That keeps rendering dependency-free,
 byte-stable (a re-run produces identical bytes, so committed views diff meaningfully)
 and honest -- what the SVG shows is exactly what the model contains, because both are
 derived from the same structures.
 
-Notation is deliberately simplified: layer-coloured boxes, solid connections with an
-arrowhead, dashed lines for Realization and Specialization. It is a reading aid for
+Notation is deliberately simplified: layer-coloured boxes, a part drawn inside its whole
+(the Composition or Aggregation it stands for is not drawn twice), orthogonal connections
+with an arrowhead, dashed for Realization and Specialization. It is a reading aid for
 stakeholders, not a substitute for opening the exchange file in a real ArchiMate tool.
 
 ``--heatmap <property>`` colours the same boxes by one property instead of by layer --
@@ -23,7 +25,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from xml.sax.saxutils import escape
 
-from . import aoef, dsl, genschema, oracle, query
+from . import dsl, genschema, layout, oracle, query
 
 # Archi-like layer fills, so anyone who has seen an ArchiMate diagram reads these.
 LAYER_FILL = {
@@ -103,19 +105,20 @@ def heatmap_colours(model: dsl.Model, key: str) -> dict[str, str]:
     return {value: HEATMAP_PALETTE[index % len(HEATMAP_PALETTE)] for index, value in enumerate(values)}
 
 
-def render_view(model: dsl.Model, view: dsl.View, heatmap: str | None = None) -> str:
-    included = [e for e in view.include if e in model.elements]
-    positions = aoef._layout(model, included)
+def _points(points: list[tuple[float, float]], dy: float) -> str:
+    return " ".join(f"{x:.1f},{y + dy:.1f}" for x, y in points)
 
-    width = max((x for x, _ in positions.values()), default=0) + aoef.NODE_WIDTH + aoef.MARGIN
-    height = max((y for _, y in positions.values()), default=0) + aoef.NODE_HEIGHT + aoef.MARGIN
+
+def render_view(model: dsl.Model, view: dsl.View, heatmap: str | None = None) -> str:
+    plan = layout.compute(model, view)
     title_height = 34
-    height += title_height
+    width = plan.width
+    height = plan.height + title_height
     colours = heatmap_colours(model, heatmap) if heatmap else {}
     counts: dict[str, int] = {}
     legend_top = height
     if heatmap:
-        for element_id in sorted(set(included)):
+        for element_id in sorted(plan.boxes):
             value = query.field_value(model.elements[element_id], heatmap)
             counts[value] = counts.get(value, 0) + 1
         height += 10 + LEGEND_ROW * len(counts)
@@ -128,52 +131,20 @@ def render_view(model: dsl.Model, view: dsl.View, heatmap: str | None = None) ->
         "<defs><marker id='arrow' markerWidth='10' markerHeight='8' refX='9' refY='4' orient='auto'>"
         "<path d='M0,0 L10,4 L0,8 z' fill='#555555'/></marker></defs>",
         f"<rect x='0' y='0' width='{width}' height='{height}' fill='#FFFFFF'/>",
-        f"<text x='{aoef.MARGIN}' y='22' {FONT} font-size='15' font-weight='bold'>"
+        f"<text x='{layout.MARGIN}' y='22' {FONT} font-size='15' font-weight='bold'>"
         f"{escape(title)}</text>",
     ]
 
     def centre(element_id: str) -> tuple[float, float]:
-        x, y = positions[element_id]
-        return x + aoef.NODE_WIDTH / 2, y + title_height + aoef.NODE_HEIGHT / 2
+        box = plan.boxes[element_id]
+        return box.cx, box.y + title_height + box.h / 2
 
-    shown = set(included)
-    for relationship_id in sorted(model.relationships):
-        relationship = model.relationships[relationship_id]
-        if relationship.source not in shown or relationship.target not in shown:
-            continue
-        sx, sy = centre(relationship.source)
-        tx, ty = centre(relationship.target)
-        gx, gy = positions[relationship.target]
-        ex, ey = _clip_to_box(sx, sy, tx, ty, gx, gy + title_height, aoef.NODE_WIDTH, aoef.NODE_HEIGHT)
-        dash = " stroke-dasharray='6,4'" if relationship.type in DASHED_RELATIONSHIPS else ""
-        lines.append(
-            f"<line x1='{sx:.1f}' y1='{sy:.1f}' x2='{ex:.1f}' y2='{ey:.1f}' "
-            f"stroke='#555555' stroke-width='1.2'{dash} marker-end='url(#arrow)'>"
-            f"<title>{escape(relationship.type)}: {escape(relationship.source)} → "
-            f"{escape(relationship.target)}</title></line>"
-        )
-
-    # Applicability bindings (appliesTo) are selector links, not relationships:
-    # drawn dotted, no arrowhead, so they cannot be misread as ArchiMate semantics.
-    for element_id in sorted(shown):
+    # Boxes first, outermost first, so a part is drawn on top of its whole; connections
+    # after, so a route is never hidden under the box it runs beside.
+    for element_id in sorted(plan.boxes, key=lambda e: (plan.depth(e), e)):
         element = model.elements[element_id]
-        for ref in element.applies_to:
-            if ref not in shown:
-                continue
-            sx, sy = centre(element_id)
-            tx, ty = centre(ref)
-            gx, gy = positions[ref]
-            ex, ey = _clip_to_box(sx, sy, tx, ty, gx, gy + title_height, aoef.NODE_WIDTH, aoef.NODE_HEIGHT)
-            lines.append(
-                f"<line x1='{sx:.1f}' y1='{sy:.1f}' x2='{ex:.1f}' y2='{ey:.1f}' "
-                f"stroke='#999999' stroke-width='1' stroke-dasharray='2,3'>"
-                f"<title>applies to: {escape(element_id)} → {escape(ref)}</title></line>"
-            )
-
-    for element_id in sorted(shown):
-        element = model.elements[element_id]
-        x, y = positions[element_id]
-        y += title_height
+        box = plan.boxes[element_id]
+        x, y = box.x, box.y + title_height
         dash = ""
         if heatmap:
             value = query.field_value(element, heatmap)
@@ -183,29 +154,73 @@ def render_view(model: dsl.Model, view: dsl.View, heatmap: str | None = None) ->
         else:
             fill = LAYER_FILL.get(oracle.layer_of(element.type), LAYER_FILL["Other"])
             tooltip = f"{element.name} ({element.type})"
-        name_lines = _wrap(element.name)
-        centre_x = x + aoef.NODE_WIDTH / 2
-        if len(name_lines) == 1:
+        centre_x = box.cx
+        if box.children:
+            # A whole holding its parts: its name in the header, above them.
             name_svg = (
-                f"<text x='{centre_x}' y='{y + 26}' {FONT} font-size='11' "
-                f"text-anchor='middle'>{escape(name_lines[0])}</text>"
+                f"<text x='{centre_x}' y='{y + 15}' {FONT} font-size='11' "
+                f"text-anchor='middle'>{escape(_truncate(element.name, NAME_LIMIT + 8))}</text>"
             )
-            type_y = y + 42
+            type_y = y + 27
         else:
-            name_svg = "".join(
-                f"<text x='{centre_x}' y='{y + offset}' {FONT} font-size='11' "
-                f"text-anchor='middle'>{escape(line)}</text>"
-                for offset, line in zip((20, 33), name_lines)
-            )
-            type_y = y + 48
+            name_lines = _wrap(element.name)
+            if len(name_lines) == 1:
+                name_svg = (
+                    f"<text x='{centre_x}' y='{y + 26}' {FONT} font-size='11' "
+                    f"text-anchor='middle'>{escape(name_lines[0])}</text>"
+                )
+                type_y = y + 42
+            else:
+                name_svg = "".join(
+                    f"<text x='{centre_x}' y='{y + offset}' {FONT} font-size='11' "
+                    f"text-anchor='middle'>{escape(line)}</text>"
+                    for offset, line in zip((20, 33), name_lines)
+                )
+                type_y = y + 48
         lines.append(
-            f"<g><rect x='{x}' y='{y}' width='{aoef.NODE_WIDTH}' height='{aoef.NODE_HEIGHT}' "
+            f"<g><rect x='{x}' y='{y}' width='{box.w}' height='{box.h}' "
             f"rx='3' fill='{fill}' stroke='#777777'{dash}/>"
             f"<title>{escape(tooltip)}</title>"
             f"{name_svg}"
             f"<text x='{centre_x}' y='{type_y}' {FONT} font-size='9' "
             f"fill='#555555' text-anchor='middle'>{escape(element.type)}</text></g>"
         )
+
+    shown = set(plan.boxes)
+    for relationship_id in sorted(model.relationships):
+        relationship = model.relationships[relationship_id]
+        if relationship.source not in shown or relationship.target not in shown:
+            continue
+        if relationship.id in plan.nested:
+            continue  # the nesting is this relationship's notation
+        route = plan.route(relationship.source, relationship.target)
+        if not route:
+            continue
+        dash = " stroke-dasharray='6,4'" if relationship.type in DASHED_RELATIONSHIPS else ""
+        lines.append(
+            f"<polyline points='{_points(route, title_height)}' fill='none' "
+            f"stroke='#555555' stroke-width='1.2'{dash} marker-end='url(#arrow)'>"
+            f"<title>{escape(relationship.type)}: {escape(relationship.source)} → "
+            f"{escape(relationship.target)}</title></polyline>"
+        )
+
+    # Applicability bindings (appliesTo) are selector links, not relationships:
+    # drawn dotted and straight, no arrowhead, so they cannot be misread as ArchiMate
+    # semantics -- and never routed like a relationship.
+    for element_id in sorted(shown):
+        element = model.elements[element_id]
+        for ref in element.applies_to:
+            if ref not in shown or ref == element_id:
+                continue
+            sx, sy = centre(element_id)
+            tx, ty = centre(ref)
+            target = plan.boxes[ref]
+            ex, ey = _clip_to_box(sx, sy, tx, ty, target.x, target.y + title_height, target.w, target.h)
+            lines.append(
+                f"<line x1='{sx:.1f}' y1='{sy:.1f}' x2='{ex:.1f}' y2='{ey:.1f}' "
+                f"stroke='#999999' stroke-width='1' stroke-dasharray='2,3'>"
+                f"<title>applies to: {escape(element_id)} → {escape(ref)}</title></line>"
+            )
 
     if heatmap:
         ordered = [v for v in colours if v in counts] + ([""] if "" in counts else [])
@@ -214,9 +229,9 @@ def render_view(model: dsl.Model, view: dsl.View, heatmap: str | None = None) ->
             dash = " stroke-dasharray='4,3'" if not value else ""
             label = value or "no value"
             lines.append(
-                f"<g><rect x='{aoef.MARGIN}' y='{top}' width='14' height='12' "
+                f"<g><rect x='{layout.MARGIN}' y='{top}' width='14' height='12' "
                 f"fill='{colours.get(value, NO_VALUE_FILL)}' stroke='#777777'{dash}/>"
-                f"<text x='{aoef.MARGIN + 20}' y='{top + 10}' {FONT} font-size='11'>"
+                f"<text x='{layout.MARGIN + 20}' y='{top + 10}' {FONT} font-size='11'>"
                 f"{escape(label)} ({counts[value]})</text></g>"
             )
 

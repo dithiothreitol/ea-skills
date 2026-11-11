@@ -145,7 +145,7 @@ decoration, so the test suite enforces the pattern:
   expected-codes list in the matching test module.
 
 **2. Generated artifacts regenerate in the same commit.** Every schema under `schema/`
-(`python -m easkills gen-schema` — all fourteen are freshness-tested) and the example's
+(`python -m easkills gen-schema` — all fifteen are freshness-tested) and the example's
 generated documentation (`python -m easkills docs --root eval/example`, i.e.
 `eval/example/docs/`) are committed *and* freshness-checked — a stale artifact fails
 CI, so regenerate alongside the change that invalidated it.
@@ -161,6 +161,14 @@ commit — that is the freshness check working, not a gold edit.
 documented "0 errors, 0 warnings" claim, gated with `--strict` in CI. If your change
 makes the example warn, either the example needs a legitimate update or your rule is
 too noisy — decide which, explicitly.
+
+**5. The worked example is sealed.** Its approved zone is vouched for by an approval record
+(`eval/example/governance-log/approvals/`), so an edit to `eval/example/model/approved/`
+fails `validate` with `APR001` until the record vouches for the new bytes. Change it the
+way an adopter would -- copy the file to `model/staging/`, edit, `promote --approved-by
+<you> --as-of <date>` -- and commit the moved file with the record the promotion writes. A
+test that copies the example to provoke a rule copies it without its approvals (see
+`tests/test_seal.py`), because a mutated copy is a tampering by design.
 
 **5. Never edit the oracle to make something pass.** `oracle/` is vendored,
 hash-pinned primary-source data. Re-pinning (`pin-oracle`) is only for deliberate,

@@ -40,7 +40,9 @@ def build(out: Path, n: int, view_size: int = 0) -> Path:
         if not (out / MARKER).is_file():
             raise SystemExit(f"{out} exists and is not a synthetic repository; refusing to overwrite it")
         shutil.rmtree(out)
-    shutil.copytree(EXAMPLE, out, ignore=shutil.ignore_patterns("docs", "build"))
+    # Unsealed on purpose: the synthetic file was never promoted, and a scale probe is not a
+    # signature.
+    shutil.copytree(EXAMPLE, out, ignore=shutil.ignore_patterns("docs", "build", "approvals"))
     (out / MARKER).write_text("written by tools/synth_repo.py\n", encoding="utf-8", newline="\n")
 
     lines = ["# Synthetic inventory", ""]

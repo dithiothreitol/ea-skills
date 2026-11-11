@@ -1,0 +1,14 @@
+# Each entry below is annotated with the rule code it is meant to trigger.
+# A well-formed record, so the zone counts as sealed and every APR finding is an error.
+id: approval-2026-07-20-01
+kind: seal
+approvedBy: architecture-board@example.test
+date: 2026-07-20
+files:
+  # --- APR001: the file's bytes have changed since this digest was recorded ----------
+  - path: model/approved/broken.yaml
+    sha256: '0000000000000000000000000000000000000000000000000000000000000000'
+  # --- APR003: vouches for a file the approved zone no longer holds -------------------
+  - path: model/approved/retired-by-hand.yaml
+    sha256: '1111111111111111111111111111111111111111111111111111111111111111'
+# --- APR001 also fires for every approved file no record names (readiness.yaml, ...) ---

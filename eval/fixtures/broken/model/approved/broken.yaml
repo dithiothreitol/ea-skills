@@ -321,6 +321,49 @@ relationships:
         quote: Order records are held by the finance system
 
 views:
+  # --- VIEW001: the layout order names an element the view does not include ------
+  - id: view-stray-order
+    name: Stray Order
+    include: [node-a, node-b]
+    layout:
+      order: [node-b, app-finance]
+
+  # --- VIEW002 (info): past the size a reader takes in at once -------------------
+  - id: view-everything
+    name: Everything At Once
+    include:
+      - actor-customer
+      - app-finance
+      - app-governed-ledger
+      - app-ledger-engine
+      - app-public-unprotected
+      - applies-on-wrong-layer
+      - assumed-without-rationale
+      - bad-date
+      - bogus-type
+      - data-order
+      - data-profile-in-scope
+      - data-restricted-records
+      - dup-name-first
+      - dup-name-second
+      - escaping-source
+      - fabricated-quote
+      - fact-ref-missing
+      - gap-floating
+      - missing-source
+      - motivation-dangling-applies
+      - node-a
+      - node-b
+      - orphan
+      - outcome-nobody-produces
+      - paraphrased-quote
+      - plateau-collision-a
+      - plateau-collision-b
+      - plateau-impossible-date
+      - plateau-undated
+      - process-invoicing
+      - req-ledger-integrity
+
   # --- REF002: view refers to an element that is not in the model --------------------
   # --- ISO005: frames no declared concern (concerns exist in this repository) --------
   - id: view-bad-reference

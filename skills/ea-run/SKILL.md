@@ -4,11 +4,15 @@ description: Orchestrate the EA pipeline - route a request to the right ea-* ski
 allowed-tools:
   - Bash(easkills align *)
   - Bash(easkills delta *)
+  - Bash(easkills doctor *)
+  - Bash(easkills init *)
   - Bash(easkills validate *)
   - Bash(easkills validate-facts *)
   - Bash(easkills validate-gov *)
   - Bash(python -m easkills align *)
   - Bash(python -m easkills delta *)
+  - Bash(python -m easkills doctor *)
+  - Bash(python -m easkills init *)
   - Bash(python -m easkills validate *)
   - Bash(python -m easkills validate-facts *)
   - Bash(python -m easkills validate-gov *)
@@ -26,6 +30,10 @@ neither resolves, the tooling is not installed -- say so; do not reason your way
 verdict the tooling exists to compute.
 
 ## State check (one minute, always)
+
+No repository yet? `easkills init <directory>` writes one from the template, pinned to
+this release, CI and code owners included; `easkills doctor --root <repo>` says in one line
+each what the machine or the repository is missing.
 
 ```bash
 easkills validate-facts --root .   # is there a verified fact register?
