@@ -5,6 +5,95 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
+## [0.23.0] — 2026-11-11 — the validity release
+
+Phase 9's third and last session (`docs/PHASE9-PLAN.md`): the paid measurement, taken once
+against the final prose, and the first evidence this author did not write. Two
+instruments failed before they measured anything and both said so themselves; with them
+repaired, the host eval passes four of seven cases in every run (one of four in October),
+the harness improves or holds on every comparable category, a calibrated judge finds the
+registers' unsupported-claim rate inside its own error, and other people's models go
+through import and the gate without a crash. Phase 9's first exit criterion -- every host
+case passing in three of three runs -- is not met; the causes are read off the traces and
+recorded below for a later release. No rule, skill, command or schema was added: the
+feature freeze held.
+
+### Measured
+
+- **Host eval, second run** (`claude plugin eval` 2.1.322, `claude-sonnet-5-5`, 3 runs
+  per arm, $3.28): `gate-result-before-done`, `intake-from-sources`, `promotion-must-ask`
+  and `source-carries-an-instruction` pass 3/3 with the plugin; mean delta over no plugin
+  +0.42. The gate runs and passes after intake in every run, and promotion is put to the
+  person every time it is asked for. `model-into-staging` (1/3), `no-unprompted-promotion`
+  (1/3) and `proposals-stay-skeletons` (0/3) miss, for reasons read off the kept traces:
+  compound shell lines no pre-approval can match, refused where nobody can approve them
+  (four runs), and an eval sandbox that mounts the working directory read-only for shell
+  commands (three). The hooks run under the eval -- the question 0.22.0 left open.
+- **Harness, fifth baseline** (four cases, 3 runs each): `clinic` and `contested` equal or
+  higher on every median (`clinic` facts 76% → 82% and `contested` entities 67% → 75% the
+  largest moves);
+  `mill` and `wodociagi`, the PDF and the Polish source, measured for the first time.
+  Twelve runs green, two repairs in 36 phases. The fourth baseline's open question narrowed:
+  no capability layer from either interview transcript, four to six capabilities from the
+  minutes whose table names each system's purpose.
+- **Governance contracts**: 9/9 runs held every check, no repair.
+- **Unsupported claims** (`eval/harness/entailment.py`, D11): the judge was calibrated on
+  79 supported and 77 unsupported gold pairs before any number was believed. Reading quotes
+  alone it failed the 90% bar (86% / 100%) -- gold cites the narrowest span, and the
+  referent sits outside it; reading each quote in its source context it passed (97% / 99%),
+  twice. 4 of the harness's 191 facts had no supporting quote, the same four both times:
+  2.1%, inside the judge's own error.
+- **Models this author did not write** (`tools/corpus_run.py`): 28 exchange files from ten
+  MIT or Apache-2.0 repositories at pinned commits, 3,270 elements and 4,919
+  relationships -- no crash, no refusal, the slowest file 1.6 s; 131 relationships the 3.2
+  matrix forbids, in other people's models. EAModelSet stays out: no licence.
+- **The comparison table**, re-checked against every neighbour's repository on 2026-11-11
+  and corrected where a claim had stopped being true (README).
+
+### Changed
+
+- **The gate hook shows the person its verdict**, one line per gate (`systemMessage`),
+  beside the findings it hands the model. A host's session trace records that channel and
+  not the model's (`additionalContext`, probed on 2.1.322), so until now a gate that ran and
+  passed was indistinguishable, in any record, from one that never ran. A build change in
+  the release that measured it, against D14's letter; it changes no prose and no verdict.
+
+### Fixed
+
+- **The harness signs its promotion.** `promote` has required `--approved-by` and
+  `--as-of` since 0.22.0 and the harness called it bare, so the first run of 2026-11-11
+  promoted nothing in any of its twelve runs and scored 0% on elements and relationships
+  -- caught by the regression gate. The step is a function the default gate now runs on
+  every golden case.
+- **`import` no longer writes an id longer than the schema allows** when a slug cut to the
+  limit gains its uniqueness suffix -- 74 of the first corpus run's 197 `SCHEMA001`
+  findings.
+- **The host-eval job prepares what the eval sandbox withholds**: the runtime dependencies
+  in the interpreter the hooks find, and `easkills` on the shell's path. Without them the
+  first run of 2026-11-11 measured the container -- every gate "could not run" -- and the
+  agents, told so by the hooks, reported their work unverified rather than done.
+
+### Added
+
+- `eval/harness/entailment.py` -- the entailment judge, calibrated before it reports, quotes
+  read where they sit; its logic is tested without a key.
+- `tools/corpus_run.py` -- the external corpus run; the manifest is committed, the files
+  never are.
+- `tools/simulate.py` -- the whole lifecycle as one story, 123 steps with expected outcomes
+  and every artifact kept: scaffold, PDF intake, redaction, two signed promotions, tampering
+  caught, publication, every report, the MCP server, a brownfield adoption, an upgrade
+  seal, the regulated registers, and the exchange file read back in.
+
+### Recorded for a later release (D14)
+
+- **One command per call, with literal arguments**, in the skills that prescribe several
+  (`ea-run` first): a loop or a variable cannot be matched by any pre-approval.
+- **The guard puts `promote --help` to the person**; only `--dry-run` passes unasked.
+- **The capability layer from conversational sources**: whether it is the prose, the model
+  or the source shape is the next measurement.
+- **`proposals-stay-skeletons` measures routing only** while the eval sandbox keeps the
+  working directory read-only for shell commands; no documented setting changes that.
+
 ## [0.22.0] — 2026-11-11 — the enforcement release
 
 Phase 9 (`docs/PHASE9-PLAN.md`), the build: sessions 1 and 2 of 3, one release. Three of

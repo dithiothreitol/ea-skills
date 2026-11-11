@@ -340,21 +340,28 @@ agents. What is not otherwise available is the *combination*:
 | Packaged as agent skills | ✓ | — (MCP server) | — (platform) | partial (plugins) | ✓ | — (SaaS) |
 | Unstructured-input ingestion | ✓ verified quotes (documents *and* spreadsheets) | — | ✓ | ✓ | partial | ✓ |
 | Real ArchiMate model files (Open Exchange) | ✓ XSD-validated, both directions (compile + brownfield import) | ✓ | ✓ | — (custom YAML) | — (markdown) | — |
-| Generated views | ✓ deterministic SVG | ✓ | — | — | — | ✓ |
-| Per-element source traceability | ✓ mechanically verified | — | ✓ claimed | partial | ✓ doc-level | partial |
+| Generated views | ✓ deterministic SVG, parts nested, connections routed | ✓ | — | ✓ own notation (SVG/PNG) | partial (Mermaid / PlantUML, no ArchiMate notation) | ✓ |
+| Per-element source traceability | ✓ mechanically verified, anchoring measured | — | ✓ claimed | partial (requirements traceability) | ✓ doc-level, quoted citation markers | partial |
 | Deterministic semantic validation | ✓ vendored 3.2 matrix | ✓ | — | ✓ (own rules) | — | partial |
 | Standards-shaped documentation (ISO 42010) | ✓ + conformance checklist | — | — | — | — | — |
-| Governance + maintenance (SIB, dispensations with expiry, debt, staleness, service catalog, agent context packs) | ✓ | — | — | partial (PR gate) | partial (docs) | partial |
-| Impact analysis / dependency traversal | ✓ declared propagation per relationship type | — | — | — | — | ✓ |
-| Roadmap / target-state planning | ✓ ArchiMate plateaus, gated (`PLAT*`) | — | — | — | — | ✓ |
+| Governance + maintenance (SIB, dispensations with expiry, debt, staleness, service catalog, agent context packs, sealed approved zone) | ✓ | — | — | partial (PR gate, compliance and gap dashboards) | partial (docs, health and conformance commands) | partial |
+| Impact analysis / dependency traversal | ✓ declared propagation per relationship type | — | — | partial (compliance impact views) | partial (`impact` command) | ✓ |
+| Roadmap / target-state planning | ✓ ArchiMate plateaus, gated (`PLAT*`) | — | — | — | partial (`roadmap` command, Wardley maps) | ✓ |
 | Regulatory reporting (DORA Register of Information) | ✓ generated from the model, gaps named in the document, explicitly not an attestation | — | — | — | — | partial |
 | Reference-architecture alignment | ✓ hash-pinned taxonomy, gap per node, exclusion needs a rationale | — | — | — | — | ✓ (content bundled) |
 | Application rationalization / duplicate-functionality detection | ✓ derived from realization edges, printed with each realizer's portfolio properties; never auto-concluded | — | — | — | — | ✓ |
 | Technology-debt sizing and costing | ✓ exposure derived, priced only by the operator's own rates; the total names what it left out | — | — | — | — | ✓ |
 
-Verified against the 2026-07-29 competitive survey behind
-[`docs/BLUEPRINT.md`](docs/BLUEPRINT.md); the ea-skills column reflects this
-repository as of 2026-08-07. Neighbours move fast, so this table carries a standing
+First verified against the 2026-07-29 competitive survey behind
+[`docs/BLUEPRINT.md`](docs/BLUEPRINT.md); **re-checked 2026-11-11** against each project's
+repository and README, and the ea-skills column reflects 0.23.0. What moved: ArcKit now
+generates Mermaid and PlantUML diagrams and carries `impact`, `roadmap`, `health` and
+`conformance` commands and quoted citation markers; Transitrix grew into an editor family
+with text-first diagram previews, a traceability matrix, compliance and gap views and a
+CLI that validates in CI; mcp-archimate is active and unchanged in kind; 7bots and
+archimate-deep-agent show no activity since 2026-07-31. A neighbour the table does not
+yet carry: `fanievh/archi-mcp-server`, an Archi plugin exposing a live model over MCP
+for querying and editing. Neighbours move fast, so this table carries a standing
 obligation: **re-check quarterly, and correct it when a claim stops being true** — it is
 tracked as an open item below and in [BLUEPRINT §8a](docs/BLUEPRINT.md), because no
 test can check a competitor's changelog. Each capability exists somewhere; the
@@ -369,9 +376,12 @@ argued with.
 
 ## Status and roadmap
 
-**Phases 0–8 are complete; Phase 9 is under way** ([plan](docs/PHASE9-PLAN.md)) — see
+**Phases 0–9 are complete** ([the last plan](docs/PHASE9-PLAN.md); what its measurement
+found is on [the coverage page](docs/SKILL-COVERAGE.md)) — see
 [CHANGELOG.md](CHANGELOG.md) for the full history and
-[BLUEPRINT §8a](docs/BLUEPRINT.md) for per-phase design decisions.
+[BLUEPRINT §8a](docs/BLUEPRINT.md) for per-phase design decisions. No phase is open: the
+next one starts from what 0.23.0 measured and from the first real engagement, and until
+then the feature freeze of Phase 9 holds — depth before breadth.
 
 | Phase | Scope | Status |
 |---|---|---|
@@ -384,7 +394,7 @@ argued with.
 | 6 | Service layer: offering catalog with SLAs, demand ledger, demand-weighted maintenance | **done** |
 | 7 | Reference, regulation, proposal: alignment to reference architectures, per-layer readiness, rationalization, cost, regulatory reporting, generated proposals, maturity | **done** |
 | 8 | Host, analyst, security, registers, time, measurement: the plugin and its guard, document intake and question records, security vocabulary and exposure, further registers and Polish output, diff/query/serve, a host eval | **done** (0.16.0–0.21.0) |
-| 9 | Enforcement, signature, adoption, evidence, views, validity: the gates run by the host, promotion put to the person, a sealed approved zone, an adopter's CI, quote folding and anchoring, scale, nesting and layout hints, two new golden cases, the measurement retaken | **under way** (0.22.0–0.23.0) |
+| 9 | Enforcement, signature, adoption, evidence, views, validity: the gates run by the host, promotion put to the person, a sealed approved zone, an adopter's CI, quote folding and anchoring, scale, nesting and layout hints, two new golden cases, the measurement retaken | **done** (0.22.0–0.23.0) |
 
 Deliberately open (decisions, not backlog): the **network facade** is half shipped on
 purpose — `serve` speaks MCP over stdio to a local host, read-only, approved zone only

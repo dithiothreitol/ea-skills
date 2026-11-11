@@ -1,7 +1,7 @@
 {
   "name": "ea-skills",
   "displayName": "EA Skills",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "description": "The enterprise-architecture lifecycle as agent skills over a deterministic core: unstructured input to validated ArchiMate 3.2, generated views, ISO 42010 documentation and living governance, in git.",
   "author": {
     "name": "Dariusz Tyszka"

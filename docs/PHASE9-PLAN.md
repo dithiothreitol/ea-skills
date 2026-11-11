@@ -9,6 +9,11 @@ what was removed is ceremony (§5). This is a plan, not a status page: every cou
 is a target or a dated measurement, and the only numbers to trust are the ones the README
 badge and its tests carry. It is a draft until the operator decisions in §8 are taken.*
 
+**Closed 2026-11-11 with 0.23.0**, in the three sessions and two releases planned. Exit
+criteria 2–8 are met; criterion 1 is not -- four of seven host-eval cases pass in three of
+three runs, and the causes of the other three are on
+[the coverage page](SKILL-COVERAGE.md), recorded for a later release as D14 requires.
+
 ## 1. What this phase answers
 
 The review found the deterministic core sound, and found that three of the README's
