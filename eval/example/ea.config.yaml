@@ -17,6 +17,10 @@ factsRoot: .
 # Raw source documents that ea-intake ingests (chunking, coverage, SRC001).
 sourcesDir: facts/sources
 
+# The oldest ea-skills release that may read this repository: the seal (APR*) it carries
+# arrived in 0.22.0, and an older tool would not know to check it.
+toolingVersion: "0.22.0"
+
 # Optional. Unit rates that turn the debt register's exposure into money.
 #
 # The tool computes the exposure; the operator prices it. Nothing here is derived,

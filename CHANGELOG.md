@@ -5,11 +5,17 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
-## [Unreleased]
+## [0.22.0] — 2026-11-11 — the enforcement release
 
-Phase 9 (`docs/PHASE9-PLAN.md`), sessions 1 and 2 of 3: what the host does, what the
-evidence gate accepts, and what an architecture repository carries. 170 rules, 26 skills,
-46 commands, 15 schemas.
+Phase 9 (`docs/PHASE9-PLAN.md`), the build: sessions 1 and 2 of 3, one release. Three of
+the README's central promises -- the gates are run, approved content is human-signed,
+exceptions expire loudly -- were sentences wherever an adopter worked; this release makes
+each a mechanism. The gates run by the host after every governed write and before a turn
+ends; promotion is put to the person and sealed by a record the gate checks; an adopter's
+repository is scaffolded with its own CI, nightly date checks and code owners. Under it:
+quotes fold encodings, anchoring was measured before it became a rule, the gates are an
+order of magnitude faster at scale, views nest and route, and two golden cases wait for
+0.23.0's measurement. 170 rules, 26 skills, 46 commands, 15 schemas.
 
 ### Added — the approval seal (D4)
 
