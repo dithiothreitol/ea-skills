@@ -1,0 +1,53 @@
+# Polish names a thing differently in every grammatical case, so the alias table records
+# the forms the source actually uses -- "terminali mobilnych", "systemu bilingowego" --
+# and nothing it does not. One term, one entity (ENT002), as in every other language.
+
+entities:
+  - id: inkasent
+    name: Inkasent
+    kind: actor
+    aliases:
+      - inkasenci
+
+  - id: terminal-mobilny
+    name: Terminal mobilny
+    kind: technology
+    aliases:
+      - terminali mobilnych
+      - Terminale
+
+  - id: aquabill
+    name: AquaBill
+    kind: application
+    aliases:
+      - system bilingowy
+      - systemu bilingowego
+
+  - id: odbiorca
+    name: Odbiorca
+    kind: actor
+    aliases:
+      - Odbiorcy
+      - odbiorców
+
+  - id: ebok
+    name: e-BOK
+    kind: application
+    aliases:
+      - e-Biurze Obsługi Klienta
+
+  - id: interfejs-aquabill
+    name: Interfejs AquaBill
+    kind: integration
+    aliases:
+      - interfejs udostępniany przez ten system
+
+  - id: serwer-aquabill
+    name: Serwer AquaBill
+    kind: technology
+    aliases:
+      - serwerze w serwerowni urzędu gminy
+
+  - id: firma-zewnetrzna
+    name: Firma zewnętrzna
+    kind: organisation

@@ -1,0 +1,323 @@
+# Gold model for the long-document case: every concept cites a fact from the register.
+# Five capabilities, one per job the minutes and the table name; the two decisions become
+# work packages bound to what they are about, and the risks the committee recorded live in
+# documentation, where a reader of the element will see them.
+
+elements:
+  # --- Strategy: what the mill can do --------------------------------------------------
+  - id: cap-production-planning
+    type: Capability
+    name: Production Planning
+    documentation: Scheduling every milling run.
+    owner: operations@brightwatermills.example
+    lastReviewed: 2026-07-14
+    provenance:
+      - fact: fact-millplan-schedules-runs
+
+  - id: cap-quality-control
+    type: Capability
+    name: Quality Control
+    documentation: Testing every batch before release.
+    owner: quality@brightwatermills.example
+    lastReviewed: 2026-07-14
+    provenance:
+      - fact: fact-batches-tested
+
+  - id: cap-sales-order-management
+    type: Capability
+    name: Sales Order Management
+    owner: finance@brightwatermills.example
+    lastReviewed: 2026-07-14
+    provenance:
+      - fact: fact-sales-orders-in-ledgerone
+
+  - id: cap-invoicing
+    type: Capability
+    name: Invoicing
+    owner: finance@brightwatermills.example
+    lastReviewed: 2026-07-14
+    provenance:
+      - fact: fact-invoices-in-ledgerone
+
+  - id: cap-mill-line-control
+    type: Capability
+    name: Mill Line Control
+    owner: engineering@brightwatermills.example
+    lastReviewed: 2026-07-14
+    provenance:
+      - fact: fact-plantcontrol-mill-line
+
+  # --- Business -------------------------------------------------------------------------
+  - id: actor-lab
+    type: BusinessActor
+    name: Lab
+    owner: quality@brightwatermills.example
+    lastReviewed: 2026-07-14
+    provenance:
+      - fact: fact-batches-tested
+
+  - id: process-batch-testing
+    type: BusinessProcess
+    name: Batch Testing
+    documentation: Every batch is tested before it is released; results go into LabTrack.
+    owner: quality@brightwatermills.example
+    lastReviewed: 2026-07-14
+    provenance:
+      - fact: fact-batches-tested
+      - fact: fact-lab-results-in-labtrack
+
+  # --- Application ----------------------------------------------------------------------
+  - id: app-millplan
+    type: ApplicationComponent
+    name: MillPlan
+    documentation: >
+      Production planning tool. Plan changes after 05:00 are phoned through to the shift
+      supervisor and are not recorded here.
+    owner: operations@brightwatermills.example
+    lastReviewed: 2026-07-14
+    properties:
+      businessOwner: Operations
+      hosting: on-premise
+    provenance:
+      - fact: fact-millplan-schedules-runs
+      - fact: fact-late-changes-unrecorded
+      - fact: fact-millplan-owner-operations
+      - fact: fact-millplan-on-premise
+
+  - id: app-ledgerone
+    type: ApplicationComponent
+    name: LedgerOne
+    documentation: Rented ERP holding sales orders and invoices.
+    owner: finance@brightwatermills.example
+    lastReviewed: 2026-07-14
+    properties:
+      businessOwner: Finance
+      hosting: vendor cloud
+    provenance:
+      - fact: fact-sales-orders-in-ledgerone
+      - fact: fact-invoices-in-ledgerone
+      - fact: fact-ledgerone-rented
+      - fact: fact-ledgerone-owner-finance
+      - fact: fact-ledgerone-vendor-cloud
+
+  - id: app-labtrack
+    type: ApplicationComponent
+    name: LabTrack
+    documentation: >
+      Spreadsheet-based record of lab results, maintained by one person in the quality
+      team -- a single point of knowledge the committee decided to replace.
+    owner: quality@brightwatermills.example
+    lastReviewed: 2026-07-14
+    properties:
+      businessOwner: Quality
+      hosting: shared drive
+    provenance:
+      - fact: fact-lab-results-in-labtrack
+      - fact: fact-labtrack-spreadsheet
+      - fact: fact-labtrack-single-maintainer
+      - fact: fact-labtrack-owner-quality
+      - fact: fact-labtrack-shared-drive
+
+  - id: app-plantcontrol
+    type: ApplicationComponent
+    name: PlantControl
+    documentation: Controls the mill line; receives the daily production plan from MillPlan.
+    owner: engineering@brightwatermills.example
+    lastReviewed: 2026-07-14
+    properties:
+      businessOwner: Engineering
+    provenance:
+      - fact: fact-plantcontrol-mill-line
+      - fact: fact-plant-control-on-servers
+      - fact: fact-plantcontrol-owner-engineering
+
+  - id: data-production-plan
+    type: DataObject
+    name: Daily Production Plan
+    documentation: Sent by MillPlan to PlantControl at 05:00 each morning.
+    owner: operations@brightwatermills.example
+    lastReviewed: 2026-07-14
+    provenance:
+      - fact: fact-plan-sent-to-plant-control
+      - fact: fact-plan-sent-at-0500
+
+  - id: data-lab-results
+    type: DataObject
+    name: Lab Results
+    owner: quality@brightwatermills.example
+    lastReviewed: 2026-07-14
+    provenance:
+      - fact: fact-lab-results-in-labtrack
+
+  # --- Technology -----------------------------------------------------------------------
+  - id: node-mill-floor-servers
+    type: Node
+    name: Mill Floor Servers
+    documentation: Two servers on the mill floor; one of them is out of vendor support.
+    owner: engineering@brightwatermills.example
+    lastReviewed: 2026-07-14
+    provenance:
+      - fact: fact-plant-control-on-servers
+      - fact: fact-server-out-of-support
+
+  # --- Implementation & Migration: the committee's two decisions ------------------------
+  - id: wp-labtrack-replacement
+    type: WorkPackage
+    name: Propose a LabTrack Replacement
+    documentation: Decided by the committee; due by the end of Q1 2027.
+    owner: it@brightwatermills.example
+    lastReviewed: 2026-07-14
+    provenance:
+      - fact: fact-labtrack-replacement-decided
+
+  - id: deliverable-labtrack-replacement-proposal
+    type: Deliverable
+    name: LabTrack Replacement Proposal
+    owner: it@brightwatermills.example
+    lastReviewed: 2026-07-14
+    provenance:
+      - fact: fact-labtrack-replacement-decided
+
+  - id: wp-mill-floor-server-pricing
+    type: WorkPackage
+    name: Price a Mill Floor Server Replacement
+    documentation: Decided by the committee; a supported replacement for the out-of-support server.
+    owner: it@brightwatermills.example
+    lastReviewed: 2026-07-14
+    provenance:
+      - fact: fact-server-replacement-decided
+
+  - id: deliverable-mill-floor-server-price
+    type: Deliverable
+    name: Mill Floor Server Replacement Price
+    owner: it@brightwatermills.example
+    lastReviewed: 2026-07-14
+    provenance:
+      - fact: fact-server-replacement-decided
+
+relationships:
+  # --- the attachment the capability map exists for ------------------------------------
+  - id: rel-millplan-realizes-production-planning
+    type: Realization
+    source: app-millplan
+    target: cap-production-planning
+    provenance:
+      - fact: fact-millplan-schedules-runs
+
+  - id: rel-batch-testing-realizes-quality-control
+    type: Realization
+    source: process-batch-testing
+    target: cap-quality-control
+    provenance:
+      - fact: fact-batches-tested
+
+  - id: rel-ledgerone-realizes-sales-orders
+    type: Realization
+    source: app-ledgerone
+    target: cap-sales-order-management
+    provenance:
+      - fact: fact-sales-orders-in-ledgerone
+
+  - id: rel-ledgerone-realizes-invoicing
+    type: Realization
+    source: app-ledgerone
+    target: cap-invoicing
+    provenance:
+      - fact: fact-invoices-in-ledgerone
+
+  - id: rel-plantcontrol-realizes-mill-line-control
+    type: Realization
+    source: app-plantcontrol
+    target: cap-mill-line-control
+    provenance:
+      - fact: fact-plantcontrol-mill-line
+
+  # --- who does the testing, and what supports it ---------------------------------------
+  - id: rel-lab-performs-batch-testing
+    type: Assignment
+    source: actor-lab
+    target: process-batch-testing
+    provenance:
+      - fact: fact-batches-tested
+
+  - id: rel-labtrack-serves-batch-testing
+    type: Serving
+    source: app-labtrack
+    target: process-batch-testing
+    provenance:
+      - fact: fact-lab-results-in-labtrack
+
+  - id: rel-labtrack-accesses-lab-results
+    type: Access
+    source: app-labtrack
+    target: data-lab-results
+    provenance:
+      - fact: fact-lab-results-in-labtrack
+
+  # --- the two integrations the minutes describe ---------------------------------------
+  - id: rel-ledgerone-feeds-millplan
+    type: Flow
+    name: Hourly Order Feed
+    source: app-ledgerone
+    target: app-millplan
+    documentation: Confirmed sales orders every hour; has failed twice this year unnoticed.
+    provenance:
+      - fact: fact-orders-pushed-hourly
+      - fact: fact-order-feed-failures
+
+  - id: rel-millplan-sends-plan-to-plantcontrol
+    type: Flow
+    source: app-millplan
+    target: app-plantcontrol
+    provenance:
+      - fact: fact-plan-sent-to-plant-control
+
+  - id: rel-millplan-accesses-production-plan
+    type: Access
+    source: app-millplan
+    target: data-production-plan
+    provenance:
+      - fact: fact-plan-sent-to-plant-control
+
+  - id: rel-plantcontrol-accesses-production-plan
+    type: Access
+    source: app-plantcontrol
+    target: data-production-plan
+    provenance:
+      - fact: fact-plan-sent-to-plant-control
+
+  # --- infrastructure, and what the decisions are about ---------------------------------
+  - id: rel-servers-serve-plantcontrol
+    type: Serving
+    source: node-mill-floor-servers
+    target: app-plantcontrol
+    provenance:
+      - fact: fact-plant-control-on-servers
+
+  - id: rel-labtrack-replacement-concerns-labtrack
+    type: Association
+    source: wp-labtrack-replacement
+    target: app-labtrack
+    provenance:
+      - fact: fact-labtrack-replacement-decided
+
+  - id: rel-server-pricing-concerns-servers
+    type: Association
+    source: wp-mill-floor-server-pricing
+    target: node-mill-floor-servers
+    provenance:
+      - fact: fact-server-replacement-decided
+
+  - id: rel-labtrack-replacement-realizes-proposal
+    type: Realization
+    source: wp-labtrack-replacement
+    target: deliverable-labtrack-replacement-proposal
+    provenance:
+      - fact: fact-labtrack-replacement-decided
+
+  - id: rel-server-pricing-realizes-price
+    type: Realization
+    source: wp-mill-floor-server-pricing
+    target: deliverable-mill-floor-server-price
+    provenance:
+      - fact: fact-server-replacement-decided

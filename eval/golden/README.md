@@ -63,6 +63,8 @@ the harness exists to make.
 |---|---|
 | `clinic/` | One interview: entity resolution, an integration relationship, a risk statement. |
 | `contested/` | **Two sources that disagree.** An inventory records a scheduling system as decommissioned; an interview two months later records dispatch using it weekly. Both sides stay in the register (`confidence: contested` + `contests:`), the model follows one and says so (`PROV009`), and the architecture description quotes the losing side in its open questions. Also exercises multi-source intake and entity resolution across documents. |
+| `wodociagi/` | **A source in Polish.** A municipal water utility's IT manager on meter reading and billing: diacritics, the low-high quotation marks and dashes a word processor writes, and an alias table that has to carry inflected forms ("terminali mobilnych", "systemu bilingowego") because Polish names a thing differently in every grammatical case. Statements are in the source's language; translating them would put a second author between the quote and the claim. |
+| `mill/` | **A long document as it is handed over.** IT steering-committee minutes as a PDF, converted by `intake-doc` (the original sits next to the markdown): several speakers, boilerplate, agenda headings, a decision list, a systems table flattened into lines by the PDF text layer, and a signed page with no text layer that the converter names. Most of its lines are not architecture, and coverage says so; "the plant control system" in the prose is `PlantControl` in the table. The PDF was written for this case. |
 | `../example/` | The largest case: full lifecycle, governance records, service layer. |
 
 ## Changing a case
@@ -132,3 +134,11 @@ A case earns its place by exercising something the existing set does not (a new
 layer, a contradiction between sources, a messier document format). Keep it small
 enough to diff by eye, make every quote verbatim, and add it to the CI steps that
 validate golden cases -- gold that does not pass its own gates is not gold.
+
+*2026-11-11, `wodociagi/` and `mill/` (0.22.0).* Added for what the set could not
+exercise: a source not in English, and a long document in the format an analyst is
+actually handed. Authored by the skills' stated rules -- one atomic statement per fact,
+the narrowest verbatim span that carries it, every named thing an entity, the capability
+map first -- in a commit of their own, before any run measured them; no run's output was
+looked at, because none existed. Their first scores are 0.23.0's, and nothing will be
+tuned against them: the rules in "Changing a case" apply from the first run.

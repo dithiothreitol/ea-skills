@@ -1,0 +1,173 @@
+# Gold model for the Polish case: every concept cites a fact from the register, and names
+# are the source's names, in Polish -- the model's text is never translated (the same rule
+# as `docs --lang pl`, which renders the description around English or Polish names alike).
+# Three capabilities, because the interview supports three ("a shape, not a target").
+
+elements:
+  # --- Strategy: what the utility can do ----------------------------------------------
+  - id: cap-odczyty-wodomierzy
+    type: Capability
+    name: Odczyty wodomierzy
+    documentation: Zbieranie odczytów wodomierzy w terenie.
+    owner: it@wodociagi-zalesie.example
+    lastReviewed: 2026-07-08
+    provenance:
+      - fact: fact-odczyty-inkasenci
+
+  - id: cap-rozliczenia-z-odbiorcami
+    type: Capability
+    name: Rozliczenia z odbiorcami
+    documentation: Wystawianie faktur i prowadzenie rozrachunków odbiorców.
+    owner: it@wodociagi-zalesie.example
+    lastReviewed: 2026-07-08
+    provenance:
+      - fact: fact-faktury
+      - fact: fact-rozrachunki
+
+  - id: cap-obsluga-odbiorcow
+    type: Capability
+    name: Obsługa odbiorców
+    documentation: Sprawdzanie salda i pobieranie faktur przez odbiorców.
+    owner: it@wodociagi-zalesie.example
+    lastReviewed: 2026-07-08
+    provenance:
+      - fact: fact-ebok-saldo
+
+  # --- Business -------------------------------------------------------------------------
+  - id: actor-inkasent
+    type: BusinessActor
+    name: Inkasent
+    owner: it@wodociagi-zalesie.example
+    lastReviewed: 2026-07-08
+    provenance:
+      - fact: fact-odczyty-inkasenci
+
+  - id: actor-odbiorca
+    type: BusinessActor
+    name: Odbiorca
+    owner: it@wodociagi-zalesie.example
+    lastReviewed: 2026-07-08
+    provenance:
+      - fact: fact-faktury
+      - fact: fact-ebok-saldo
+
+  # --- Application ----------------------------------------------------------------------
+  - id: app-aquabill
+    type: ApplicationComponent
+    name: AquaBill
+    documentation: System bilingowy -- faktury i rozrachunki odbiorców.
+    owner: it@wodociagi-zalesie.example
+    lastReviewed: 2026-07-08
+    provenance:
+      - fact: fact-przesyl-odczytow
+      - fact: fact-faktury
+      - fact: fact-rozrachunki
+
+  - id: app-ebok
+    type: ApplicationComponent
+    name: e-BOK
+    documentation: e-Biuro Obsługi Klienta -- saldo i faktury dla odbiorców.
+    owner: it@wodociagi-zalesie.example
+    lastReviewed: 2026-07-08
+    provenance:
+      - fact: fact-ebok-saldo
+      - fact: fact-ebok-interfejs
+
+  - id: service-interfejs-aquabill
+    type: ApplicationService
+    name: Interfejs AquaBill
+    documentation: Udostępniany przez AquaBill; e-BOK pobiera przez niego dane.
+    owner: it@wodociagi-zalesie.example
+    lastReviewed: 2026-07-08
+    provenance:
+      - fact: fact-ebok-interfejs
+
+  # --- Technology -----------------------------------------------------------------------
+  - id: device-terminal-mobilny
+    type: Device
+    name: Terminal mobilny
+    documentation: Przesyła odczyty do AquaBill raz dziennie, zwykle wieczorem.
+    owner: it@wodociagi-zalesie.example
+    lastReviewed: 2026-07-08
+    provenance:
+      - fact: fact-terminale-mobilne
+      - fact: fact-przesyl-odczytow
+      - fact: fact-przesyl-raz-dziennie
+
+  - id: node-serwer-aquabill
+    type: Node
+    name: Serwer AquaBill
+    documentation: >
+      Serwer w serwerowni urzędu gminy. Kopie zapasowe wykonuje firma zewnętrzna, ale
+      umowa serwisowa wygasa z końcem roku -- ryzyko zapisane przez kierownika IT.
+    owner: it@wodociagi-zalesie.example
+    lastReviewed: 2026-07-08
+    provenance:
+      - fact: fact-serwer-urzad
+      - fact: fact-kopie-zewnetrzne
+      - fact: fact-umowa-wygasa
+
+relationships:
+  # --- the attachment the capability map exists for ------------------------------------
+  - id: rel-inkasent-realizuje-odczyty
+    type: Realization
+    source: actor-inkasent
+    target: cap-odczyty-wodomierzy
+    provenance:
+      - fact: fact-odczyty-inkasenci
+
+  - id: rel-aquabill-realizuje-rozliczenia
+    type: Realization
+    source: app-aquabill
+    target: cap-rozliczenia-z-odbiorcami
+    provenance:
+      - fact: fact-faktury
+
+  - id: rel-ebok-realizuje-obsluge
+    type: Realization
+    source: app-ebok
+    target: cap-obsluga-odbiorcow
+    provenance:
+      - fact: fact-ebok-saldo
+
+  - id: rel-aquabill-realizuje-interfejs
+    type: Realization
+    source: app-aquabill
+    target: service-interfejs-aquabill
+    provenance:
+      - fact: fact-ebok-interfejs
+
+  - id: rel-interfejs-obsluguje-ebok
+    type: Serving
+    source: service-interfejs-aquabill
+    target: app-ebok
+    provenance:
+      - fact: fact-ebok-interfejs
+
+  - id: rel-ebok-obsluguje-odbiorce
+    type: Serving
+    source: app-ebok
+    target: actor-odbiorca
+    provenance:
+      - fact: fact-ebok-saldo
+
+  - id: rel-terminal-obsluguje-inkasenta
+    type: Serving
+    source: device-terminal-mobilny
+    target: actor-inkasent
+    provenance:
+      - fact: fact-terminale-mobilne
+
+  - id: rel-terminal-przesyla-do-aquabill
+    type: Flow
+    source: device-terminal-mobilny
+    target: app-aquabill
+    provenance:
+      - fact: fact-przesyl-odczytow
+
+  - id: rel-serwer-obsluguje-aquabill
+    type: Serving
+    source: node-serwer-aquabill
+    target: app-aquabill
+    provenance:
+      - fact: fact-serwer-urzad

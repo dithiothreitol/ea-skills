@@ -1,0 +1,228 @@
+# One atomic statement per fact. The minutes pack several claims into a sentence ("Sales
+# orders and invoices are held in LedgerOne"), and the systems table packs four into a
+# row; each claim is its own fact, citing the narrowest verbatim span that carries it.
+# Attendance, the agenda and the boilerplate are not architecture and stay uncited -- the
+# coverage report lists them, which is what it is for.
+
+facts:
+  - id: fact-millplan-schedules-runs
+    statement: MillPlan schedules every milling run.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: The production planning tool MillPlan schedules every milling run.
+    entities: [millplan]
+    topics: [application]
+
+  - id: fact-plan-sent-to-plant-control
+    statement: MillPlan sends the daily production plan to the plant control system.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: >-
+          MillPlan
+          sends the daily production plan to the plant control system
+    entities: [millplan, production-plan, plantcontrol]
+    topics: [integration]
+
+  - id: fact-plan-sent-at-0500
+    statement: The daily production plan is sent at 05:00 each morning.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: at 05:00 each morning.
+    entities: [production-plan]
+    topics: [integration]
+
+  - id: fact-late-changes-phoned
+    statement: Plan changes after 05:00 are phoned through to the shift supervisor.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: Changes after 05:00 are phoned through to the shift supervisor
+    entities: [shift-supervisor]
+    topics: [business]
+
+  - id: fact-late-changes-unrecorded
+    statement: Plan changes after 05:00 are not recorded in MillPlan.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: >-
+          are not
+          recorded in MillPlan.
+    entities: [millplan]
+    topics: [risk]
+
+  - id: fact-batches-tested
+    statement: Every batch is tested in the lab before it is released.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: Every batch is tested in the lab before it is released.
+    entities: [lab]
+    topics: [business]
+
+  - id: fact-lab-results-in-labtrack
+    statement: Lab results are recorded in LabTrack.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: >-
+          Lab results are
+          recorded in LabTrack.
+    entities: [lab-results, labtrack]
+    topics: [application]
+
+  - id: fact-labtrack-spreadsheet
+    statement: LabTrack is a spreadsheet-based tool.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: LabTrack is a spreadsheet-based tool
+    entities: [labtrack]
+    topics: [application]
+
+  - id: fact-labtrack-single-maintainer
+    statement: LabTrack is maintained by one person in the quality team.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: >-
+          it is maintained by one
+          person in the quality team.
+    entities: [labtrack, quality-team]
+    topics: [risk]
+
+  - id: fact-sales-orders-in-ledgerone
+    statement: Sales orders are held in LedgerOne.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: Sales orders and invoices are held in LedgerOne
+    entities: [ledgerone]
+    topics: [application]
+
+  - id: fact-invoices-in-ledgerone
+    statement: Invoices are held in LedgerOne.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: Sales orders and invoices are held in LedgerOne
+    entities: [ledgerone]
+    topics: [application]
+
+  - id: fact-ledgerone-rented
+    statement: LedgerOne is an ERP rented from its vendor.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: >-
+          the ERP we rent from the
+          vendor.
+    entities: [ledgerone]
+    topics: [technology]
+
+  - id: fact-orders-pushed-hourly
+    statement: LedgerOne pushes confirmed sales orders into MillPlan every hour.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: The ERP pushes confirmed sales orders into MillPlan every hour.
+    entities: [ledgerone, millplan, order-feed]
+    topics: [integration]
+
+  - id: fact-order-feed-failures
+    statement: The hourly order feed has failed twice this year without anyone noticing until the next morning.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: >-
+          the hourly order feed has failed twice this year without
+          anyone noticing until the next morning.
+    entities: [order-feed]
+    topics: [risk]
+
+  - id: fact-plant-control-on-servers
+    statement: The plant control system runs on two servers on the mill floor.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: The plant control system runs on two servers on the mill floor.
+    entities: [plantcontrol, mill-floor-servers]
+    topics: [technology]
+
+  - id: fact-server-out-of-support
+    statement: One of the two mill floor servers is out of vendor support.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: >-
+          One of the
+          two servers is out of vendor support.
+    entities: [mill-floor-servers]
+    topics: [risk]
+
+  - id: fact-labtrack-replacement-decided
+    statement: IT will propose a replacement for LabTrack by the end of Q1 2027.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: IT will propose a replacement for LabTrack by the end of Q1 2027.
+    entities: [labtrack]
+    topics: [decision]
+
+  - id: fact-server-replacement-decided
+    statement: IT will price a supported replacement for the out-of-support mill floor server.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: IT will price a supported replacement for the mill floor server.
+    entities: [mill-floor-servers]
+    topics: [decision]
+
+  - id: fact-millplan-owner-operations
+    statement: The business owner of MillPlan is Operations.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: MillPlan production planning Operations on-premise
+    entities: [millplan]
+    topics: [application]
+
+  - id: fact-millplan-on-premise
+    statement: MillPlan is hosted on-premise.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: MillPlan production planning Operations on-premise
+    entities: [millplan]
+    topics: [technology]
+
+  - id: fact-ledgerone-owner-finance
+    statement: The business owner of LedgerOne is Finance.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: LedgerOne orders, invoicing, finance Finance vendor cloud
+    entities: [ledgerone]
+    topics: [application]
+
+  - id: fact-ledgerone-vendor-cloud
+    statement: LedgerOne is hosted in the vendor's cloud.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: LedgerOne orders, invoicing, finance Finance vendor cloud
+    entities: [ledgerone]
+    topics: [technology]
+
+  - id: fact-labtrack-owner-quality
+    statement: The business owner of LabTrack is Quality.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: LabTrack quality lab results Quality shared drive
+    entities: [labtrack]
+    topics: [application]
+
+  - id: fact-labtrack-shared-drive
+    statement: LabTrack is hosted on a shared drive.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: LabTrack quality lab results Quality shared drive
+    entities: [labtrack]
+    topics: [technology]
+
+  - id: fact-plantcontrol-mill-line
+    statement: PlantControl controls the mill line.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: PlantControl mill line control Engineering mill floor servers
+    entities: [plantcontrol]
+    topics: [application]
+
+  - id: fact-plantcontrol-owner-engineering
+    statement: The business owner of PlantControl is Engineering.
+    provenance:
+      - file: facts/sources/it-steering-minutes-2026-07-14.md
+        quote: PlantControl mill line control Engineering mill floor servers
+    entities: [plantcontrol]
+    topics: [application]

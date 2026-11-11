@@ -1,0 +1,98 @@
+# One atomic statement per fact, in the language of the source: the register records what
+# the interview says, and translating it would put a second author between the quote and
+# the claim. Quotes are verbatim -- typographic quotation marks and dashes included.
+
+facts:
+  - id: fact-odczyty-inkasenci
+    statement: Odczyty wodomierzy zbierają inkasenci w terenie.
+    provenance:
+      - file: facts/sources/wywiad-kierownik-it-2026-07-08.md
+        quote: Odczyty wodomierzy zbierają inkasenci w terenie
+    entities: [inkasent]
+    topics: [business]
+
+  - id: fact-terminale-mobilne
+    statement: Inkasenci zbierają odczyty za pomocą terminali mobilnych.
+    provenance:
+      - file: facts/sources/wywiad-kierownik-it-2026-07-08.md
+        quote: zbierają inkasenci w terenie za pomocą terminali mobilnych.
+    entities: [inkasent, terminal-mobilny]
+    topics: [technology]
+
+  - id: fact-przesyl-odczytow
+    statement: Terminale przesyłają odczyty do systemu bilingowego AquaBill.
+    provenance:
+      - file: facts/sources/wywiad-kierownik-it-2026-07-08.md
+        quote: Terminale przesyłają odczyty do systemu bilingowego „AquaBill”
+    entities: [terminal-mobilny, aquabill]
+    topics: [integration]
+
+  - id: fact-przesyl-raz-dziennie
+    statement: Terminale przesyłają odczyty raz dziennie, zwykle wieczorem.
+    provenance:
+      - file: facts/sources/wywiad-kierownik-it-2026-07-08.md
+        quote: >-
+          raz dziennie – zwykle
+          wieczorem.
+    entities: [terminal-mobilny]
+    topics: [integration]
+
+  - id: fact-faktury
+    statement: System bilingowy wystawia faktury dla odbiorców.
+    provenance:
+      - file: facts/sources/wywiad-kierownik-it-2026-07-08.md
+        quote: System bilingowy wystawia faktury dla odbiorców
+    entities: [aquabill, odbiorca]
+    topics: [application]
+
+  - id: fact-rozrachunki
+    statement: System bilingowy prowadzi rozrachunki odbiorców.
+    provenance:
+      - file: facts/sources/wywiad-kierownik-it-2026-07-08.md
+        quote: prowadzi ich rozrachunki.
+    entities: [aquabill, odbiorca]
+    topics: [application]
+
+  - id: fact-ebok-saldo
+    statement: Odbiorcy mogą sprawdzić saldo i pobrać fakturę w e-Biurze Obsługi Klienta.
+    provenance:
+      - file: facts/sources/wywiad-kierownik-it-2026-07-08.md
+        quote: Odbiorcy mogą sprawdzić saldo i pobrać fakturę w e-Biurze Obsługi Klienta.
+    entities: [odbiorca, ebok]
+    topics: [business]
+
+  - id: fact-ebok-interfejs
+    statement: e-BOK pobiera dane z AquaBill przez interfejs udostępniany przez AquaBill.
+    provenance:
+      - file: facts/sources/wywiad-kierownik-it-2026-07-08.md
+        quote: >-
+          e-BOK pobiera
+          dane z AquaBill przez interfejs udostępniany przez ten system.
+    entities: [ebok, aquabill, interfejs-aquabill]
+    topics: [integration]
+
+  - id: fact-serwer-urzad
+    statement: AquaBill działa na serwerze w serwerowni urzędu gminy.
+    provenance:
+      - file: facts/sources/wywiad-kierownik-it-2026-07-08.md
+        quote: AquaBill działa na serwerze w serwerowni urzędu gminy.
+    entities: [aquabill, serwer-aquabill]
+    topics: [technology]
+
+  - id: fact-kopie-zewnetrzne
+    statement: Kopie zapasowe wykonuje firma zewnętrzna.
+    provenance:
+      - file: facts/sources/wywiad-kierownik-it-2026-07-08.md
+        quote: >-
+          Kopie zapasowe wykonuje firma
+          zewnętrzna
+    entities: [firma-zewnetrzna, serwer-aquabill]
+    topics: [technology]
+
+  - id: fact-umowa-wygasa
+    statement: Umowa serwisowa na wykonywanie kopii zapasowych wygasa z końcem roku.
+    provenance:
+      - file: facts/sources/wywiad-kierownik-it-2026-07-08.md
+        quote: umowa serwisowa wygasa z końcem roku.
+    entities: [firma-zewnetrzna]
+    topics: [risk]

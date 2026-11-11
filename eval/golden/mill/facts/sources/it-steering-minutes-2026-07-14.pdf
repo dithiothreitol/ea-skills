@@ -1,0 +1,128 @@
+%PDF-1.4
+%ту╧╙
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R 9 0 R 11 0 R] /Count 4 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 1228 >>
+stream
+BT
+/F1 10 Tf
+14 TL
+60 750 Td
+(BRIGHTWATER MILLS LTD) Tj T*
+(IT Steering Committee Ц minutes of the meeting held on 14 July 2026) Tj T*
+(CONFIDENTIAL. Internal use only. Do not forward outside Brightwater Mills.) Tj T*
+() Tj T*
+(Present: Helen Ward \(Operations Director, chair\), Raj Patel \(IT Manager\), Tom Okafor) Tj T*
+(\(Finance Controller\), Ana Silva \(Quality Lead\).) Tj T*
+(Apologies: none.) Tj T*
+(Agenda: 1. Production planning. 2. Quality data. 3. Orders and finance. 4. Plant) Tj T*
+(infrastructure. 5. Any other business.) Tj T*
+() Tj T*
+(1. Production planning) Tj T*
+(Raj Patel: The production planning tool MillPlan schedules every milling run. MillPlan) Tj T*
+(sends the daily production plan to the plant control system at 05:00 each morning.) Tj T*
+(Helen Ward asked whether the plan can be changed after it is sent.) Tj T*
+(Raj Patel: Changes after 05:00 are phoned through to the shift supervisor and are not) Tj T*
+(recorded in MillPlan.) Tj T*
+() Tj T*
+(2. Quality data) Tj T*
+(Ana Silva: Every batch is tested in the lab before it is released. Lab results are) Tj T*
+(recorded in LabTrack. LabTrack is a spreadsheet-based tool, and it is maintained by one) Tj T*
+(person in the quality team.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Length 774 >>
+stream
+BT
+/F1 10 Tf
+14 TL
+60 750 Td
+(3. Orders and finance) Tj T*
+(Tom Okafor: Sales orders and invoices are held in LedgerOne, the ERP we rent from the) Tj T*
+(vendor. The ERP pushes confirmed sales orders into MillPlan every hour.) Tj T*
+(Raj Patel confirmed that the hourly order feed has failed twice this year without) Tj T*
+(anyone noticing until the next morning.) Tj T*
+() Tj T*
+(4. Plant infrastructure) Tj T*
+(Raj Patel: The plant control system runs on two servers on the mill floor. One of the) Tj T*
+(two servers is out of vendor support.) Tj T*
+(Decision: IT will propose a replacement for LabTrack by the end of Q1 2027.) Tj T*
+(Decision: IT will price a supported replacement for the mill floor server.) Tj T*
+() Tj T*
+(5. Any other business) Tj T*
+(None.) Tj T*
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 721 >>
+stream
+BT
+/F1 10 Tf
+14 TL
+60 750 Td
+(Attachment A Ц systems overview \(as supplied by IT\)) Tj T*
+() Tj T*
+(System          Purpose                        Business owner   Hosting) Tj T*
+(MillPlan        production planning            Operations       on-premise) Tj T*
+(LedgerOne       orders, invoicing, finance     Finance          vendor cloud) Tj T*
+(LabTrack        quality lab results            Quality          shared drive) Tj T*
+(PlantControl    mill line control              Engineering      mill floor servers) Tj T*
+() Tj T*
+(Actions) Tj T*
+(R. Patel Ц LabTrack replacement proposal Ц Q1 2027.) Tj T*
+(R. Patel Ц price a supported mill floor server Ц next meeting.) Tj T*
+(Next meeting: 13 October 2026.) Tj T*
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Length 88 >>
+stream
+0.6 w
+60 520 492 200 re S
+90 600 m 230 640 l 300 590 l S
+340 610 m 470 650 l 520 600 l S
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << >> /Contents 10 0 R >>
+endobj
+xref
+0 12
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000140 00000 n 
+0000000237 00000 n 
+0000001517 00000 n 
+0000001643 00000 n 
+0000002468 00000 n 
+0000002594 00000 n 
+0000003366 00000 n 
+0000003492 00000 n 
+0000003631 00000 n 
+trailer
+<< /Size 12 /Root 1 0 R >>
+startxref
+3737
+%%EOF

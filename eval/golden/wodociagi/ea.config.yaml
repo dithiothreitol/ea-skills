@@ -1,0 +1,16 @@
+# Golden case: a small repository whose source is in Polish. The harness scores a
+# candidate produced by the skills against this gold standard (easkills score).
+name: Wodociągi Miejskie w Zalesiu -- architektura korporacyjna
+documentation: >
+  Golden-set case for the extraction and modelling pipeline on a source that is not in
+  English: one interview with a municipal water utility's IT manager, covering meter
+  reading and customer billing. It exercises the matcher's folding table on real text --
+  Polish diacritics, the low-high quotation marks and dashes a word processor writes --
+  and an alias table that has to carry inflected forms, because Polish names a thing
+  differently in every case. Deliberately no counts here -- this file is copied into the
+  scratch repository a candidate is produced in, and stating how many facts and elements
+  gold holds would hand the answer to the run being measured.
+stalenessDays: 365
+quoteMatchThreshold: 0.90
+factsRoot: .
+sourcesDir: facts/sources

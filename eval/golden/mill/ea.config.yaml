@@ -1,0 +1,19 @@
+# Golden case: a long, messy document that enters through `easkills intake-doc`. The
+# harness scores a candidate produced by the skills against this gold standard.
+name: Brightwater Mills Enterprise Architecture
+documentation: >
+  Golden-set case for the extraction and modelling pipeline on the kind of document an
+  analyst is actually handed: the minutes of an IT steering committee as a PDF, converted
+  by `intake-doc` (the original sits next to the converted markdown, as ea-intake
+  prescribes). Several speakers, boilerplate, agenda headings, a decision list, a systems
+  table flattened into lines by the PDF text layer, and a signed page with no text layer
+  that the converter names instead of skipping. It exercises entity resolution across
+  prose and table ("the plant control system" is "PlantControl"), atomic facts out of
+  compound sentences, and a source in which most lines are not architecture. The PDF was
+  written for this case. Deliberately no counts here -- this file is copied into the
+  scratch repository a candidate is produced in, and stating how many facts and elements
+  gold holds would hand the answer to the run being measured.
+stalenessDays: 365
+quoteMatchThreshold: 0.90
+factsRoot: .
+sourcesDir: facts/sources

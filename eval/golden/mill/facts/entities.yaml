@@ -1,0 +1,55 @@
+# The minutes and the attached table name the same systems differently -- the prose says
+# "the plant control system" and "the ERP", the table says PlantControl and LedgerOne --
+# and resolving the two is the case's point. Only aliases the document actually uses.
+
+entities:
+  - id: millplan
+    name: MillPlan
+    kind: application
+
+  - id: plantcontrol
+    name: PlantControl
+    kind: application
+    aliases:
+      - plant control system
+
+  - id: ledgerone
+    name: LedgerOne
+    kind: application
+    aliases:
+      - the ERP
+
+  - id: labtrack
+    name: LabTrack
+    kind: application
+
+  - id: production-plan
+    name: Daily Production Plan
+    kind: data
+
+  - id: lab-results
+    name: Lab Results
+    kind: data
+
+  - id: order-feed
+    name: Hourly Order Feed
+    kind: integration
+
+  - id: lab
+    name: Lab
+    kind: actor
+
+  - id: quality-team
+    name: Quality Team
+    kind: actor
+
+  - id: shift-supervisor
+    name: Shift Supervisor
+    kind: role
+
+  - id: mill-floor-servers
+    name: Mill Floor Servers
+    kind: technology
+    aliases:
+      - two servers on the mill floor
+      - two servers
