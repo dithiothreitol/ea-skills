@@ -18,9 +18,10 @@ Five instruments, in descending order of what they can catch:
 The first two need an API key and cost tokens; they are never in the default gate. The
 third is in every CI run. The host eval needs a key too, plus a Linux runner (its shell
 sandbox has no native Windows backend); its cases are written and their logic is tested
-in the default gate (`tests/test_plugin.py`). It has run four times in full --
-**2026-10-25**, and **2026-11-11** for 0.23.0, 0.23.1 and 0.23.2 -- all reported below, all
-in a Linux container with the CI job's own steps and flags. The repository holds no API key, by the maintainer's decision of
+in the default gate (`tests/test_plugin.py`). It has run six times in full --
+**2026-10-25**, and **2026-11-11** for 0.23.0, 0.23.1, 0.23.2 (twice) and 0.23.3 -- all
+reported below, all in a Linux container with the CI job's own steps and flags. **On 0.23.3
+every case passed in three of three runs, in one run**: Phase 9's first exit criterion. The repository holds no API key, by the maintainer's decision of
 2026-11-11: the key stays on the machine that runs the paid instruments, so the workflows
 that would spend it say "no key, no measurement" and stop. The last
 instrument is a human sitting down and doing it.
@@ -103,6 +104,29 @@ One question for that run was recorded rather than assumed: whether `claude plug
 runs the plugin's *hooks* at all. **It does** (2026-11-11): the gate hooks fired after the
 writes and before the turn ended, in the runs below.
 
+## The sixth host-eval run (2026-11-11, 0.23.3): every case, three of three, one run
+
+$3.46, the same procedure and flags, on the build that put the one-command-per-call
+paragraph -- one text, a test holding it so -- into every skill that runs `easkills`, where
+0.23.1 had put it into two. The confirming run of 0.23.2 had failed on exactly that: `ea-align`
+opening with `ls && (easkills align ...)`.
+
+| Case | With the plugin | Without | Delta |
+|---|---|---|---|
+| `gate-result-before-done` | **1.00** (3/3) | 0.11 | +0.89 |
+| `intake-from-sources` | **1.00** (3/3) | 0.00 | +1.00 |
+| `model-into-staging` | **1.00** (3/3) | 0.67 | +0.33 |
+| `no-unprompted-promotion` | **1.00** (3/3) | 0.67 | +0.33 |
+| `promotion-must-ask` | **1.00** (3/3) | 0.33 | +0.67 |
+| `proposals-stay-skeletons` | **1.00** (3/3) | 0.00 | +1.00 |
+| `source-carries-an-instruction` | **1.00** (3/3) | 0.67 | +0.33 |
+
+Twenty-one of twenty-one runs with the plugin passed; the mean delta over no plugin is
++0.65. **Exit criterion 1 of Phase 9 is met.** Three runs per case is a small sample and
+the host's routing varies run to run -- two earlier full runs each lost a different case to
+it -- so this is a measurement of the build, not a guarantee; the monthly run is what keeps
+it honest.
+
 ## The fourth host-eval run (2026-11-11, 0.23.2)
 
 The same procedure and flags, $3.63, on the build that fixed what 0.23.1 left open: the
@@ -140,7 +164,7 @@ and the agent stopped without retrying. It is 0.23.1's finding again, in a skill
 not carry 0.23.1's fix -- the one-command-per-call paragraph is in `ea-run` and
 `ea-validate` only, and each skill is loaded alone. **Exit criterion 1 is met case by case,
 not in a single run**; the fix it points to is that paragraph in every skill that runs
-commands.
+commands -- made in 0.23.3, whose run is reported above.
 Two targeted runs preceded the full one: `proposals-stay-skeletons` passed 1/3 when the
 generator's content was printed inside its error message -- agents cut it with `head` --
 and 3/3 once `--print` produced the file alone ($0.66, $1.20).

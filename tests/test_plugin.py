@@ -149,29 +149,72 @@ def test_the_skills_that_read_content_say_it_is_data_not_instructions(name):
     assert D8_SENTENCE in body, f"{name} does not say that source content is data"
 
 
-@pytest.mark.parametrize("name", ["ea-run", "ea-validate"])
-def test_the_skills_that_run_several_gates_say_one_command_per_call(name):
-    """0.23.1: in four of the seven failing host-eval runs of 2026-11-11 the agent folded
-    these skills' commands into a loop or a line with `$TMPDIR` and `$?` -- which no
-    pre-approval matches, so a run with nobody to ask refused it and the gate never ran."""
-    _, body = _frontmatter(REPO_ROOT / "skills" / name / "SKILL.md")
-    assert "**One command per call, written out in full.**" in body
+def _one_command_rule(body: str) -> str | None:
+    flat = " ".join(body.split())
+    start = flat.find("**One command per call, written out in full.**")
+    end = flat.find("beside the output.", start) if start >= 0 else -1
+    return None if end < 0 else flat[start:end]
 
 
-SHELL_ONLY_A_PERSON_CAN_APPROVE = re.compile(r"\$[({A-Za-z_?]|^\s*(?:for|while|until)\s|;\s*do\b|^\s*done\b")
+@pytest.mark.parametrize("skill", SKILLS, ids=lambda p: p.name)
+def test_every_skill_that_runs_easkills_says_one_command_per_call(skill):
+    """0.23.1 put this rule in the two skills whose runs had failed on it (a loop, `$TMPDIR`,
+    `$?` -- lines no pre-approval matches, refused where nobody can approve). 0.23.2's
+    confirming run then failed on `ls && (easkills align ...)` from `ea-align`, which did
+    not carry it: each skill is loaded alone, so each one that runs commands needs it."""
+    meta, body = _frontmatter(skill / "SKILL.md")
+    if not any(str(tool).startswith("Bash(easkills") for tool in meta.get("allowed-tools") or []):
+        pytest.skip("runs no easkills command")
+    assert _one_command_rule(body), f"{skill.name} runs easkills commands without the one-command rule"
+
+
+def test_the_one_command_rule_is_one_text_in_every_skill():
+    texts = {skill.name: _one_command_rule(_frontmatter(skill / "SKILL.md")[1]) for skill in SKILLS}
+    present = {name: text for name, text in texts.items() if text}
+    assert len(set(present.values())) == 1, sorted(present)
+    rule = next(iter(present.values()))
+    assert "no `&&` chain, no pipe or redirect, no subshell" in rule
+    # The review of 0.23.3's first draft: "run them again one by one rather than stopping"
+    # would have turned a person's "no" into pre-approved commands that run anyway.
+    assert "A command the person declined stays declined." in rule and "rather than stopping" not in rule
+
+
+# Variables, loops, chains, pipes, redirects into a pipe, subshells, `;`-joined commands.
+SHELL_ONLY_A_PERSON_CAN_APPROVE = re.compile(
+    r"\$[({A-Za-z_?]|^\s*(?:for|while|until)\s|;\s*do\b|^\s*done\b|&&|\|\||(?<![<>])\|(?!\|)|^\s*\(|;\s*\S"
+)
+
+
+def _shell_lines(body: str) -> list[str]:
+    """Command lines of the shell examples, comments removed: blocks tagged as shell, and
+    untagged blocks that run `easkills` (YAML records use `|` and `;` innocently)."""
+    lines, block, tag = [], None, ""
+    for line in body.splitlines():
+        if line.lstrip().startswith("```"):
+            if block is None:
+                block, tag = [], line.strip()[3:].strip()
+            else:
+                if tag in ("bash", "sh", "shell", "console") or (not tag and any("easkills " in b for b in block)):
+                    lines += [b.split(" #", 1)[0] for b in block if not b.lstrip().startswith("#")]
+                block = None
+        elif block is not None:
+            block.append(line)
+    return lines
+
+
+def test_the_shell_example_check_catches_the_lines_that_were_refused():
+    for refused in ("ls && (easkills align --root . 2>&1 | head -60)", "for c in validate delta; do",
+                    "easkills validate --root . --json $TMPDIR/s.json", "easkills chunk --root . | head -200"):
+        assert SHELL_ONLY_A_PERSON_CAN_APPROVE.search(refused), refused
+    assert not SHELL_ONLY_A_PERSON_CAN_APPROVE.search("easkills validate --root <repo> --zone staging")
 
 
 @pytest.mark.parametrize("skill", SKILLS, ids=lambda p: p.name)
 def test_no_skill_shows_a_command_line_no_pre_approval_can_match(skill):
-    """What a skill shows is what an agent copies: a loop, a `$VAR` or a `$(...)` in an
-    example is the shape that was refused in four headless runs of 2026-11-11."""
+    """What a skill shows is what an agent copies: a loop, a `$VAR`, a chain, a pipe or a
+    subshell in an example is the shape that was refused in headless runs of 2026-11-11."""
     _, body = _frontmatter(skill / "SKILL.md")
-    fenced, offending = False, []
-    for line in body.splitlines():
-        if line.lstrip().startswith("```"):
-            fenced = not fenced
-        elif fenced and SHELL_ONLY_A_PERSON_CAN_APPROVE.search(line):
-            offending.append(line.strip())
+    offending = [line.strip() for line in _shell_lines(body) if SHELL_ONLY_A_PERSON_CAN_APPROVE.search(line)]
     assert not offending, f"{skill.name}: {offending}"
 
 

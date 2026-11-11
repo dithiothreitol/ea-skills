@@ -13,6 +13,15 @@ concern is framed by at least one view, every view exists to frame someone's con
 The validator enforces the loop (`ISO001`-`ISO006`); your job is to fill it with real
 people and real questions.
 
+**One command per call, written out in full.** Each skill pre-approves the `easkills`
+commands its own text prescribes, matched by their literal text -- so run each command
+as its own Bash call, alone on its line: no `&&` chain, no pipe or redirect, no subshell
+`( ... )`, no loop over subcommands, no shell variable (`$TMPDIR`, `$?`), no command
+substitution. A line the permission check cannot read is put to the person, and refused
+outright where nobody can answer -- which leaves the command unrun. A command the person
+declined stays declined. You never need `echo $?`: the Bash tool reports a non-zero exit
+code beside the output.
+
 ## Where they come from
 
 **The fact register, not your imagination.** Interview participants, named owners in

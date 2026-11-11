@@ -27,6 +27,15 @@ regenerate both with every model change. Only the generator's own wording is tra
 names, documentation and decision rationale stay in the language their authors wrote
 them in, which is a fact about the model rather than a defect of the translation.
 
+**One command per call, written out in full.** Each skill pre-approves the `easkills`
+commands its own text prescribes, matched by their literal text -- so run each command
+as its own Bash call, alone on its line: no `&&` chain, no pipe or redirect, no subshell
+`( ... )`, no loop over subcommands, no shell variable (`$TMPDIR`, `$?`), no command
+substitution. A line the permission check cannot read is put to the person, and refused
+outright where nobody can answer -- which leaves the command unrun. A command the person
+declined stays declined. You never need `echo $?`: the Bash tool reports a non-zero exit
+code beside the output.
+
 ## What the generator guarantees (so you do not re-do it)
 
 * ISO 42010 Clause 6 shape: stakeholders -> concerns -> views, with a concern-coverage

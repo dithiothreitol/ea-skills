@@ -9,15 +9,16 @@ what was removed is ceremony (§5). This is a plan, not a status page: every cou
 is a target or a dated measurement, and the only numbers to trust are the ones the README
 badge and its tests carry. It is a draft until the operator decisions in §8 are taken.*
 
-**Closed 2026-11-11 with 0.23.0**, in the three sessions and two releases planned. Exit
-criteria 2–8 are met; criterion 1 is not -- four of seven host-eval cases pass in three of
-three runs, and the causes of the other three are on
+**Closed 2026-11-11 with 0.23.0**, in the three sessions and two releases planned, with
+exit criteria 2–8 met and criterion 1 not -- four of seven host-eval cases passed in three
+of three runs, and the causes of the other three are on
 [the coverage page](SKILL-COVERAGE.md), recorded for a later release as D14 requires.
 That later release was 0.23.1, the same day (§10's small release): five of seven cases
 passed in three of three runs. 0.23.2 closed the other two and what its own run found:
 every case has passed three of three on its build -- six in one full run, the seventh in
-six runs after a one-line fix -- so criterion 1 is met case by case; a confirming run
-passed six of seven, so not yet in one run.
+six runs after a one-line fix; its confirming run passed six of seven. 0.23.3 put the
+one-command rule into every skill that runs commands, and **every case passed three of
+three in one run: criterion 1 is met.**
 
 ## 1. What this phase answers
 

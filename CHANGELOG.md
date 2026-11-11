@@ -5,6 +5,33 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
+## [0.23.3] — 2026-11-11 — every case, one run
+
+Phase 9's first exit criterion, met: every host-eval case passed in three of three runs, in
+a single run on this build. The last failure class was the one 0.23.1 had already fixed --
+a command line no pre-approval matches -- in a skill 0.23.1's fix had not reached.
+
+### Changed
+
+- **Every skill that runs `easkills` carries the one-command-per-call rule**, as one text
+  a test holds identical across all twenty-six, placed before each skill's first section:
+  each command its own Bash call, alone on its line -- no `&&` chain, no pipe or redirect,
+  no subshell, no loop, no shell variable. 0.23.1 had put it into `ea-run` and
+  `ea-validate`; 0.23.2's confirming run then failed on `ls && (easkills align ...)` from
+  `ea-align`. The session review stopped the first draft, which said to rerun refused
+  commands one by one "rather than stopping" -- that would have turned a person's "no" into
+  pre-approved commands that run anyway; the rule now says a declined command stays
+  declined.
+- **The test of the skills' shell examples** now also refuses chains, pipes, subshells and
+  `;`-joined commands, reading only shell blocks, so a YAML record's `|` is not mistaken
+  for one.
+
+### Measured
+
+- **Host eval, sixth full run** ($3.46): seven of seven cases at 3/3 -- twenty-one of
+  twenty-one runs with the plugin passed; mean delta over no plugin +0.65. **Exit criterion
+  1 is met**; Phase 9 closes with all eight.
+
 ## [0.23.2] — 2026-11-11 — the open items, closed
 
 What 0.23.1's measurement left open, each traced to its cause and fixed, then measured

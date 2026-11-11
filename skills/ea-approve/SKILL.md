@@ -17,6 +17,15 @@ context extracts read only from it. Promotion is the act of a person putting the
 name on a proposal. Your job is to make that act safe and informed -- never to
 perform it unprompted.
 
+**One command per call, written out in full.** Each skill pre-approves the `easkills`
+commands its own text prescribes, matched by their literal text -- so run each command
+as its own Bash call, alone on its line: no `&&` chain, no pipe or redirect, no subshell
+`( ... )`, no loop over subcommands, no shell variable (`$TMPDIR`, `$?`), no command
+substitution. A line the permission check cannot read is put to the person, and refused
+outright where nobody can answer -- which leaves the command unrun. A command the person
+declined stays declined. You never need `echo $?`: the Bash tool reports a non-zero exit
+code beside the output.
+
 ## The one rule that is not negotiable
 
 **A promotion runs only on the person's confirmation, given when it runs.** "The

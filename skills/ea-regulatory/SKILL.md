@@ -29,6 +29,15 @@ The EU AI Act has its own register (`ai-act-register`) and its own skill —
 [`ea-ai-governance`](../ea-ai-governance/SKILL.md). One element can be in both scopes at
 once (`regulatoryScope: ai-act dora`); neither register drops it.
 
+**One command per call, written out in full.** Each skill pre-approves the `easkills`
+commands its own text prescribes, matched by their literal text -- so run each command
+as its own Bash call, alone on its line: no `&&` chain, no pipe or redirect, no subshell
+`( ... )`, no loop over subcommands, no shell variable (`$TMPDIR`, `$?`), no command
+substitution. A line the permission check cannot read is put to the person, and refused
+outright where nobody can answer -- which leaves the command unrun. A command the person
+declined stays declined. You never need `echo $?`: the Bash tool reports a non-zero exit
+code beside the output.
+
 ## Non-negotiables
 
 * **This tooling generates; it does not attest.** The register's structure follows the
