@@ -9,7 +9,8 @@ project's build phases (design log with per-decision rationale:
 
 What 0.23.1's measurement left open, each traced to its cause and fixed, then measured
 again: every host-eval case has now passed in three of three runs on this build -- six in
-one full run, the seventh in six runs after a one-line fix made after it -- and the
+one full run, the seventh in six runs after a one-line fix made after it, though a
+confirming run again passed six of seven -- and the
 capability layer appears in both interview cases, in the source's own language.
 
 ### Fixed
@@ -41,6 +42,10 @@ capability layer appears in both interview cases, in the source's own language.
   `proposals-stay-skeletons` 0/3 → 3/3 (its first pass), four more held at 3/3;
   `no-unprompted-promotion` 1/3 in that run -- the host loaded no skill in two runs -- and
   6/6 alone after the description fix. Mean delta +0.62.
+- **The confirming run** on the tagged build ($3.50): six of seven again --
+  `no-unprompted-promotion` 3/3, `proposals-stay-skeletons` 2/3, where `ea-align` opened
+  with a subshell no grant matches. Exit criterion 1 is met case by case, not in one run;
+  the one-command-per-call paragraph belongs in every skill that runs commands, not two.
 - **Harness, sixth baseline**: every median of the four golden cases held or rose but two,
   both inside the fifth's spread; elements rose in all four and relationships in three --
   `contested` relationships 14% → 32%, `mill` elements 38% → 48%. `clinic` writes 2–3 of gold's three

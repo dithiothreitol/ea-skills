@@ -130,8 +130,17 @@ never "ready"; it now names the question. Run alone six times on the final build
 passed **6/6**, each run loading `ea-validate` and reading the gate's PASS ($0.34).
 
 So every case has passed in three of three runs on 0.23.2's build -- six in one full run,
-the seventh in six runs after a one-line description change made after it. **Exit criterion
-1 is met case by case, not yet in a single run**; that confirmation is the next full run's.
+the seventh in six runs after a one-line description change made after it.
+
+**The confirming run did not confirm** (same day, the exact tagged build, $3.50): six of
+seven again, mean delta +0.64 -- `no-unprompted-promotion` 3/3 this time, and
+`proposals-stay-skeletons` 2/3. In the miss, `ea-align`'s first command was
+`ls && (easkills align --root . 2>&1 | head -60)`: a subshell no grant matches, refused,
+and the agent stopped without retrying. It is 0.23.1's finding again, in a skill that does
+not carry 0.23.1's fix -- the one-command-per-call paragraph is in `ea-run` and
+`ea-validate` only, and each skill is loaded alone. **Exit criterion 1 is met case by case,
+not in a single run**; the fix it points to is that paragraph in every skill that runs
+commands.
 Two targeted runs preceded the full one: `proposals-stay-skeletons` passed 1/3 when the
 generator's content was printed inside its error message -- agents cut it with `head` --
 and 3/3 once `--print` produced the file alone ($0.66, $1.20).

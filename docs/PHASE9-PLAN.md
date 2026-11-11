@@ -16,7 +16,8 @@ three runs, and the causes of the other three are on
 That later release was 0.23.1, the same day (§10's small release): five of seven cases
 passed in three of three runs. 0.23.2 closed the other two and what its own run found:
 every case has passed three of three on its build -- six in one full run, the seventh in
-six runs after a one-line fix -- so criterion 1 is met case by case, not yet in one run.
+six runs after a one-line fix -- so criterion 1 is met case by case; a confirming run
+passed six of seven, so not yet in one run.
 
 ## 1. What this phase answers
 
