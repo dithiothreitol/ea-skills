@@ -31,7 +31,7 @@ jobs:
         with:
           fetch-depth: 0 # `diff --ref` reads the base branch from history
 
-      - uses: dithiothreitol/ea-skills@v0.23.2
+      - uses: dithiothreitol/ea-skills@v0.23.3
 
       - name: Model gate (includes the approval seal, APR001-APR003)
         run: easkills validate --root .
@@ -64,7 +64,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: dithiothreitol/ea-skills@v0.23.2
+      - uses: dithiothreitol/ea-skills@v0.23.3
 
       - name: Date-dependent gates against today
         id: dated
