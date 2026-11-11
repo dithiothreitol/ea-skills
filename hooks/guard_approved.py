@@ -29,7 +29,8 @@ Scope, so it never fires where it should not:
   easkills promote`), gets the host's `ask` decision: the person confirms it at the
   moment it runs, and where nobody can (a headless run), the host refuses it. A skill's
   pre-approval does not cover it -- only `ea-approve`, which only a person can invoke,
-  pre-approves `promote` at all. The dry run, which moves nothing, passes as before.
+  pre-approves `promote` at all. A dry run or a help request, which move nothing, pass
+  unasked -- read off promote's own arguments, never off the rest of the line (0.23.1).
 
 Fails open on malformed input: a hook that crashed would block nothing and explain
 nothing, and a hook that refused everything it could not parse would make the host
@@ -158,6 +159,67 @@ def _promote_segment(segment: str) -> bool:
     return PROMOTE.search(segment) is not None
 
 
+# The two requests that move nothing. A dry run shows the plan; a help request is answered
+# by argparse, which prints and exits before anything runs and accepts any unambiguous
+# prefix of `--help`. Asking for `--help` was refused in every headless host-eval run of
+# 2026-11-11, which is why help joined the dry run in 0.23.1.
+NOTHING_MOVES = re.compile(r"--dry-run|-h|--h(?:e(?:lp?)?)?")
+# `promote`'s options that take a value: the token after one is data, never a flag.
+VALUED = ("--root", "--file", "--approved-by", "--as-of")
+EASKILLS = re.compile(r"(?:^|[\\/])easkills(?:\.exe)?$", re.IGNORECASE)
+
+
+def _promote_arguments(tokens: list[str], depth: int = 0) -> list[str] | None:
+    """The arguments `easkills promote` receives in these tokens, or None if none is found.
+
+    Up to the first shell operator (`&`, `|`, `;`, a redirect): what follows one belongs to
+    another command. A promotion inside a quoted command (`bash -c "..."`) is read inside
+    that string only, so a flag outside the quotes never counts as promote's.
+    """
+    for index, token in enumerate(tokens):
+        if token == "promote" and index and EASKILLS.search(tokens[index - 1].strip("\"'")):
+            arguments: list[str] = []
+            for argument in tokens[index + 1:]:
+                if argument and set(argument) <= set("();<>|&"):
+                    break
+                arguments.append(argument)
+            return arguments
+        if depth < 2 and " " in token and "promote" in token:
+            inner = _split(token, posix=True)
+            found = _promote_arguments(inner, depth + 1) if inner else None
+            if found is not None:
+                return found
+    return None
+
+
+def _split(text: str, posix: bool) -> list[str] | None:
+    lexer = shlex.shlex(text, posix=posix, punctuation_chars=True)
+    lexer.whitespace_split = True
+    try:
+        return list(lexer)
+    except ValueError:
+        return None
+
+
+def _moves_nothing(segment: str, powershell: bool) -> bool:
+    """True only when `--dry-run` or a help flag is an argument of `promote` itself."""
+    tokens = _split(segment, posix=not powershell)
+    arguments = _promote_arguments(tokens) if tokens else None
+    if not arguments:
+        return False
+    skip = False
+    for argument in arguments:
+        if skip:
+            skip = False
+            continue
+        if argument in VALUED:
+            skip = True
+            continue
+        if NOTHING_MOVES.fullmatch(argument):
+            return True
+    return False
+
+
 def shell_targets(command: str, powershell: bool) -> list[str]:
     """Paths a shell command line would write to, as best a pattern can tell."""
     targets: list[str] = []
@@ -215,8 +277,10 @@ def _root_argument(segment: str, cwd: Path) -> Path:
 def promotion(payload: dict) -> str | None:
     """The reason to put this shell command to the person, if it promotes; else None.
 
-    Only the dry run passes unasked -- it moves nothing. Inside the ea-skills checkout a
-    promotion is maintainers editing fixtures, which the guard leaves alone throughout.
+    Only a dry run or a help request passes unasked -- neither moves anything -- and only
+    when the flag is an argument of `promote` itself (`_moves_nothing`). Inside the
+    ea-skills checkout a promotion is maintainers editing fixtures, which the guard leaves
+    alone throughout.
     """
     tool = str(payload.get("tool_name", ""))
     if tool not in SHELL_TOOLS:
@@ -224,7 +288,7 @@ def promotion(payload: dict) -> str | None:
     command = str((payload.get("tool_input") or {}).get("command") or "")
     cwd = Path(str(payload.get("cwd") or os.getcwd()))
     for segment in SEGMENT_SPLIT.split(command):
-        if not _promote_segment(segment) or re.search(r"(?<![\w-])--dry-run(?![\w-])", segment):
+        if not _promote_segment(segment) or _moves_nothing(segment, powershell=tool == "PowerShell"):
             continue
         if not _is_tooling_repository(_root_argument(segment, cwd) / "model"):
             return ASK

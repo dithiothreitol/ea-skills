@@ -19,6 +19,13 @@ easkills validate --root <repo> --json report.json  # machine-readable
 easkills validate --root <repo> --strict            # warnings fail too
 ```
 
+**One command per call, written out in full.** Each skill pre-approves the `easkills`
+commands its own text prescribes, matched by their literal text -- so run each command
+as its own Bash call: no loop over subcommands, no shell variable (`$TMPDIR`, `$?`), no
+command substitution. A line the permission check cannot read is put to the person, and
+refused outright where nobody can answer, which leaves the gate unrun. You never need
+`echo $?`: the Bash tool reports a non-zero exit code beside the output.
+
 Exit code 0 means no errors; 1 means errors (or, under `--strict`, warnings). The
 compiler refuses to run on a model with errors, so this gate is what stands between a
 proposal and a published model.

@@ -52,9 +52,11 @@ measured-skill list to the README and keeps the network out of `easkills/`.
 
 A third instrument measures the *host*: `evals/` holds cases for `claude plugin eval`, which
 runs each one as a real Claude Code session with only this plugin loaded and again with no
-plugin, and reports the difference. Dispatch it from the Actions tab
-(`.github/workflows/plugin-eval.yml`); it needs a Linux runner, because shell-granting runs
-need an OS sandbox native Windows does not have. `tests/test_plugin.py` keeps the cases
+plugin, and reports the difference. It needs Linux, because shell-granting runs need an
+OS sandbox native Windows does not have. The repository deliberately holds no API key
+(decided 2026-11-11), so the paid instruments run on the maintainer's machine -- for this
+one, a Linux container following `.github/workflows/plugin-eval.yml` step by step; the
+workflow itself stays for anyone who runs it with a key of their own. `tests/test_plugin.py` keeps the cases
 loadable and proves the one judgement-bearing grader against both answers. Run it anywhere
 else and give the sandbox what the workflow gives it: the runtime dependencies in the
 interpreter first on `PATH` (the hooks find that one -- no environment is passed through)

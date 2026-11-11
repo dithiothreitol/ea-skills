@@ -13,6 +13,9 @@ badge and its tests carry. It is a draft until the operator decisions in §8 are
 criteria 2–8 are met; criterion 1 is not -- four of seven host-eval cases pass in three of
 three runs, and the causes of the other three are on
 [the coverage page](SKILL-COVERAGE.md), recorded for a later release as D14 requires.
+That later release was 0.23.1, the same day (§10's small release): five of seven cases
+now pass in three of three runs; the two that do not are a run that skipped the sign-off
+hand-back and the eval sandbox's read-only working directory.
 
 ## 1. What this phase answers
 
@@ -364,7 +367,8 @@ state an unchecked count, use the wall clock in an artifact). Added for this pha
    yes, with the state-based `info` → `error` ramp and the "Upgrading" section.
 2. **An `ANTHROPIC_API_KEY` repository secret, and the budget.** A few cents of host
    verification in 9.1, one full run in 9.3, and a monthly schedule afterwards; without
-   the secret no eval runs unprompted. *Recommended:* yes.
+   the secret no eval runs unprompted. *Recommended:* yes. **Decided 2026-11-11: no** --
+   the key is used locally only; the paid instruments run on the maintainer's machine.
 3. **The ArchiMate 4 position (AD-11).** *Recommended:* stay on 3.2 with the T1 trigger;
    decide nothing further until the primary text and the licence terms have been read.
 4. **A real engagement**, and what may be published from it.

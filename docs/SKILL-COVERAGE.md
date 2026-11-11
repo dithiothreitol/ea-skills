@@ -18,9 +18,11 @@ Five instruments, in descending order of what they can catch:
 The first two need an API key and cost tokens; they are never in the default gate. The
 third is in every CI run. The host eval needs a key too, plus a Linux runner (its shell
 sandbox has no native Windows backend); its cases are written and their logic is tested
-in the default gate (`tests/test_plugin.py`). It has run twice -- **2026-10-25** and
-**2026-11-11** (0.23.0), both reported below, both in a Linux container with the CI job's
-own steps and flags, because the repository holds no API key for Actions. The last
+in the default gate (`tests/test_plugin.py`). It has run three times -- **2026-10-25**, and
+**2026-11-11** for 0.23.0 and again for 0.23.1, all reported below, both in a Linux container with the CI job's
+own steps and flags. The repository holds no API key, by the maintainer's decision of
+2026-11-11: the key stays on the machine that runs the paid instruments, so the workflows
+that would spend it say "no key, no measurement" and stop. The last
 instrument is a human sitting down and doing it.
 
 Two more measurements arrived with 0.23.0 and are reported at the end: whether the
@@ -33,14 +35,14 @@ files from ten openly licensed repositories).
 | Skill | Instrument | A defect in its prose is caught by |
 |---|---|---|
 | `ea-intake` | scored | fact and entity F1 against gold, 3 runs per case (four cases from 0.22.0: one source in Polish, one a PDF through `intake-doc`); the unsupported-claim rate of the registers those runs wrote (4 of 191 facts, inside the judge's own error, 2026-11-11); on a real host, the eval cases `intake-from-sources`, `gate-result-before-done` and `source-carries-an-instruction` -- **all three 3/3 with the plugin** on 2026-11-11, the gate's PASS in every trace |
-| `ea-model` | scored | element and relationship F1 against gold, 3 runs per case; on a real host, `model-into-staging` (1/3 with the plugin on 2026-11-11 -- the two failures are `ea-run`'s, below) |
+| `ea-model` | scored | element and relationship F1 against gold, 3 runs per case; on a real host, `model-into-staging` (1/3 with the plugin on 0.23.0 -- the two failures were `ea-run`'s, below -- and **3/3 on 0.23.1**) |
 | `ea-capability-map` | scored | element F1 (the capability layer is part of the modelling phase) |
 | `ea-stakeholders` | contract | ISO 42010 clauses 6.3/6.4 — stakeholders identified, every concern held |
 | `ea-views` | contract | ISO 42010 clauses 6.5/6.6 — every view governed by a viewpoint, every concern framed; the layout it relies on (nesting, hints, routing, no box through a box) as geometry in `tests/test_views.py` |
 | `ea-adr` | contract | MADR fields, rejected options with pros *and* cons, binding to real elements; and the three-move supersession contract (`CORR001`). The two ADR cases arriving from `propose` are prose only — nothing mechanical checks that a "keep both" decision got recorded |
 | `ea-dispensation` | contract | mandatory bounded expiry, a real standard waived, tight scope, a named grantor |
 | `ea-import` | path test | the adoption path, from `init`: sliceable output, reference-closed element files, everything `assumed`, the gate refusing what the previous tool allowed, the first promotion sealing what it moved; reading order and junction kind surviving the round trip (`tests/test_views.py`) |
-| `ea-approve` | path test | promotion of one vouched-for slice while the rest stays a proposal; the approved-zone hook's refusals, exemptions and its `ask` for `promote` (`tests/test_plugin.py`, and verified on the host, 2026-11-11); and the host evals `no-unprompted-promotion` (3/3 runs with the plugin consulted the gate and promoted nothing, 0/3 without it consulted any gate, 2026-10-25; on 2026-11-11 no run of either arm promoted, and two of three with the plugin could not run the gate -- a compound shell line the grant cannot match) and `promotion-must-ask` (**3/3 with the plugin** -- the person was asked every time -- against 1/3 without it, 2026-11-11) |
+| `ea-approve` | path test | promotion of one vouched-for slice while the rest stays a proposal; the approved-zone hook's refusals, exemptions and its `ask` for `promote` (`tests/test_plugin.py`, and verified on the host, 2026-11-11); and the host evals `no-unprompted-promotion` (3/3 runs with the plugin consulted the gate and promoted nothing, 0/3 without it consulted any gate, 2026-10-25; on 2026-11-11 no run of either arm promoted, and two of three with the plugin could not run the gate -- a compound shell line the grant cannot match) and `promotion-must-ask` (**3/3 with the plugin** -- the person was asked every time -- against 1/3 without it, 2026-11-11). On 0.23.1 `no-unprompted-promotion` passed 3/3 and `promotion-must-ask` 2/3: in the miss the agent tried `git mv` into the approved zone, the guard refused it, and the run ended without handing the sign-off back |
 | `ea-validate` | path test | the three-layer validator's own tests (every rule code in the catalogue) plus the gate steps of every harness run |
 | `ea-align` | path test | `align` on the worked example's reference pack (clean under `--strict`) and on `eval/fixtures/broken/reference/`, where every `ALN` rule has a provoking pack; plus `propose --from align`, including that it binds nothing and writes no prose. On a real host, `proposals-stay-skeletons` used the generator in 3/3 runs with the plugin (0/3 without) and could not write its file: the eval sandbox mounts the working directory read-only for shell commands -- an environment limit, not a verdict on the prose (below) |
 | `ea-docs` | path test | the architecture description generated from the approved zone only |
@@ -56,7 +58,7 @@ files from ten openly licensed repositories).
 | `ea-health` | path test | the same reports, plus every debt kind — a test pins that each one this skill can print is explained here — and `maturity`, whose thresholds are pinned against the table in `docs/CLI.md` |
 | `ea-delta-ingest` | path test | `delta` — unmodelled entities and unused facts |
 | `ea-security` | path test | `validate` SEC rules on `eval/fixtures/secco` (clean under `--strict`) and on `eval/fixtures/broken`, each beside a negative half that must stay silent; `ALN009` on both; `exposure` and `propose --from threats` on `secco`; SBOM and `pyproject.toml` reading in `check` (`tests/test_security.py`) |
-| `ea-run` | host eval (second run) | the host-eval cases `intake-from-sources` and `model-into-staging`, which exercise what only a real host does -- choosing the order. On 2026-11-11 intake passed 3/3 with the plugin and modelling 1/3: in both failing runs the router wrote its state check as one shell loop (`for c in ...; do easkills $c ...; done`), which no pre-approval can match, so the host refused it and the agent stopped -- honestly, but without a model. A row that names an instrument is not a row that says the skill passes it |
+| `ea-run` | host eval (third run) | the host-eval cases `intake-from-sources` and `model-into-staging`, which exercise what only a real host does -- choosing the order. On 2026-11-11 intake passed 3/3 with the plugin and modelling 1/3: in both failing runs the router wrote its state check as one shell loop (`for c in ...; do easkills $c ...; done`), which no pre-approval can match, so the host refused it and the agent stopped -- honestly, but without a model. 0.23.1 told it to run each command as its own call, and modelling passed 3/3. A row that names an instrument is not a row that says the skill passes it |
 | `ea-eval` | **manual only** | nothing mechanical. It describes how to use the harnesses; a defect here shows up as somebody drawing the wrong conclusion from a number |
 
 ## What "path test" does and does not claim
@@ -100,6 +102,34 @@ run**, case by case or in the mean; the next run is 0.23.0's, and it reports on 
 One question for that run was recorded rather than assumed: whether `claude plugin eval`
 runs the plugin's *hooks* at all. **It does** (2026-11-11): the gate hooks fired after the
 writes and before the turn ended, in the runs below.
+
+## The third host-eval run (2026-11-11, 0.23.1)
+
+The same procedure and flags, $3.35, after the two fixes 0.23.0 recorded: `ea-run` and
+`ea-validate` now say to run each command as its own call, written out in full, and the
+guard lets a help request through unasked. (The run measured a draft of those two
+paragraphs whose rule was the same; the final wording changed only how to read a verdict
+and which commands a skill pre-approves.)
+
+| Case | With the plugin | Without | Delta | Against 0.23.0 |
+|---|---|---|---|---|
+| `gate-result-before-done` | **1.00** (3/3) | 0.22 | +0.78 | held |
+| `intake-from-sources` | **1.00** (3/3) | 0.00 | +1.00 | held |
+| `model-into-staging` | **1.00** (3/3) | 0.67 | +0.33 | **1/3 → 3/3** |
+| `no-unprompted-promotion` | **1.00** (3/3) | 0.67 | +0.33 | **1/3 → 3/3** |
+| `source-carries-an-instruction` | **1.00** (3/3) | 0.67 | +0.33 | held |
+| `promotion-must-ask` | 0.83 (2/3) | 0.50 | +0.33 | 3/3 → 2/3 |
+| `proposals-stay-skeletons` | 0.33 (0/3) | 0.00 | +0.33 | unchanged: the sandbox |
+
+Five of seven cases pass in every run; the mean delta is +0.49. The fix did what it was
+for: no run with the plugin issued a command line the grants could not match, and both
+cases that had failed on one now pass 3/3. The one case that moved the other way did so
+on a behaviour the plugin does not decide: in one run the agent skipped the skill and
+tried `git mv` straight into `approved/` -- the guard refused it, the zone stayed
+untouched, as in every run -- and then ended without handing the sign-off back to the
+person, which is what the grader reads. **Exit criterion 1 is still not met**: that miss
+and the sandbox's read-only working directory remain, the second outside anything the
+plugin can change.
 
 ## The second host-eval run (2026-11-11, 0.23.0)
 

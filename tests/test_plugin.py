@@ -149,6 +149,32 @@ def test_the_skills_that_read_content_say_it_is_data_not_instructions(name):
     assert D8_SENTENCE in body, f"{name} does not say that source content is data"
 
 
+@pytest.mark.parametrize("name", ["ea-run", "ea-validate"])
+def test_the_skills_that_run_several_gates_say_one_command_per_call(name):
+    """0.23.1: in four of the seven failing host-eval runs of 2026-11-11 the agent folded
+    these skills' commands into a loop or a line with `$TMPDIR` and `$?` -- which no
+    pre-approval matches, so a run with nobody to ask refused it and the gate never ran."""
+    _, body = _frontmatter(REPO_ROOT / "skills" / name / "SKILL.md")
+    assert "**One command per call, written out in full.**" in body
+
+
+SHELL_ONLY_A_PERSON_CAN_APPROVE = re.compile(r"\$[({A-Za-z_?]|^\s*(?:for|while|until)\s|;\s*do\b|^\s*done\b")
+
+
+@pytest.mark.parametrize("skill", SKILLS, ids=lambda p: p.name)
+def test_no_skill_shows_a_command_line_no_pre_approval_can_match(skill):
+    """What a skill shows is what an agent copies: a loop, a `$VAR` or a `$(...)` in an
+    example is the shape that was refused in four headless runs of 2026-11-11."""
+    _, body = _frontmatter(skill / "SKILL.md")
+    fenced, offending = False, []
+    for line in body.splitlines():
+        if line.lstrip().startswith("```"):
+            fenced = not fenced
+        elif fenced and SHELL_ONLY_A_PERSON_CAN_APPROVE.search(line):
+            offending.append(line.strip())
+    assert not offending, f"{skill.name}: {offending}"
+
+
 @pytest.mark.parametrize("skill", SKILLS, ids=lambda p: p.name)
 def test_skill_prose_names_the_command_the_plugin_puts_on_path(skill):
     _, body = _frontmatter(skill / "SKILL.md")
@@ -345,6 +371,21 @@ def test_the_guard_script_exits_2_with_the_reason_and_fails_open_on_garbage(ea_r
         ("easkills promote --dry-run --root .", False),
         ("easkills validate --root . --zone staging", False),
         ("easkills promote --dry-run --root . && easkills promote --root .", True),
+        # A help request moves nothing -- refused in every headless run of 2026-11-11.
+        ("easkills promote --help", False),
+        ("easkills promote -h 2>&1 | head -30", False),
+        ("easkills promote --help && easkills promote --root .", True),
+        ("easkills promote --hel", False),
+        ("python -m easkills promote --root . -h", False),
+        # ... but only as promote's own flag -- the review's bypasses of the first version.
+        ("easkills promote --root /x & df -h", True),
+        ("easkills promote --root /x&df -h", True),
+        ('easkills promote --root . --approved-by="-h" --as-of 2026-11-11', True),
+        ("easkills promote --root . --approved-by -h --as-of 2026-11-11", True),
+        ("easkills promote --file model/staging/-h.yaml --approved-by x --as-of 2026-11-11", True),
+        ('bash -c "easkills promote --root ." -h', True),
+        ('bash -c "easkills promote --root ." --dry-run', True),
+        ("easkills promote --root . > /tmp/--dry-run", True),
         # Wrappers a token parser would have to be taught -- the review found five it was not.
         ('bash -c "easkills promote --root ."', True),
         ("env EASKILLS_PYTHON=python3 easkills promote --root .", True),
