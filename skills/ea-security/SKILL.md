@@ -3,8 +3,16 @@ name: ea-security
 description: Work the security architecture in the existing model - classify data, mark exposure and trust zones, find unguarded paths from the public internet, propose threat assessments for trust-boundary crossings, anchor high-rated systems to a control framework (NIST SP 800-53, SP 800-207, CSF), and check SBOMs against security standards. Use for security architecture reviews, threat modelling, attack-surface or "what could an attacker reach" questions, data classification, zero-trust or control-coverage questions, and SEC001-SEC003 or ALN009 findings.
 argument-hint: "[element-id or as-of YYYY-MM-DD]"
 allowed-tools:
-  - Bash(easkills *)
-  - Bash(python -m easkills *)
+  - Bash(easkills align *)
+  - Bash(easkills check *)
+  - Bash(easkills exposure *)
+  - Bash(easkills propose *)
+  - Bash(easkills validate *)
+  - Bash(python -m easkills align *)
+  - Bash(python -m easkills check *)
+  - Bash(python -m easkills exposure *)
+  - Bash(python -m easkills propose *)
+  - Bash(python -m easkills validate *)
 ---
 
 # Security architecture in the existing model

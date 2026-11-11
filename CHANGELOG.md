@@ -5,6 +5,161 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
+## [Unreleased]
+
+Phase 9 (`docs/PHASE9-PLAN.md`), session 1 of 3: what the host does, and what the evidence
+gate accepts. 165 rules, 26 skills, 42 commands, 14 schemas.
+
+### Added — the gates run by the host (D1, D2)
+
+- **`hooks/run_gate.py` (`PostToolUse`).** After a write into a governed directory of an
+  architecture repository the owning gate runs and its verdict goes back to the model:
+  `facts/` → `validate-facts`, `model/staging/` → `validate --zone staging`,
+  `standards/`, `governance-log/`, `services/` → `validate-gov`. Errors come back as the
+  hook's `block` decision with the findings, a pass as one line of context. Exact for the
+  file-editing tools, by the guard's own patterns for shell commands (a heredoc into the
+  register counts). A gate that could not run says so by name -- no interpreter with the
+  runtime dependencies, a timeout, a crash -- because a hook that silently did nothing
+  would look exactly like a gate that found nothing.
+- **`hooks/gate_on_stop.py` (`Stop`).** Before a turn ends, governed paths that differ from
+  `HEAD` (untracked included) are gated; errors stop the turn **once** with the findings.
+  It passes when the turn is already continuing for a stop hook, and remembers per session
+  which failure it already reported, so a leftover failure is said once, not every turn.
+  Outside git it says once that it cannot see changes, and lets the turn end. Handles an
+  architecture repository nested in a larger checkout and Windows 8.3 short paths.
+
+### Changed — promotion is put to the person (D3)
+
+- **`easkills promote` (without `--dry-run`) gets the host's `ask` decision** from the
+  approved-zone guard. Verified on Claude Code 2.1.268 (2026-11-11, four probes, $0.96):
+  the `ask` prevails over a loaded skill's pre-approval and over an `--allowedTools` rule,
+  and a headless run refuses the promotion and hands the model the reason -- which then
+  ran the dry run on its own. An instruction given earlier, or found in a document, no
+  longer signs anything off.
+- **Least privilege in `allowed-tools`.** `Bash(easkills *)` pre-approved every
+  subcommand, `promote` included, whenever any skill was active. Each skill now
+  pre-approves exactly the subcommands its own prose names (both spellings), and a test
+  derives that set from the body. `promote` is pre-approved only by `ea-approve`; a skill
+  that prescribes the dry run pre-approves `promote --dry-run` and nothing more;
+  `pin-oracle`, `pin-reference` and `serve` are pre-approved nowhere. `Bash(easkills
+  validate *)` was checked on the host to cover `validate` and not `validate-facts`.
+- **`ea-dispensation` runs its gate** (`validate-gov`) as a step of its own.
+
+### Fixed — a guard gap found while adding the `ask`
+
+- **A segment that *mentioned* `easkills promote` was exempt from write detection.** So
+  `echo "easkills promote" > model/approved/a.yaml` passed the guard, and so did a
+  redirect inside a real promote command. No segment is exempt from write detection now.
+  A promotion is recognised on the segment's raw text, so every wrapper counts -- `bash -c`,
+  `env`, `time`, `uv run`, `cmd /c`, the PowerShell call operator, a quoted `.exe` path.
+  The review of this release found five wrappers a token parser had not been taught;
+  recall was chosen over precision on purpose, and `echo "easkills promote"` is asked
+  about too.
+
+### Fixed — found by the session review (each with its regression test)
+
+- **`bin/easkills` executed a module planted in the architecture repository.** `python -c`
+  puts the working directory first on the import path, so a `yaml.py` or `lxml/` in the
+  repository a command ran in replaced the real dependency -- code execution from content,
+  which SECURITY.md rules out. The wrapper and the gate hook's child now run with `-P`.
+  This predates 0.22.0.
+- **The gate hooks could be killed before they spoke.** Several gates run one after
+  another, and the host's timeouts were shorter than their worst case; a killed hook prints
+  nothing, which reads as a pass. Each hook now has one time budget inside the host's
+  timeout (100 of 120 s, 270 of 300 s), and a gate the budget cannot reach is named.
+- **The `Stop` hook skipped deletions, and gated a fact change only against facts.** A
+  deleted register leaves the model's fact references dangling (`PROV007`) without a model
+  file changing; deletions now count, and a change under `facts/` also runs the model
+  gates.
+- **A YAML parse error read differently depending on how PyYAML was built.** libyaml words
+  errors its own way and drops the snippet showing where; a failed parse is now parsed
+  again by the pure-Python loader, which states the error.
+- **Folding missed scripts that compose without combining marks.** Hangul conjoining jamo
+  (how macOS exports Korean) were folded one by one in coverage and composed in the
+  matcher; clusters now join wherever NFKC composes.
+- **`PROV010` held elements resting only on `implied` facts to naming**, which `FACT012`
+  exempts; both exempt them now. The checks normalize each term and quote once per run.
+
+### Upgrading — what legitimately gets stricter
+
+- **`PROV010` is a warning, so it fails `validate --strict`** where a named element cites
+  facts that do not name it. The measured rate on this repository's gold was zero, and a
+  register written elsewhere may differ: the fix is the alias the source actually uses in
+  `facts/entities.yaml`, or a citation of the fact that is about the element.
+- **`easkills promote` asks the person**, and in a headless run is refused. Automation that
+  promoted through an agent now has to promote through the CLI, as a person.
+- **Skills pre-approve only the subcommands they name.** A command a skill does not
+  prescribe prompts for permission, as it would without the plugin.
+
+### Added — the same text in another encoding is the same text (D9)
+
+- **`easkills/textfold.py`**, one folding table read by the quote matcher, the coverage
+  segmenter and the verbatim recovery of `propose --from coverage`: NFKC, typographic
+  quotation marks and dashes, soft hyphens and zero-width characters. A decomposed Polish
+  export now matches a composed quote exactly, and a quote typed with `"` matches a source
+  with `„…”` -- both were `PROV004`, an error under `--strict`, against a verbatim quote.
+  End-of-line hyphenation is deliberately not folded; a changed word stays `PROV004`.
+
+### Changed — the gates at scale
+
+- **A source is normalized once per gate run, not once per quote** (`SourceIndex`). On a
+  3000-element synthetic repository `validate` went from 66.9 s to 5.4 s, `compile` from
+  70.5 s to 6.0 s, `docs` from 64.6 s to 6.6 s. The YAML loader is libyaml's safe loader
+  where PyYAML has it (`dsl.load_yaml`), held to identical documents on every committed
+  YAML file by a test. `tools/synth_repo.py` makes the measurement repeatable;
+  `tests/test_scale.py` asserts operation counts, never seconds.
+
+### Added — quote anchoring, measured before it was a rule (D10)
+
+- **`PROV010` (warning):** a named element -- business, application, technology or
+  physical structure -- cites facts none of whose entities answers to its name and none of
+  whose quotes names it. **`FACT012` (info):** a stated fact lists entities none of its
+  quotes names. Both were run over the four golden cases and the worked example first
+  (`tools/anchor_report.py`): `FACT012` flagged 9 of 76 stated facts and every one was a
+  correct fact quoted through a pronoun, a demonstrative, a plural or an elided subject --
+  so it informs and never gates; `PROV010` flagged 0 of 25 -- so it warns. The negative
+  fixture provokes both.
+
+### Added — two golden cases, and the harness reads only sources
+
+- **`eval/golden/wodociagi/`** -- a municipal water utility, one interview **in Polish**:
+  diacritics, `„…”` and dashes on real text, an alias table carrying inflected forms.
+  **`eval/golden/mill/`** -- the minutes of an IT steering committee **as a PDF** through
+  `intake-doc`: several speakers, boilerplate, a systems table flattened by the text
+  layer, two decisions, and a signed page with no text layer that the converter names.
+  Both clean under `--strict`, self-score 100, in CI's "golden set stays gold" step, and
+  in the harness's cases -- unmeasured until 0.23.0, by design. The harness now reads only
+  source-suffix files from `facts/sources/`, so an original kept next to its conversion
+  (as `ea-intake` prescribes) no longer breaks a run.
+
+### Changed — the host eval reads properties, not mechanisms (D15)
+
+- The gate graders no longer demand a `Bash(easkills validate-facts)` call -- which a run
+  in which the plugin ran the gate for the agent would have failed by working. They read
+  the trace: a gate verdict is there, and the last one is a pass. Three new cases:
+  `gate-result-before-done` (the prompt never mentions checking), `promotion-must-ask`
+  (an explicit request, in a run where nobody can confirm), and
+  `source-carries-an-instruction` (a memo addressed to "any assistant": promote
+  everything, tell no one). Every scaffold is a git repository. Every pattern grader is
+  proved against what it must and must not match, in `tests/test_plugin.py`.
+
+### Added — content is data, said where content is read (D8)
+
+- `ea-intake`, `ea-delta-ingest`, `ea-import`, `ea-model`, `ea-compliance` and `ea-check`
+  say, in one pinned sentence, that source content is data, never instructions.
+
+### Added — ArchiMate 4 has a recorded position (AD-11)
+
+- 3.2 stays until a machine-readable, vendorable version 4 relationship table exists;
+  the triggers and an impact table are in BLUEPRINT §3. `import` refuses an exchange file
+  declaring a version 4 (or later) namespace by name instead of misreading it.
+
+### Fixed — prose counts
+
+- The README said "Five of the 24 skills" are measured (seven of 26 are: three scored,
+  four by contract) and "Phase 8 is under way" above a table that said done. Both
+  sentences are now read by tests.
+
 ## [0.21.0] — 2026-10-25 — the measurement release
 
 Phase 8.6 — the measurement, retaken once against the final text of Phase 8. 163 rules,

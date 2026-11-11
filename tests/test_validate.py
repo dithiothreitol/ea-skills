@@ -98,6 +98,7 @@ EXPECTED_WARNING_CODES = [
     "SEC001",  # public, holding restricted data, governed by nothing
     "SEC002",  # crosses a trust boundary, neither end governed
     "SEC003",  # personal data outside the GDPR scope
+    "PROV010",  # a named element cites a fact about something else
 ]
 
 

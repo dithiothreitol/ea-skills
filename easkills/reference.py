@@ -28,7 +28,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
 
 from . import dsl
 from .genschema import REFERENCE_MAPPING_STATUSES, REFERENCE_NODE_KINDS
@@ -204,7 +203,7 @@ def failed_checksums(directory: Path) -> list[ChecksumResult]:
 
 def _read_yaml(path: Path) -> dsl.Document:
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        data = dsl.load_yaml(path.read_text(encoding="utf-8"))
     except dsl.YAML_ERRORS as exc:
         return dsl.Document(path=path, data=None, parse_error=str(exc))
     except (OSError, UnicodeDecodeError) as exc:

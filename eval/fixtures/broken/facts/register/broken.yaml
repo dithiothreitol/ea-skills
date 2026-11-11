@@ -95,3 +95,20 @@ facts:
     provenance:
       - file: facts/sources/notes.md
         quote: referenced by the customer portal
+
+  # --- FACT012 (info): the quote names no entity the fact lists -----------------------
+  # Located, verbatim, and about the data centre -- not the portal the fact claims.
+  - id: fact-unanchored
+    statement: The customer portal mirrors its data to a second server.
+    provenance:
+      - file: facts/sources/notes.md
+        quote: The primary data centre hosts two application servers that mirror each other
+    entities: [ent-portal]
+
+  # --- the fact PROV010's element cites: it is about the portal, not the element ------
+  - id: fact-portal-references-orders
+    statement: The customer portal references the order records.
+    provenance:
+      - file: facts/sources/notes.md
+        quote: referenced by the customer portal
+    entities: [ent-portal]

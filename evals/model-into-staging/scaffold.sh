@@ -9,3 +9,8 @@ gold="$root/eval/golden/clinic"
 cp "$gold/ea.config.yaml" .
 cp -r "$gold/facts" facts
 mkdir -p model/staging model/approved
+# An architecture repository is a git repository (the commit is the approval record), and
+# the end-of-turn gate check compares the working tree with HEAD.
+if command -v git >/dev/null 2>&1; then
+  git init -q && git add -A && git -c user.name=eval -c user.email=eval@example.invalid commit -qm "scaffold"
+fi

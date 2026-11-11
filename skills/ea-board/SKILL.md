@@ -3,8 +3,16 @@ name: ea-board
 description: Prepare the Architecture Board agenda and minutes from the governance log and health reports. Use when asked to prepare, run or minute an architecture board / governance review meeting, or to summarise what needs architectural decision this period.
 argument-hint: "[as-of YYYY-MM-DD]"
 allowed-tools:
-  - Bash(easkills *)
-  - Bash(python -m easkills *)
+  - Bash(easkills diff *)
+  - Bash(easkills maturity *)
+  - Bash(easkills trend *)
+  - Bash(easkills validate *)
+  - Bash(easkills validate-gov *)
+  - Bash(python -m easkills diff *)
+  - Bash(python -m easkills maturity *)
+  - Bash(python -m easkills trend *)
+  - Bash(python -m easkills validate *)
+  - Bash(python -m easkills validate-gov *)
 ---
 
 # Architecture Board support

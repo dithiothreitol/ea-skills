@@ -2,8 +2,8 @@
 name: ea-stakeholders
 description: Identify stakeholders and their concerns from the fact register and plan which views will frame them (ISO 42010). Use when asked who the architecture is for, when starting documentation work, when views exist without declared concerns, or when ISO001-ISO006 findings need resolving. Produces the stakeholder/concern register and a view plan.
 allowed-tools:
-  - Bash(easkills *)
-  - Bash(python -m easkills *)
+  - Bash(easkills validate *)
+  - Bash(python -m easkills validate *)
 ---
 
 # Stakeholders, concerns and the view plan

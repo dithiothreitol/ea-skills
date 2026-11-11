@@ -2,8 +2,12 @@
 name: ea-capability-map
 description: Build or extend the business capability map, the spine of the EA model. Use when starting to model a new enterprise, when asked for a capability map, capability model or business capability assessment, or before any application/technology modelling when no capability layer exists yet. Everything else in the model attaches to capabilities, so this comes first.
 allowed-tools:
-  - Bash(easkills *)
-  - Bash(python -m easkills *)
+  - Bash(easkills align *)
+  - Bash(easkills readiness *)
+  - Bash(easkills validate *)
+  - Bash(python -m easkills align *)
+  - Bash(python -m easkills readiness *)
+  - Bash(python -m easkills validate *)
 ---
 
 # Building the capability map
@@ -138,6 +142,8 @@ easkills validate --root <repo> --zone staging
 ```
 
 Staging validates as an overlay on `approved`, so attaching new capabilities to
-already-approved applications is fine. Fix errors (three-iteration cap), report the
+already-approved applications is fine. With the plugin installed the same gate also runs
+on its own after staging writes, and its verdict comes back as hook feedback. Fix errors
+(three-iteration cap), report the
 map with its evidence, the assumptions, and which capabilities have no application
 support yet -- that list is the first portfolio insight the map produces.

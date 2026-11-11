@@ -3,8 +3,8 @@ name: ea-adr
 description: Record an architecture decision (MADR-shaped) in the governance log. Use when a decision has been made or needs framing, when asked to "write an ADR" or "document this decision", when superseding an earlier decision, or when the ISO 42010 conformance check reports no decisions with rationale.
 argument-hint: "[decision title]"
 allowed-tools:
-  - Bash(easkills *)
-  - Bash(python -m easkills *)
+  - Bash(easkills validate-gov *)
+  - Bash(python -m easkills validate-gov *)
 ---
 
 # Architecture decision records
@@ -76,5 +76,7 @@ anything else:
   ADR, then have the requirement reference it. A requirement filed alone leaves its
   reasoning nowhere.
 
-Validate with `easkills validate-gov`, report the decision in one sentence
-plus who should confirm `status: accepted` if you filed it as `proposed`.
+Validate with `easkills validate-gov` (with the plugin installed it also runs on its own
+after you write the record, and its verdict comes back as hook feedback), report the
+decision in one sentence plus who should confirm `status: accepted` if you filed it as
+`proposed`.

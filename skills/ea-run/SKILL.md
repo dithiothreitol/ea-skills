@@ -2,8 +2,16 @@
 name: ea-run
 description: Orchestrate the EA pipeline - route a request to the right ea-* skill and keep the stage order honest. Use when a request spans multiple stages ("model our architecture from these documents"), when unsure which ea-* skill applies, or when resuming work in an EA repository whose state you have not inspected yet.
 allowed-tools:
-  - Bash(easkills *)
-  - Bash(python -m easkills *)
+  - Bash(easkills align *)
+  - Bash(easkills delta *)
+  - Bash(easkills validate *)
+  - Bash(easkills validate-facts *)
+  - Bash(easkills validate-gov *)
+  - Bash(python -m easkills align *)
+  - Bash(python -m easkills delta *)
+  - Bash(python -m easkills validate *)
+  - Bash(python -m easkills validate-facts *)
+  - Bash(python -m easkills validate-gov *)
 ---
 
 # Routing the pipeline

@@ -3,8 +3,12 @@ name: ea-service
 description: Operate the architecture-service layer (Architecture-as-a-Service / on-demand) - maintain the service catalog, intake and fulfil service requests, keep SLA hygiene. Use when someone requests something from EA ("we need a review / context / an exception"), when defining or changing EA's offerings, or when REQ006-REQ008 findings (SLA breaches, retired offerings) need working.
 argument-hint: "[offering-id]"
 allowed-tools:
-  - Bash(easkills *)
-  - Bash(python -m easkills *)
+  - Bash(easkills context *)
+  - Bash(easkills kpi *)
+  - Bash(easkills staleness *)
+  - Bash(python -m easkills context *)
+  - Bash(python -m easkills kpi *)
+  - Bash(python -m easkills staleness *)
 ---
 
 # The architecture service layer

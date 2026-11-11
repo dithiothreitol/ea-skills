@@ -3,8 +3,18 @@ name: ea-health
 description: Run and interpret the model-health reports - EA debt register, staleness report, KPIs and their trend over committed snapshots. Use when asked how healthy, current or trustworthy the model is, whether it is getting better or worse, for an EA debt review, portfolio metrics, obsolescence exposure, or a periodic (e.g. quarterly) model health check.
 argument-hint: "[as-of YYYY-MM-DD]"
 allowed-tools:
-  - Bash(easkills *)
-  - Bash(python -m easkills *)
+  - Bash(easkills debt *)
+  - Bash(easkills kpi *)
+  - Bash(easkills maturity *)
+  - Bash(easkills roadmap *)
+  - Bash(easkills staleness *)
+  - Bash(easkills trend *)
+  - Bash(python -m easkills debt *)
+  - Bash(python -m easkills kpi *)
+  - Bash(python -m easkills maturity *)
+  - Bash(python -m easkills roadmap *)
+  - Bash(python -m easkills staleness *)
+  - Bash(python -m easkills trend *)
 ---
 
 # Model health: debt, staleness, KPIs

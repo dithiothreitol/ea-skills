@@ -3,8 +3,12 @@ name: ea-ai-governance
 description: Govern the AI systems in the architecture and maintain the EU AI Act system inventory. Use for AI risk-framework gap analysis (NIST AI RMF), AI Act scope and risk-classification questions, the AI system inventory, recording accepted AI risk, or when asked which systems use AI and what obligations attach.
 argument-hint: "[as-of YYYY-MM-DD]"
 allowed-tools:
-  - Bash(easkills *)
-  - Bash(python -m easkills *)
+  - Bash(easkills ai-act-register *)
+  - Bash(easkills align *)
+  - Bash(easkills propose *)
+  - Bash(python -m easkills ai-act-register *)
+  - Bash(python -m easkills align *)
+  - Bash(python -m easkills propose *)
 ---
 
 # AI governance and the AI Act inventory

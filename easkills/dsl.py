@@ -29,6 +29,29 @@ CONFIG_FILENAME = "ea.config.yaml"
 # command instead of a SCHEMA000/FACT000 finding.
 YAML_ERRORS = (yaml.YAMLError, ValueError, TypeError)
 
+# libyaml's loader when the installed PyYAML was built with it, the pure-Python one
+# otherwise. Same constructor and resolver either way -- so the same documents, and the
+# same ``ValueError`` on an impossible unquoted date -- at a fraction of the parse time
+# (10.8 of 69.7 seconds of a 3000-element ``validate`` was the pure-Python parser).
+# tests/test_scale.py holds the two to identical documents on every committed fixture.
+_YAML_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
+
+def load_yaml(text: str) -> Any:
+    """Parse repository YAML: safe types only, never code. Raises one of ``YAML_ERRORS``.
+
+    A file that fails to parse is parsed again by the pure-Python loader, which raises the
+    error that reaches the report. The two word their errors differently -- libyaml drops
+    the snippet and caret that show *where* -- and a gate's output must not depend on how
+    PyYAML was built on the machine that ran it. Errors are rare; the second parse is free.
+    """
+    try:
+        return yaml.load(text, Loader=_YAML_LOADER)  # noqa: S506 -- a SafeLoader, C or Python
+    except YAML_ERRORS:
+        if _YAML_LOADER is yaml.SafeLoader:
+            raise
+        return yaml.load(text, Loader=yaml.SafeLoader)  # noqa: S506 -- the reference loader
+
 DEFAULT_CONFIG: dict[str, Any] = {
     "name": "Enterprise Architecture Model",
     "documentation": "",
@@ -159,7 +182,7 @@ def load_config(root: Path) -> dict[str, Any]:
     path = root / CONFIG_FILENAME
     if path.exists():
         try:
-            loaded = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+            loaded = load_yaml(path.read_text(encoding="utf-8")) or {}
         except YAML_ERRORS:
             return config  # an unreadable config falls back to defaults; the gate reports it
         if isinstance(loaded, dict):
@@ -244,7 +267,7 @@ def load_documents(root: Path, zone: str) -> list[Document]:
     paths = sorted(p for p in directory.rglob("*") if p.is_file() and p.suffix in {".yaml", ".yml"})
     for path in paths:
         try:
-            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+            data = load_yaml(path.read_text(encoding="utf-8"))
         except YAML_ERRORS as exc:
             documents.append(Document(path=path, data=None, parse_error=str(exc)))
             continue

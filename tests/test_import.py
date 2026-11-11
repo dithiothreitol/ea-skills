@@ -261,6 +261,35 @@ def test_a_missing_source_is_refused(tmp_path):
         importer.import_exchange(tmp_path, tmp_path / "nope.xml")
 
 
+@pytest.mark.parametrize("namespace", ["http://www.opengroup.org/xsd/archimate/4.0/", "http://www.opengroup.org/xsd/archimate/4/"])
+def test_a_later_language_version_is_refused_by_name(tmp_path, namespace):
+    """AD-11: ArchiMate 4 removes and merges concepts the 3.2 oracle knows. Read best-effort,
+    its file would import some elements, skip others and judge every relationship by the
+    wrong matrix -- a migration that looks done and is quietly wrong."""
+    source = tmp_path / "v4.xml"
+    source.write_text(
+        f'<?xml version="1.0"?><model xmlns="{namespace}"><elements>'
+        '<element identifier="e1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="BusinessActor">'
+        "<name>Clerk</name></element></elements></model>",
+        encoding="utf-8",
+    )
+    with pytest.raises(importer.ImportRefusal, match="AD-11"):
+        importer.import_exchange(tmp_path, source)
+    assert not (tmp_path / "model" / "staging").exists(), "a refusal writes nothing"
+
+
+def test_the_three_x_namespace_still_imports(tmp_path):
+    source = tmp_path / "v3.xml"
+    source.write_text(
+        '<?xml version="1.0"?><model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"><elements>'
+        '<element identifier="e1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="BusinessActor">'
+        "<name>Clerk</name></element></elements></model>",
+        encoding="utf-8",
+    )
+    report = importer.import_exchange(tmp_path, source)
+    assert report.elements == 1
+
+
 # ------------------------------------------------------------------------------- CLI
 
 

@@ -18,7 +18,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-from . import facts as facts_mod, ui
+from . import facts as facts_mod, textfold, ui
 from .validate import _normalize
 
 DEFAULT_MAX_CHARS = 2000
@@ -231,7 +231,12 @@ class CoverageReport:
 
 def _index_source(text: str) -> tuple[str, list[int], set[int]]:
     """Normalize like the quote matcher does, tracking the original line of every
-    normalized character and the offsets where a new paragraph starts."""
+    normalized character and the offsets where a new paragraph starts.
+
+    Folding goes through ``textfold.units`` -- the matcher's own table, cluster by
+    cluster -- so a quote the validator accepts covers the statement it was taken from
+    here too, whatever encoding either side arrived in.
+    """
     norm: list[str] = []
     lines: list[int] = []
     para_starts: set[int] = set()
@@ -239,27 +244,27 @@ def _index_source(text: str) -> tuple[str, list[int], set[int]]:
     saw_space = False
     saw_break = False
     newlines = 0
-    for ch in text:
-        if ch == "\n":
+    for start, _end, folded in textfold.units(text):
+        if text[start] == "\n":
             line_no += 1
             newlines += 1
             saw_space = True
             if newlines >= 2:
                 saw_break = True
             continue
-        if ch.isspace():
-            saw_space = True
-            continue
-        newlines = 0
-        if norm and saw_space:
-            norm.append(" ")
-            lines.append(line_no)
-        if saw_break or not norm:
-            para_starts.add(len(norm))
-        saw_space = False
-        saw_break = False
-        for folded in ch.casefold():
-            norm.append(folded)
+        for ch in folded:
+            if ch.isspace():
+                saw_space = True
+                continue
+            newlines = 0
+            if norm and saw_space:
+                norm.append(" ")
+                lines.append(line_no)
+            if saw_break or not norm:
+                para_starts.add(len(norm))
+            saw_space = False
+            saw_break = False
+            norm.append(ch)
             lines.append(line_no)
     return "".join(norm), lines, para_starts
 

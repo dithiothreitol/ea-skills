@@ -19,7 +19,6 @@ from dataclasses import fields
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-import yaml
 
 from . import dsl, reports, ui
 
@@ -131,7 +130,7 @@ def _documents_at(root: Path, ref: str, zone: str = "approved") -> list[dsl.Docu
         path = Path(name)
         text = _git(root, "show", f"{ref}:{name}")
         try:
-            data = yaml.safe_load(text)
+            data = dsl.load_yaml(text)
         except dsl.YAML_ERRORS as exc:
             documents.append(dsl.Document(path=path, data=None, parse_error=str(exc)))
             continue

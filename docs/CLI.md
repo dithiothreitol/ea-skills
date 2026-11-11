@@ -59,6 +59,28 @@ flag that only decorated the report header would be exactly the decorative confo
 
 Full catalogue with severities and rationale: [RULES.md](RULES.md).
 
+Quotes are located in the matcher's normal form, one definition for every reader
+(`easkills/textfold.py`): whitespace, case and *encoding* are folded -- Unicode
+compatibility forms, typographic quotation marks and dashes, soft hyphens and zero-width
+characters -- so a quote typed with `"` matches a source with `„…”`, and a decomposed
+export matches a composed quote. Words are never folded: a changed word stays `PROV004`.
+
+**At scale (measured 2026-11-11, Python 3.14, Windows, `tools/synth_repo.py`):** on a
+synthetic repository of 3000 application components and 6000 relationships, all
+quote-verified against one inventory, `validate` takes 5.4 s (66.9 s before 0.22.0, when
+the source was normalized once per quote instead of once per run), `compile` 6.0 s (70.5)
+and `docs` 6.6 s (64.6). A quote that is *not* in its source costs one linear pass of
+quarter-step windows over it: 0.3–1.9 s per missing quote against a 1 MB source. These are
+dated measurements, not promises; the tests assert the operation counts behind them
+(`tests/test_scale.py`), never the seconds.
+
+With the plugin installed, the owning gate also runs on its own after every write into a
+governed directory -- `facts/` (`validate-facts`), `model/staging/` (`validate --zone
+staging`), `standards/`, `governance-log/`, `services/` (`validate-gov`) -- and again
+before a turn ends on uncommitted governed changes, its verdict handed back to the model
+as hook feedback. Same commands, same exit codes; nothing a hook reports is a finding a
+manual run would not.
+
 ## Build & publish
 
 | Command | Does |

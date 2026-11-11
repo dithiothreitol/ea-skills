@@ -38,10 +38,13 @@ def test_the_measured_cases_carry_atomic_statements():
     `ea-intake`: a fact is *one atomic statement*. Gold's clinic register carried two
     compound ones, three measured runs split them, and the scorer charged the runs half
     credit for being more correct than gold. Semicolons are the shape that defect took;
-    this pins it for the two cases the baseline depends on. `eval/example/` is deliberately
-    not covered -- it is a lifecycle fixture, not a measured case.
+    this pins it for every case under eval/golden/, each of which the harness measures.
+    `eval/example/` is deliberately not covered -- it is a lifecycle fixture, not a measured
+    case.
     """
-    for case in (CLINIC, REPO_ROOT / "eval" / "golden" / "contested"):
+    cases = sorted(p for p in (REPO_ROOT / "eval" / "golden").iterdir() if (p / "facts").is_dir())
+    assert len(cases) >= 4, "the golden set looks unreadable from here"
+    for case in cases:
         register, _documents, _entities = facts.load(case)
         compound = [f.id for f in register.facts.values() if ";" in f.statement]
         assert not compound, f"{case.name}: compound statements in {compound}"

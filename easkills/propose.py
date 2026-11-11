@@ -46,6 +46,7 @@ from . import (
     oracle,
     readiness as readiness_mod,
     reports,
+    textfold,
 )
 from .validate import SEVERITY_WARNING
 
@@ -524,16 +525,27 @@ def _from_ai_act(root: Path, today: date) -> list[Proposal]:
 def _verbatim(original: str, normalized: str) -> str | None:
     """The source's own characters for a sentence the coverage report normalized.
 
-    Coverage works on casefolded, whitespace-collapsed text; a question's quote has to be
-    the source's text, or it reads as a misquotation even where the matcher would accept
-    it. Rebuilt word by word with flexible whitespace, case-insensitively.
+    Coverage works on folded, casefolded, whitespace-collapsed text; a question's quote has
+    to be the source's text, or it reads as a misquotation even where the matcher would
+    accept it. The sentence is found word by word in the source's folded form -- the same
+    ``textfold`` table the coverage report used -- and the span is mapped back to the
+    source's own characters, typographic quotation marks and all.
     """
-    words = normalized.split(" ")
+    words = [word for word in normalized.split(" ") if word]
     if not words:
         return None
-    pattern = re.compile(r"\s+".join(re.escape(word) for word in words), re.IGNORECASE)
-    match = pattern.search(original)
-    return " ".join(match.group(0).split()) if match else None
+    folded: list[str] = []
+    origin: list[tuple[int, int]] = []
+    for start, end, unit in textfold.units(original):
+        for ch in unit:
+            folded.append(ch)
+            origin.append((start, end))
+    pattern = re.compile(r"\s+".join(re.escape(word) for word in words))
+    match = pattern.search("".join(folded))
+    if not match:
+        return None
+    begin, finish = origin[match.start()][0], origin[match.end() - 1][1]
+    return " ".join(original[begin:finish].split())
 
 
 def _from_coverage(root: Path, today: date) -> tuple[list[Proposal], list[dict[str, str]]]:

@@ -3,8 +3,12 @@ name: ea-align
 description: Measure the model against a reference architecture or industry blueprint and record the result. Use when asked whether a layer or the model is "complete" or "done", for a gap analysis against a reference model (BIAN, APQC PCF, eTOM, ACORD, NIST CSF, an internal capability standard), when asked what is missing compared to industry practice, or when maintaining reference/<name>/mappings.yaml. Also use before answering "is our capability map finished?" -- that question has no answer without a yardstick.
 argument-hint: "[reference-pack]"
 allowed-tools:
-  - Bash(easkills *)
-  - Bash(python -m easkills *)
+  - Bash(easkills align *)
+  - Bash(easkills coverage *)
+  - Bash(easkills propose *)
+  - Bash(python -m easkills align *)
+  - Bash(python -m easkills coverage *)
+  - Bash(python -m easkills propose *)
 ---
 
 # Aligning the model to a reference architecture

@@ -1,0 +1,14 @@
+#!/bin/sh
+# Runs gate_on_stop.py with the first interpreter that actually runs Python 3.11+ -- probed, not just
+# found on PATH, because on Windows `python3` can be the Store stub. The gate it starts
+# needs the same interpreter the `easkills` command uses ($EASKILLS_PYTHON first).
+# If none qualifies, the hook lets the call through (exit 0) and says so on stderr: a
+# hook that cannot start must not make the host unusable.
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) || exit 0
+for py in ${EASKILLS_PYTHON:-} python3 python; do
+  if "$py" -c "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)" >/dev/null 2>&1; then
+    exec "$py" "$here/gate_on_stop.py"
+  fi
+done
+echo "ea-skills: no Python 3.11+ found; the end-of-turn gate check did not run" >&2
+exit 0

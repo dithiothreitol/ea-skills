@@ -72,6 +72,10 @@ BASELINE_PATH = HARNESS_DIR / "baseline.json"
 CASES = {
     "clinic": REPO_ROOT / "eval" / "golden" / "clinic",
     "contested": REPO_ROOT / "eval" / "golden" / "contested",
+    # Added 0.22.0, authored before the prose they score was measured: a source not in
+    # English, and a long PDF that enters through intake-doc. No baseline until 0.23.0.
+    "wodociagi": REPO_ROOT / "eval" / "golden" / "wodociagi",
+    "mill": REPO_ROOT / "eval" / "golden" / "mill",
 }
 # Which skills' prose this harness actually puts in front of the model, per phase. The
 # list is the honest answer to "what is measured here" -- everything else in `skills/` is
@@ -243,9 +247,14 @@ def run_case(client: Any, case: str, model: str, workdir: Path, candidates: int 
     try:
         # ---------------------------------------------------------------- intake
         chunks = easkills("chunk", "--root", str(scratch), "--json")
+        # Source documents only: an original a converted document was made from (a PDF next
+        # to its markdown, as ea-intake prescribes) is bytes the skills never read either.
+        from easkills.facts import SOURCE_SUFFIXES  # local: the harness reads the core
+
         sources = "\n\n".join(
             f"=== {path.name} ===\n{path.read_text(encoding='utf-8')}"
             for path in sorted((scratch / "facts" / "sources").iterdir())
+            if path.is_file() and path.suffix in SOURCE_SUFFIXES
         )
         intake = Session(client, model, phase_system("intake"), usage)
         phase(

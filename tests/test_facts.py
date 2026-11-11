@@ -91,6 +91,15 @@ def test_broken_register_fails_overall(broken_report):
     assert not broken_report.ok
 
 
+def test_an_unanchored_quote_is_reported_and_never_gates(broken_report):
+    """FACT012 ships as info because its measured false-positive rate is total: 9 of 76
+    stated facts in the gold repositories flagged, all nine correct (pronouns, "that API",
+    plurals, elided subjects). A pointer for a reviewer, never a reason for a gate to fail."""
+    finding = next(f for f in broken_report.findings if f.concept == "fact-unanchored")
+    assert finding.code == "FACT012"
+    assert finding.severity == validate.SEVERITY_INFO
+
+
 def test_fabricated_citation_is_an_error_not_a_warning(broken_report):
     finding = next(f for f in broken_report.findings if f.concept == "fact-fabricated-quote")
     assert finding.code == "FACT004"

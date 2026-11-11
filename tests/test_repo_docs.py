@@ -72,6 +72,20 @@ def test_documented_rule_count_matches_the_catalogue(repo_root):
         )
 
 
+def test_the_readme_status_sentence_agrees_with_the_phase_table(repo_root):
+    """"Phase 8 is under way" sat above a table that said Phase 8 was done, for a release.
+    The sentence and the table are now the same claim, checked once."""
+    readme = _read(repo_root, "README.md")
+    sentence = re.search(r"\*\*Phases 0–(\d+) are complete; Phase (\d+) is under way\*\*", readme)
+    assert sentence, "the README's status sentence moved -- update this test with it"
+    complete, current = int(sentence.group(1)), int(sentence.group(2))
+    rows = dict(re.findall(r"^\| (\d+) \| [^|]+ \| \*\*([a-z ]+)\*\*", readme, re.MULTILINE))
+    assert all(rows.get(str(n)) == "done" for n in range(complete + 1)), rows
+    assert rows.get(str(current)) == "under way", rows
+    assert current == complete + 1
+    assert (repo_root / "docs" / f"PHASE{current}-PLAN.md").is_file(), "the status sentence links the current plan"
+
+
 def test_documented_skill_count_matches_the_skills_directory(repo_root):
     skills = sorted(p for p in (repo_root / "skills").iterdir() if (p / "SKILL.md").is_file())
     assert skills, "no skills found"

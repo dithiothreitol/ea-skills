@@ -15,8 +15,13 @@ error-severity findings — the same commands are your CI.
 If you work with Claude Code, install the plugin as well (`/plugin marketplace add
 dithiothreitol/ea-skills`, then `/plugin install ea-skills@ea-skills`). It gives every
 session the skills, an `easkills` command — the same CLI as `python -m easkills`, usable
-from inside your architecture repository rather than from the clone — and a hook that
-refuses writes into `model/approved/` by any route but `promote` (step 3).
+from inside your architecture repository rather than from the clone — and three hooks: one
+refuses writes into `model/approved/` by any route but `promote` and asks you before
+`promote` itself runs (step 3); one runs the gate a skill prescribes after every write into
+`facts/`, `model/staging/`, `standards/`, `governance-log/` or `services/`, and hands the
+verdict to the agent; one runs those gates again before a turn ends on uncommitted changes
+there. The last one compares the working tree with `HEAD`, which is one more reason the
+repository is a git repository from its first minute.
 
 ## 0. Scaffold a repository
 
@@ -164,8 +169,10 @@ git add -A && git commit -m "Approve initial capability map and application laye
 ```
 
 With the plugin enabled, this is also the only route the host allows: its hook refuses
-an agent's direct edit of an approved file, and the `ea-approve` skill runs only when you
-invoke it.
+an agent's direct edit of an approved file, asks *you* before an agent's `promote` runs —
+an instruction you gave earlier in the conversation, or a sentence in a source document,
+is not you confirming now — and the `ea-approve` skill runs only when you invoke it. In a
+run where nobody can answer (a headless session, CI), the promotion is refused.
 
 The gate judges approved+staging merged **by approved-zone standards**: missing
 owners or review dates block here. The commit is the approval record — promotion is

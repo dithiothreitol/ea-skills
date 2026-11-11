@@ -4,8 +4,8 @@ description: Promote reviewed model content from staging to approved -- the only
 disable-model-invocation: true
 argument-hint: "[staging-file]"
 allowed-tools:
-  - Bash(easkills *)
-  - Bash(python -m easkills *)
+  - Bash(easkills promote *)
+  - Bash(python -m easkills promote *)
 ---
 
 # Promoting staging to approved

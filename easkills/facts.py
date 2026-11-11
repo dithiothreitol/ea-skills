@@ -16,7 +16,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
 from jsonschema import Draft202012Validator
 
 from . import dsl, genschema, ui
@@ -25,6 +24,7 @@ from .validate import (
     SEVERITY_INFO,
     SEVERITY_WARNING,
     Finding,
+    SourceIndex,
     _normalize,
     _quote_match,
 )
@@ -153,7 +153,7 @@ def load_register_documents(root: Path) -> list[dsl.Document]:
     paths = sorted(p for p in directory.rglob("*") if p.is_file() and p.suffix in {".yaml", ".yml"})
     for path in paths:
         try:
-            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+            data = dsl.load_yaml(path.read_text(encoding="utf-8"))
         except dsl.YAML_ERRORS as exc:
             documents.append(dsl.Document(path=path, data=None, parse_error=str(exc)))
             continue
@@ -173,7 +173,7 @@ def load_entities_document(root: Path) -> dsl.Document | None:
     if not path.is_file():
         return None
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        data = dsl.load_yaml(path.read_text(encoding="utf-8"))
     except dsl.YAML_ERRORS as exc:
         return dsl.Document(path=path, data=None, parse_error=str(exc))
     if data is None:
@@ -293,14 +293,14 @@ def check_identifiers(register: Register) -> list[Finding]:
     return findings
 
 
-def check_quotes(register: Register) -> list[Finding]:
+def check_quotes(register: Register, sources: SourceIndex | None = None) -> list[Finding]:
     """Locate every quote in its cited source -- the same gate model provenance passes."""
     findings: list[Finding] = []
     threshold, _problem = dsl.config_number(
         register.config, "quoteMatchThreshold", 0.90, minimum=0.0, maximum=1.0
     )  # the model gate reports a bad value (SCHEMA002); never crash on it here
     facts_root = register.facts_root()
-    cache: dict[Path, str | None] = {}
+    sources = sources or SourceIndex()
 
     for fact in register.facts.values():
         rel_file = _rel(register.root, fact.source_path)
@@ -319,12 +319,8 @@ def check_quotes(register: Register) -> list[Finding]:
                     )
                 )
                 continue
-            if source_path not in cache:
-                cache[source_path] = (
-                    source_path.read_text(encoding="utf-8", errors="replace") if source_path.is_file() else None
-                )
-            text = cache[source_path]
-            if text is None:
+            haystack = sources.normalized(source_path)
+            if haystack is None:
                 findings.append(
                     Finding(
                         "FACT003",
@@ -336,7 +332,7 @@ def check_quotes(register: Register) -> list[Finding]:
                     )
                 )
                 continue
-            verdict = _quote_match(_normalize(text), _normalize(provenance.quote), threshold)
+            verdict = _quote_match(haystack, _normalize(provenance.quote), threshold)
             if verdict == "missing":
                 findings.append(
                     Finding(
@@ -567,7 +563,7 @@ def load_question_documents(root: Path) -> list[dsl.Document]:
         return documents
     for path in sorted(p for p in directory.rglob("*") if p.is_file() and p.suffix in {".yaml", ".yml"}):
         try:
-            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+            data = dsl.load_yaml(path.read_text(encoding="utf-8"))
         except dsl.YAML_ERRORS as exc:
             documents.append(dsl.Document(path=path, data=None, parse_error=str(exc)))
             continue
@@ -622,7 +618,7 @@ def load_questions(root: Path) -> dict[str, Question]:
     return questions
 
 
-def check_questions(register: Register) -> tuple[list[Finding], int]:
+def check_questions(register: Register, sources: SourceIndex | None = None) -> tuple[list[Finding], int]:
     """QST001-QST006: a question points at real text, and an answer points at a fact."""
     root = register.root
     documents = load_question_documents(root)
@@ -651,6 +647,7 @@ def check_questions(register: Register) -> tuple[list[Finding], int]:
 
     threshold, _problem = dsl.config_number(register.config, "quoteMatchThreshold", 0.90, minimum=0.0, maximum=1.0)
     facts_root = register.facts_root()
+    sources = sources or SourceIndex()
     for question in sorted(questions.values(), key=lambda q: q.id):
         rel_file = _rel(root, question.source_path)
 
@@ -664,8 +661,8 @@ def check_questions(register: Register) -> tuple[list[Finding], int]:
             elif not source_path.is_file():
                 findings.append(finding("QST002", SEVERITY_ERROR, f"source file not found: {question.file}"))
             elif question.quote:
-                text = source_path.read_text(encoding="utf-8", errors="replace")
-                if _quote_match(_normalize(text), _normalize(question.quote), threshold) == "missing":
+                haystack = sources.normalized(source_path) or ""
+                if _quote_match(haystack, _normalize(question.quote), threshold) == "missing":
                     findings.append(
                         finding(
                             "QST002",
@@ -712,17 +709,21 @@ def check_questions(register: Register) -> tuple[list[Finding], int]:
 
 
 def validate_facts(root: Path) -> FactsReport:
+    from . import anchors  # local: anchors reads the Register this module defines
+
     register, documents, entities_doc = load(root)
 
     findings: list[Finding] = []
+    sources = SourceIndex()  # one read and one normalization per source for the whole gate
     findings += check_schema(root, documents, entities_doc)
     findings += check_identifiers(register)
-    findings += check_quotes(register)
+    findings += check_quotes(register, sources)
+    findings += anchors.unanchored_facts(register)  # FACT012, info: measured before shipped (D10)
     findings += check_entities(register)
     findings += check_contradictions(register)
     findings += check_duplicate_statements(register)
     findings += check_uncited_sources(register)
-    question_findings, question_count = check_questions(register)
+    question_findings, question_count = check_questions(register, sources)
     findings += question_findings
 
     severity_rank = {SEVERITY_ERROR: 0, SEVERITY_WARNING: 1, SEVERITY_INFO: 2}

@@ -268,6 +268,41 @@ def test_the_coverage_page_classifies_every_skill_exactly_once(contracts):
             assert expected in rows[name], f"{name} ({phase}) is listed as {rows[name]!r}"
 
 
+COUNT_WORDS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
+    "nine": 9, "ten": 10, "eleven": 11, "twelve": 12,
+}
+
+
+def test_the_readme_says_how_many_skills_the_harnesses_measure(contracts):
+    """run.py's comment promised "a test pins this declaration to the claim in README.md",
+    and no test did: the README said "Five of the 24 skills" for two releases after the
+    catalogue reached 26. The sentence is now read and held to both harnesses."""
+    import ast
+    import re
+
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    match = re.search(
+        r"(\w+)\s+of the (\d+) skills are measured that way -- (\w+) scored against gold, (\w+) checked by\s+contract",
+        readme,
+    )
+    assert match, "the README's measured-skills sentence moved -- update this test with it"
+    total, catalogue, scored_word, contract_word = match.groups()
+    tree = ast.parse((HARNESS / "run.py").read_text(encoding="utf-8"))
+    measured = next(
+        ast.literal_eval(node.value)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.AnnAssign) and getattr(node.target, "id", "") == "MEASURED_SKILLS"
+    )
+    scored = {name for phase, names in measured.items() if phase != "apparatus" for name in names}
+    contract = set(measured.get("apparatus", ())) | {name for c in contracts.CONTRACTS for name in c.skills}
+    skills = [p for p in (REPO_ROOT / "skills").iterdir() if (p / "SKILL.md").is_file()]
+    assert int(catalogue) == len(skills)
+    assert COUNT_WORDS[scored_word.lower()] == len(scored)
+    assert COUNT_WORDS[contract_word.lower()] == len(contract)
+    assert COUNT_WORDS[total.lower()] == len(scored | contract)
+
+
 def test_the_contract_harness_is_offline_except_for_the_model(contracts):
     """Same quarantine as the scoring harness: it may call the API, the core may not."""
     source = (HARNESS / "contracts.py").read_text(encoding="utf-8")

@@ -182,6 +182,18 @@ def read_exchange(xml: bytes, ids: str, report: ImportReport) -> dict[str, Any]:
         raise ImportRefusal(f"not parseable as XML: {exc}") from exc
     if etree.QName(root).localname != "model":
         raise ImportRefusal(f"root element is <{etree.QName(root).localname}>, expected <model>")
+    # AD-11: a later language version is refused by name, not read best-effort. ArchiMate 4
+    # removes and merges concepts this oracle knows; reading its file against the 3.2 matrix
+    # would import some elements, skip others and judge every relationship by the wrong
+    # table -- a plausible migration that is quietly wrong, which is worse than a refusal.
+    namespace = etree.QName(root).namespace or ""
+    version = re.search(r"/xsd/archimate/(\d+)", namespace)
+    if version and int(version.group(1)) >= 4:
+        raise ImportRefusal(
+            f"the file declares the ArchiMate {version.group(1)} exchange namespace ({namespace}); this "
+            f"tooling's oracle is ArchiMate {oracle.matrix_version()}, and a later language version is "
+            "refused rather than misread (AD-11, docs/BLUEPRINT.md). Export the model as ArchiMate 3.x."
+        )
 
     xsi_type = f"{{{oracle.XSI_NS}}}type"
     known_types = oracle.element_types()

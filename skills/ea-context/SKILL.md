@@ -3,8 +3,10 @@ name: ea-context
 description: Generate scoped EA context packs for development and coding agents working in downstream system repositories (AD-09), query the approved model, or serve it read-only over MCP. Use when asked what constraints, standards or decisions apply to a system, when preparing an AGENTS.md/CLAUDE.md governance section for a consuming repo, before a compliance assessment needs its checklist inputs, for an ad-hoc question about the model, or to give another agent or MCP host access to the architecture.
 argument-hint: "[element-id]"
 allowed-tools:
-  - Bash(easkills *)
-  - Bash(python -m easkills *)
+  - Bash(easkills context *)
+  - Bash(easkills query *)
+  - Bash(python -m easkills context *)
+  - Bash(python -m easkills query *)
 ---
 
 # Agent context packs

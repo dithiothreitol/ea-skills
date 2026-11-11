@@ -9,3 +9,8 @@ root="$(cd "$case_dir/../.." && pwd)"
 # named gap (ALN004), which is what `propose --from align` turns into skeletons.
 cp -r "$root/eval/example/." .
 rm -f reference/wholesale-core/mappings.yaml
+# An architecture repository is a git repository (the commit is the approval record), and
+# the end-of-turn gate check compares the working tree with HEAD.
+if command -v git >/dev/null 2>&1; then
+  git init -q && git add -A && git -c user.name=eval -c user.email=eval@example.invalid commit -qm "scaffold"
+fi

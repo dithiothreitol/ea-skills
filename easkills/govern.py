@@ -20,7 +20,6 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-import yaml
 from jsonschema import Draft202012Validator
 
 from . import correspond, dsl, genschema, ui
@@ -241,7 +240,7 @@ def _read_record_files(root: Path, directory: Path) -> list[dsl.Document]:
         return documents
     for path in sorted(p for p in base.rglob("*") if p.is_file() and p.suffix in {".yaml", ".yml"}):
         try:
-            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+            data = dsl.load_yaml(path.read_text(encoding="utf-8"))
         except dsl.YAML_ERRORS as exc:
             documents.append(dsl.Document(path=path, data=None, parse_error=str(exc)))
             continue

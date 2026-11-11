@@ -3,8 +3,8 @@ name: ea-dispensation
 description: File, renew or close a time-bounded dispensation (waiver) from a standard or rule. Use when a system cannot comply yet (STD002 blocking), when a compliance assessment is non-conformant, when DISP003/DISP006 findings appear (expired or expiring waivers), or when asked for an exception, waiver or dispensation.
 argument-hint: "[standard-id] [element-id]"
 allowed-tools:
-  - Bash(easkills *)
-  - Bash(python -m easkills *)
+  - Bash(easkills validate-gov *)
+  - Bash(python -m easkills validate-gov *)
 ---
 
 # Dispensations: exceptions with an expiry
@@ -43,6 +43,17 @@ status: open
 * **Scope tightly.** One standard, the specific elements, the shortest defensible
   window. A waiver for "everything, two years" is a policy change wearing a
   waiver's clothes -- route that to a decision record instead.
+
+## Check the record
+
+```bash
+easkills validate-gov --root <repo>
+```
+
+The governance gate holds a waiver to the rules above (`DISP*`) and to the standard it
+waives (`STD002` stays covered only while the waiver is open and unexpired). With the
+plugin installed the same gate also runs on its own after you write the record, and its
+verdict comes back to you; either way, a record the gate rejects is not filed yet.
 
 ## Lifecycle
 

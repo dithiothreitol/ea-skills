@@ -54,13 +54,14 @@ language-model extraction.
 |---|---|---|
 | `PROV001` | error | No provenance and not marked `assumed: true`. Every concept is either evidenced or an explicit assumption. |
 | `PROV002` | error | The cited source file does not exist. |
-| `PROV003` | error | The quote does not occur in the cited file (whitespace- and case-insensitive). A citation that cannot be located is a fabricated citation. |
+| `PROV003` | error | The quote does not occur in the cited file (whitespace-, case- and encoding-insensitive: Unicode compatibility forms (NFKC), typographic quotation marks and dashes, soft hyphens and zero-width characters fold; end-of-line hyphenation deliberately does not, since joining it would also join words hyphenated on purpose). A citation that cannot be located is a fabricated citation. |
 | `PROV004` | warning | The quote matches only approximately (similarity at or above `quoteMatchThreshold`, default 0.90). Quote verbatim text instead of paraphrasing. |
 | `PROV005` | error | Marked `assumed: true` with no rationale. |
 | `PROV006` | info | A declared assumption, listed so it can be confirmed or dropped at review. |
 | `PROV007` | error | Provenance references a fact (`fact:`) that is not in the fact register. A resolved fact's own quotes are re-verified here (as `PROV002`/`PROV003`/`PROV004`, marked "via fact"), so the evidence chain stays mechanical even if the register changed after intake. |
 | `PROV008` | error | The provenance `file:` resolves outside the repository (`../../secrets.txt`, or via a `factsRoot` that escapes). A quote verified against a file no reviewer can open is unreviewable traceability -- and in CI on untrusted content, pass/fail would leak whether a string exists on the runner. The file is refused, not read. |
 | `PROV009` | info | The concept cites a **contested** fact: the sources disagree and this model follows one side. Reported, never blocked -- choosing is the architect's job; choosing invisibly is not. Listed in the architecture description's open questions with the other side quoted. |
+| `PROV010` | warning | A **named element** -- business, application, technology or physical structure, the elements a source calls by name -- cites facts none of whose entities answers to its name (by canonical name or alias) and none of whose quotes names it. The citation is probably about something else. Capabilities, behaviour, motivation and migration elements are exempt: the modeller names those, and "Retain Purchase Orders for Seven Years" is a sentence no source contains. Measured before it shipped (2026-11-11): 0 of 25 named elements in the golden set and the worked example flagged. The usual fix is an alias in `facts/entities.yaml`, which is how a register says two names are one thing. |
 
 ## Layer 1 -- governance metadata
 
@@ -186,7 +187,7 @@ schema error rather than a distinct rule.
 | `FACT001` | error | The file violates `schema/facts.schema.json` or `schema/entities.schema.json` -- unknown key, missing required field (including `provenance`), bad identifier pattern. |
 | `FACT002` | error | Duplicate fact id. Reported against the second definition, naming the file holding the first. |
 | `FACT003` | error | The cited source file does not exist. |
-| `FACT004` | error | The quote does not occur in the cited file (whitespace- and case-insensitive). A citation that cannot be located is a fabricated citation. |
+| `FACT004` | error | The quote does not occur in the cited file (whitespace-, case- and encoding-insensitive: Unicode compatibility forms (NFKC), typographic quotation marks and dashes, soft hyphens and zero-width characters fold; end-of-line hyphenation deliberately does not, since joining it would also join words hyphenated on purpose). A citation that cannot be located is a fabricated citation. |
 | `FACT005` | warning | The quote matches only approximately (similarity at or above `quoteMatchThreshold`, default 0.90). Quote verbatim text instead of paraphrasing. |
 | `FACT006` | error | The fact references an entity id that is not in `facts/entities.yaml`. |
 | `FACT007` | warning | Another fact already makes the same statement. Merge them and keep both quotes as provenance. |
@@ -194,6 +195,7 @@ schema error rather than a distinct rule.
 | `FACT009` | error | `confidence: contested` without a `contests:` reference. A contradiction nobody can follow is hinted at, not recorded. |
 | `FACT010` | error | `contests:` names a fact that is not in the register. |
 | `FACT011` | warning | The named fact does not record the disagreement back (not `contested`, or not pointing here). A one-sided contradiction reads as if one source simply won. |
+| `FACT012` | info | A fact lists entities and none of its quotes names any of them, by name or alias (`confidence: implied` facts are exempt: they are indirect by definition). A located quote proves the text exists, not that it is about the claim; naming the thing is the cheapest proxy for that, and it misfires on the sentences people actually write. Measured before it shipped (2026-11-11): 9 of 76 stated facts in the golden set and the worked example flagged, and all nine were correct facts quoted through a pronoun, a demonstrative, a plural or singular the alias table does not carry, or a clause whose subject the sentence elided -- so it is information for a reviewer and never gates. Whether a quote supports its claim is measured outside the core (the harness's entailment judge). |
 
 ## Fact register -- entity resolution
 

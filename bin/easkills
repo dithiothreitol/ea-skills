@@ -12,12 +12,17 @@
 # The interpreter is the first of $EASKILLS_PYTHON, python3, python that actually runs
 # Python 3.11+ -- probed, not just found on PATH, because on Windows `python3` can be the
 # Microsoft Store stub, which exists and does nothing useful.
+#
+# `-P` (3.11+) keeps the working directory off the import path. `python -c` would otherwise
+# put it first, so a `yaml.py` or `lxml/` planted in the architecture repository a command
+# runs in would be imported -- and executed -- in place of the real dependency. The
+# tooling promises no code execution from content (SECURITY.md); this is where that holds.
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd) || exit 1
 
 for py in ${EASKILLS_PYTHON:-} python3 python; do
   if "$py" -c "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)" >/dev/null 2>&1; then
-    exec "$py" -c '
+    exec "$py" -P -c '
 import sys
 root = sys.argv.pop(1)
 sys.path.insert(0, root)

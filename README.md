@@ -10,7 +10,7 @@ and living governance out. All of it in git.
 [![CI](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/dithiothreitol/ea-skills/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Validation rules](https://img.shields.io/badge/validation%20rules-163-brightgreen.svg)](docs/RULES.md)
+[![Validation rules](https://img.shields.io/badge/validation%20rules-165-brightgreen.svg)](docs/RULES.md)
 [![ArchiMate 3.2](https://img.shields.io/badge/ArchiMate-3.2-orange.svg)](oracle/NOTICE.md)
 [![ISO/IEC/IEEE 42010](https://img.shields.io/badge/ISO%2FIEC%2FIEEE-42010%3A2022-lightgrey.svg)](docs/RULES.md)
 
@@ -118,10 +118,16 @@ The plugin brings the code, not the interpreter: `easkills` runs the plugin's ow
 of the tooling with the first Python 3.11+ it finds (`$EASKILLS_PYTHON`, `python3`,
 `python`), which needs the three runtime dependencies installed
 (`pip install pyyaml jsonschema lxml`). From a clone, `python -m easkills` is the same
-command with the same arguments. While the plugin is enabled, a `PreToolUse` hook refuses
-any write into an architecture repository's `model/approved/` that does not go through
-`easkills promote`, and `ea-approve` is the one skill a model may not load on its own —
-you invoke it (`/ea-skills:ea-approve`) when you mean to sign something off.
+command with the same arguments. While the plugin is enabled, three hooks turn the skills'
+most important sentences into mechanisms. A `PreToolUse` hook refuses any write into an
+architecture repository's `model/approved/` that does not go through `easkills promote` —
+and puts `promote` itself to you at the moment it runs, so an instruction given earlier, or
+found in a document, never signs anything off. A `PostToolUse` hook runs the gate a skill
+prescribes after every write into a governed directory and hands the verdict back to the
+model; a `Stop` hook runs it again before a turn ends on uncommitted governed changes.
+`ea-approve` is the one skill a model may not load on its own — you invoke it
+(`/ea-skills:ea-approve`) when you mean to sign something off — and each skill pre-approves
+only the subcommands its own instructions name.
 
 **Already have a model?** `import` reads an ArchiMate Open Exchange export (Archi,
 and most commercial tools) into `model/staging/`, and `intake-csv` turns an
@@ -187,16 +193,19 @@ delta rather than copying the world. The only way into `approved` is
 standards — ownership and review dates, advisory while drafting, block there. The git
 commit of the move is the approval record. With the plugin enabled, the rule is a
 mechanism and not only a sentence: a hook refuses writes into `approved/` by any other
-route — exactly for the file-editing tools, by pattern for shell commands.
+route — exactly for the file-editing tools, by pattern for shell commands — and asks the
+person before `promote` itself runs.
 
 **The skills are measured, not just the tooling.** Prose cannot be executed by pytest, so
 the product used to be the untested half. `eval/harness/` now runs the skills against the
 golden set with an API key — a blind scratch repository, the pipeline the prose describes,
 three runs per case because the spread is the honest part — and scores the result; a second
-harness checks that the governance skills produce records satisfying their own rules. Five
-of the 24 skills are measured that way and [the coverage page](docs/SKILL-COVERAGE.md) says
-exactly which, including the two nothing mechanical covers. The first baseline paid for the
-harness the same day by exposing three prose defects invisible to reading.
+harness checks that the governance skills produce records satisfying their own rules. Seven
+of the 26 skills are measured that way -- three scored against gold, four checked by
+contract -- and [the coverage page](docs/SKILL-COVERAGE.md) says exactly which, including
+the one nothing mechanical covers. A real host is measured as well (`claude plugin eval`,
+`evals/`). The first baseline paid for the harness the same day by exposing three prose
+defects invisible to reading.
 
 **Intake comes first and is measured.** `ea-intake` extracts a **fact register**
 (`facts/register/*.yaml`) from raw sources chunk by chunk: atomic statements, each with
@@ -300,7 +309,7 @@ validator.
 
 | Concern | What is used | How |
 |---|---|---|
-| Notation | **ArchiMate 3.2** | Primary. Enforced from the machine-readable matrix, exported as Open Group Model Exchange XML. |
+| Notation | **ArchiMate 3.2** | Primary. Enforced from the machine-readable matrix, exported as Open Group Model Exchange XML. ArchiMate 4 (April 2026) is tracked, not adopted: no vendorable version 4 relationship table exists yet, and a version 4 exchange file is refused by name rather than misread ([AD-11](docs/BLUEPRINT.md)). |
 | Architecture description | **ISO/IEC/IEEE 42010:2022** | Documentation structure and conformance checking: stakeholders, concerns, viewpoints, views, decisions with rationale, and §6.9 correspondences derived from the records that declare them — never authored twice. |
 | Method and governance | **TOGAF 10** | Used as vocabulary and for governance mechanics (conformance levels, dispensations with expiry, Phase H change classes) — *not* as a process to march through. |
 | Detail design | **UML** | Secondary, where ArchiMate is too coarse (sequences, deployment). |
@@ -355,7 +364,7 @@ argued with.
 
 ## Status and roadmap
 
-**Phases 0–7 are complete; Phase 8 is under way** ([plan](docs/PHASE8-PLAN.md)) — see
+**Phases 0–8 are complete; Phase 9 is under way** ([plan](docs/PHASE9-PLAN.md)) — see
 [CHANGELOG.md](CHANGELOG.md) for the full history and
 [BLUEPRINT §8a](docs/BLUEPRINT.md) for per-phase design decisions.
 
@@ -370,6 +379,7 @@ argued with.
 | 6 | Service layer: offering catalog with SLAs, demand ledger, demand-weighted maintenance | **done** |
 | 7 | Reference, regulation, proposal: alignment to reference architectures, per-layer readiness, rationalization, cost, regulatory reporting, generated proposals, maturity | **done** |
 | 8 | Host, analyst, security, registers, time, measurement: the plugin and its guard, document intake and question records, security vocabulary and exposure, further registers and Polish output, diff/query/serve, a host eval | **done** (0.16.0–0.21.0) |
+| 9 | Enforcement, signature, adoption, evidence, views, validity: the gates run by the host, promotion put to the person, a sealed approved zone, an adopter's CI, quote folding and anchoring, scale, nesting and layout hints, two new golden cases, the measurement retaken | **under way** (0.22.0–0.23.0) |
 
 Deliberately open (decisions, not backlog): the **network facade** is half shipped on
 purpose — `serve` speaks MCP over stdio to a local host, read-only, approved zone only
@@ -415,7 +425,7 @@ docs/            GETTING-STARTED, CLI reference, RULES catalogue, BLUEPRINT (des
 |---|---|
 | [Getting started](docs/GETTING-STARTED.md) | Tutorial: from a raw interview to a validated, documented architecture |
 | [CLI reference](docs/CLI.md) | Every command, flag and exit-code contract |
-| [Rule catalogue](docs/RULES.md) | All 163 validation rules with severities and rationale |
+| [Rule catalogue](docs/RULES.md) | All 165 validation rules with severities and rationale |
 | [Blueprint](docs/BLUEPRINT.md) | The research-verified design: decisions, evidence, per-phase log |
 | [Golden set](eval/golden/README.md) | How pipeline quality is measured |
 | [Skill coverage](docs/SKILL-COVERAGE.md) | Which instrument measures which skill — including where nothing does |

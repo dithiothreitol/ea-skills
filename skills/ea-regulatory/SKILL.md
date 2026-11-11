@@ -3,8 +3,12 @@ name: ea-regulatory
 description: Map regulatory controls onto the architecture and maintain the DORA Register of Information and the GDPR record of processing activities. Use for control-framework gap analysis (NIST CSF, KNF Rekomendacja D and similar), ICT third-party risk, DORA register upkeep and the ITS worksheets, the GDPR Art. 30 record, regulatory scope questions, security-architecture coverage, or when asked which systems a regulation touches and what evidence exists. For the EU AI Act and AI risk, see ea-ai-governance.
 argument-hint: "[as-of YYYY-MM-DD]"
 allowed-tools:
-  - Bash(easkills *)
-  - Bash(python -m easkills *)
+  - Bash(easkills align *)
+  - Bash(easkills dora-register *)
+  - Bash(easkills gdpr-register *)
+  - Bash(python -m easkills align *)
+  - Bash(python -m easkills dora-register *)
+  - Bash(python -m easkills gdpr-register *)
 ---
 
 # Regulatory controls, the DORA register and the GDPR record

@@ -24,14 +24,13 @@ from typing import Any, Iterable
 
 from jsonschema import Draft202012Validator
 
-from . import dsl, genschema, oracle, ui
+from . import dsl, genschema, oracle, textfold, ui
 
 SEVERITY_ERROR = "error"
 SEVERITY_WARNING = "warning"
 SEVERITY_INFO = "info"
 
 _PLACEHOLDER_RE = re.compile(r"\b(tbd|todo|tba|xxx|fixme|\?\?\?)\b", re.IGNORECASE)
-_WHITESPACE_RE = re.compile(r"\s+")
 
 
 @dataclass(frozen=True)
@@ -120,7 +119,29 @@ def _rel(root: Path, path: Path | None) -> str:
 
 
 def _normalize(text: str) -> str:
-    return _WHITESPACE_RE.sub(" ", text).strip().casefold()
+    """The matcher's form: folded (``textfold``), whitespace collapsed, case folded."""
+    return textfold.normalize(text)
+
+
+class SourceIndex:
+    """Every source file read and normalized once per run, however many quotes cite it.
+
+    The matcher used to normalize the whole source again for every quote: on a 3000-element
+    repository citing one inventory, 46.7 of 69.7 seconds of ``validate`` went to producing
+    the same string 9042 times (measured 2026-11-10). A gate that slow is a gate a hook
+    cannot afford to run after every write -- and a gate nobody runs reports nothing.
+    """
+
+    def __init__(self) -> None:
+        self._texts: dict[Path, str | None] = {}
+
+    def normalized(self, path: Path) -> str | None:
+        """The matcher's form of the file at ``path``, or None if it is not a file."""
+        if path not in self._texts:
+            self._texts[path] = (
+                _normalize(path.read_text(encoding="utf-8", errors="replace")) if path.is_file() else None
+            )
+        return self._texts[path]
 
 
 def _quote_match(haystack_norm: str, quote_norm: str, threshold: float) -> str:
@@ -347,7 +368,7 @@ def check_provenance(model: dsl.Model) -> list[Finding]:
         model.config, "quoteMatchThreshold", 0.90, minimum=0.0, maximum=1.0
     )  # a bad value is reported by check_config; here the default keeps the gate running
     facts_root = model.facts_root()
-    cache: dict[Path, str | None] = {}
+    sources = SourceIndex()
     register, _register_docs, _entities_doc = facts_mod.load(model.root)
 
     def verify_quote(concept: dsl.Concept, file: str, quote: str, via: str = "") -> None:
@@ -367,12 +388,8 @@ def check_provenance(model: dsl.Model) -> list[Finding]:
                 )
             )
             return
-        if source_path not in cache:
-            cache[source_path] = (
-                source_path.read_text(encoding="utf-8", errors="replace") if source_path.is_file() else None
-            )
-        text = cache[source_path]
-        if text is None:
+        haystack = sources.normalized(source_path)
+        if haystack is None:
             findings.append(
                 Finding(
                     "PROV002",
@@ -384,7 +401,7 @@ def check_provenance(model: dsl.Model) -> list[Finding]:
                 )
             )
             return
-        verdict = _quote_match(_normalize(text), _normalize(quote), threshold)
+        verdict = _quote_match(haystack, _normalize(quote), threshold)
         if verdict == "missing":
             findings.append(
                 Finding(
@@ -482,6 +499,10 @@ def check_provenance(model: dsl.Model) -> list[Finding]:
                     verify_quote(concept, fact_provenance.file, fact_provenance.quote, via=fact.id)
                 continue
             verify_quote(concept, provenance.file, provenance.quote)
+
+    from . import anchors  # local: anchors imports Finding from here
+
+    findings += anchors.unanchored_elements(model, register)  # PROV010 (D10)
     return findings
 
 

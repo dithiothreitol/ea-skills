@@ -2,8 +2,8 @@
 name: ea-standards-base
 description: Maintain the standards information base (SIB) - technology and architecture standards with type and lifecycle. Use when asked to record, adopt, deprecate or retire a standard, when STD001-STD004 or SIB003/SIB004 findings appear, or when someone asks "what is our standard for X".
 allowed-tools:
-  - Bash(easkills *)
-  - Bash(python -m easkills *)
+  - Bash(easkills kpi *)
+  - Bash(python -m easkills kpi *)
 ---
 
 # The standards information base

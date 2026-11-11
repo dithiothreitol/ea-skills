@@ -2,8 +2,12 @@
 name: ea-validate
 description: Run and interpret the deterministic EA model validation gate. Use when asked to check, validate, review or lint an architecture model, when a model build fails, before promoting content from staging to approved, or when investigating ArchiMate relationship errors, provenance failures or model quality findings.
 allowed-tools:
-  - Bash(easkills *)
-  - Bash(python -m easkills *)
+  - Bash(easkills compile *)
+  - Bash(easkills promote --dry-run *)
+  - Bash(easkills validate *)
+  - Bash(python -m easkills compile *)
+  - Bash(python -m easkills promote --dry-run *)
+  - Bash(python -m easkills validate *)
 ---
 
 # Validating the model
@@ -24,6 +28,12 @@ proposed delta, so its relationships may reference approved elements and a same-
 concept is an update proposal. The promotion gate (`easkills promote
 --dry-run`) validates the merged result by approved-zone standards instead; content
 that merely warns in staging can block there (ownership, review dates).
+
+With the plugin installed, the owning gate also runs on its own after every write into a
+governed directory (`facts/`, `model/staging/`, `standards/`, `governance-log/`,
+`services/`), and again before a turn ends on uncommitted governed changes; the verdict
+comes back as hook feedback beginning `ea-skills gate (...)`. It is this gate, run for
+you -- read its verdict the way you would read your own run.
 
 The full rule catalogue with severities is in `docs/RULES.md`. Read it rather than
 guessing what a code means.
@@ -86,7 +96,7 @@ often serving, association or flow.
 
 ## Before promoting staging to approved
 
-Run `easkills promote --root <repo> --dry-run` -- it validates the merged
+Run `easkills promote --dry-run --root <repo>` -- it validates the merged
 result by approved-zone standards, which is the actual bar. Confirm: zero errors,
 `GOV001`/`GOV002` resolved (warnings in staging, errors at the gate), every `PROV006`
 assumption either confirmed into evidence or consciously accepted, and every warning

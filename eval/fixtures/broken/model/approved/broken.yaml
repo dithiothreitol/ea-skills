@@ -251,6 +251,15 @@ elements:
       - file: facts/sources/notes.md
         quote: Order records are held by the finance system
 
+  # --- PROV010: cites a fact about something else; no entity answers to its name ------
+  - id: app-ledger-engine
+    type: ApplicationComponent
+    name: Ledger Engine
+    owner: finance@example.test
+    lastReviewed: 2026-07-20
+    provenance:
+      - fact: fact-portal-references-orders
+
 relationships:
   # --- REL001: DataObject -> BusinessActor permits Association only ------------------
   - id: rel-illegal

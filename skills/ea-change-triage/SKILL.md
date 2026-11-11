@@ -3,8 +3,14 @@ name: ea-change-triage
 description: Classify an incoming architecture change request (TOGAF Phase H) and route it - simplification, incremental, or re-architecting. Use when a change request, new demand or drift report arrives and someone asks what to do with it, or whether a change "needs architecture".
 argument-hint: "[element-id]"
 allowed-tools:
-  - Bash(easkills *)
-  - Bash(python -m easkills *)
+  - Bash(easkills debt *)
+  - Bash(easkills diff *)
+  - Bash(easkills impact *)
+  - Bash(easkills query *)
+  - Bash(python -m easkills debt *)
+  - Bash(python -m easkills diff *)
+  - Bash(python -m easkills impact *)
+  - Bash(python -m easkills query *)
 ---
 
 # Change triage (Phase H)
