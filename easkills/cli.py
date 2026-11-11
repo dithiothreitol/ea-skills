@@ -549,6 +549,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_propose.add_argument("--out", type=Path, help="write here instead of the default staging file")
     p_propose.add_argument("--json", dest="json_out", type=Path, help="also write the report as JSON")
     p_propose.add_argument("--dry-run", action="store_true", help="show what would be proposed, write nothing")
+    p_propose.add_argument(
+        "--print",
+        dest="print_only",
+        action="store_true",
+        help="print the file it would write, exactly, and write nothing (for a shell that may not write)",
+    )
 
     p_pin_ref = sub.add_parser(
         "pin-reference", help="rewrite a reference pack's SHA256SUMS after a deliberate upgrade"
@@ -1284,6 +1290,12 @@ def cmd_maturity(args: argparse.Namespace) -> int:
 
 
 def cmd_propose(args: argparse.Namespace) -> int:
+    if args.print_only and args.json_out:
+        # stdout is the file and nothing else under --print, and --print writes nothing;
+        # dropping --json silently would leave a caller waiting for a report that never comes.
+        print(_error("--print writes nothing, so it takes no --json: run the two separately"))
+        return 1
+    unwritable: propose_mod.ProposeUnwritable | None = None
     try:
         report = propose_mod.propose(
             args.root.resolve(),
@@ -1292,6 +1304,7 @@ def cmd_propose(args: argparse.Namespace) -> int:
             references=args.reference,
             out=args.out,
             dry_run=args.dry_run,
+            print_only=args.print_only,
         )
     except (propose_mod.ProposeRefusal, alignment.AlignmentError) as exc:
         # AlignmentError too: `--from align` reaches the same loader `align` does, so a
@@ -1299,15 +1312,45 @@ def cmd_propose(args: argparse.Namespace) -> int:
         # a traceback because this command forgot to catch it.
         print(_error(str(exc)))
         return 1
-    print(propose_mod.render(report))
+    except propose_mod.ProposeUnwritable as exc:
+        unwritable, report = exc, exc.report
+    if args.print_only:
+        # The file and nothing else, as UTF-8 with LF endings whatever the console's code
+        # page: what a file tool writes from this must be byte for byte what a run writes.
+        sys.stdout.flush()
+        binary = getattr(sys.stdout, "buffer", None)
+        if binary is not None:
+            binary.write(report.content.encode("utf-8"))
+            binary.flush()
+        else:  # a text-only stdout (an embedding host, a redirect): the text, unconverted
+            sys.stdout.write(report.content)
+        if not report.content:
+            print("nothing to propose", file=sys.stderr)
+        return 0
+    print(propose_mod.render(report, failed=unwritable is not None))
+    json_failed = False
     if args.json_out:
-        args.json_out.parent.mkdir(parents=True, exist_ok=True)
-        args.json_out.write_text(
-            json.dumps(report.as_dict(), indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8",
-            newline="\n",
-        )
-        print(f"\nJSON report written to {args.json_out}")
+        try:
+            args.json_out.parent.mkdir(parents=True, exist_ok=True)
+            args.json_out.write_text(
+                json.dumps(report.as_dict(), indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+                newline="\n",
+            )
+            print(f"\nJSON report written to {args.json_out}")
+        except OSError as exc:
+            print(_error(f"could not write {args.json_out}: {exc.strerror or exc}"))
+            json_failed = True  # a report asked for and not written is a failed run
+    if unwritable is not None:
+        print(_error(
+            f"could not write {unwritable.target.resolve()}: {unwritable.reason}. The proposals file "
+            "was not written. Run the same command again with --print: it writes nothing and prints "
+            "exactly this file, in full -- do not pipe it through head or tail -- for a file tool to "
+            "put at that path unchanged."
+        ))
+        return 1
+    if json_failed:
+        return 1
     # Always 0: proposing nothing is a clean repository, not a failure, and a generator
     # that exited 1 on "no findings" would be unusable in a pipeline.
     return 0

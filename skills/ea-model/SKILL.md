@@ -52,8 +52,9 @@ mistake, because a reader cannot tell it from a real one.
 
 **2. Write to `model/staging/` unless told otherwise.** `approved/` is human-signed
 content; the only path into it is `easkills promote` (see the `ea-approve`
-skill), on explicit human instruction. Staging validates as an *overlay* on approved:
-your proposed relationships may reference approved elements, and re-proposing an
+skill), confirmed by the person when it runs -- a request is not a confirmation.
+Staging validates as an *overlay* on approved: your proposed relationships may
+reference approved elements, and re-proposing an
 existing id is an update, not a duplicate -- so model the delta, do not copy approved
 content into staging.
 
@@ -240,7 +241,9 @@ worth that.
    *is* information about where to interview next.
 2. **Do the names survive contest?** Read each name to someone who works there. If they
    say "we don't call it that", the name is wrong even when the element is right --
-   traceability dies at vocabulary, and so does the golden-set score.
+   traceability dies at vocabulary, and so does the golden-set score. That includes the
+   language: a register written in Polish gets Polish names -- the entity table's, where it
+   has an entry -- not English translations of them.
 3. **Are the gaps recorded rather than painted over?** A capability nothing realizes is a
    finding worth keeping, not a hole to fill with a plausible application. Write the
    weakness down (`properties: {assessment: weak}`, or a `Gap` element) and it stops being

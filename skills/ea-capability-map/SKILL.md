@@ -28,7 +28,10 @@ A capability is **what** the business can do, stable over years: "Order Manageme
 * a **system** ("SAP" is not a capability; invoicing is).
 
 Name capabilities as noun phrases. If the name only works as a verb ("Pick Orders"),
-you are looking at a process.
+you are looking at a process. Name them in the language the register is written in: a
+Polish register gets `Odczyty wodomierzy`, not `Meter Reading` -- the people who confirm
+the map work in that language, and two of three measured runs on a Polish source
+translated the names on their own (2026-11-11).
 
 ## Method
 
@@ -37,16 +40,25 @@ you are looking at a process.
    directly (`provenance: [{fact: fact-...}]`) -- the validator resolves the fact and
    re-verifies its quotes. Only fall back to raw file+quote citations when no register
    exists.
+
+   Sources almost never say *capability*. A fact that the business does something --
+   patients book appointments, invoices are produced, every batch is tested before release
+   -- evidences the ability to do it, and that fact is the capability's provenance
+   (`Appointment Booking`, `Invoicing`, `Quality Control`). What no fact describes the
+   business doing, the map does not hold.
 2. **Start with one level, six to twelve capabilities.** A level-1 map that fits on a
    page and survives argument is worth more than a three-level taxonomy nobody
    confirmed. Decompose (via `Composition` from parent to child) only where the
    sources actually differentiate.
 
    That range is for an enterprise-wide map built on enterprise-wide evidence. **It is
-   a shape, not a target**: a single interview supports the capabilities it names and
-   no more. Reaching six by inventing four is the failure this skill's rules of
-   evidence exist to prevent, and a measured run did exactly that on a single
-   twenty-line interview.
+   a shape, not a target**: a single interview supports the capabilities its facts
+   evidence and no more. Reaching six by inventing four is the failure this skill's rules
+   of evidence exist to prevent, and a measured run did exactly that on a single
+   twenty-line interview. **Zero is the opposite failure, not caution**: a register that
+   says what the business does, modelled without a capability layer, has skipped the
+   spine -- and measured runs did exactly that on two interviews (2026-11-11), where gold
+   holds three capabilities each.
 3. **Type them `Capability`** (Strategy layer), ids `cap-<slug>`, write to
    `model/staging/strategy.yaml` (or the file the repository already uses).
 4. **Attach the rest of the model.** The load-bearing relationship is

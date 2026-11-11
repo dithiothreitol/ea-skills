@@ -479,3 +479,139 @@ def test_the_worked_example_has_nothing_to_propose(source, example_root):
 def test_every_documented_source_is_implemented():
     assert set(propose.SOURCES) == set(propose.STAGING_FILENAME)
     assert set(propose.SOURCES) == set(propose._ROLE)
+
+
+# ------------------------------------------------- a shell that may not write (0.23.2)
+
+
+def _gapped(example_root, tmp_path, name):
+    """The worked example with every reference node a gap, so there is a file to write."""
+    root = tmp_path / name
+    shutil.copytree(example_root, root)
+    (root / "reference" / "wholesale-core" / "mappings.yaml").write_text("mappings: []\n", encoding="utf-8")
+    return root
+
+
+def _cli(*args):
+    import subprocess
+    import sys
+
+    return subprocess.run([sys.executable, "-m", "easkills", *map(str, args)], capture_output=True)
+
+
+def test_print_writes_nothing_and_prints_the_file_byte_for_byte(example_root, tmp_path):
+    """Under `claude plugin eval` no shell command may write (2026-11-11). `--print` is the
+    way out: exactly what a run writes, as raw UTF-8 with LF endings whatever the console,
+    for a file tool to put in place."""
+    writable = _gapped(example_root, tmp_path, "writable")
+    assert _cli("propose", "--root", writable, "--from", "align", "--as-of", "2026-11-11").returncode == 0
+    expected = (writable / "model" / "staging" / "proposed-requirements.yaml").read_bytes()
+    printing = _gapped(example_root, tmp_path, "printing")
+    done = _cli("propose", "--root", printing, "--from", "align", "--as-of", "2026-11-11", "--print")
+    assert done.returncode == 0 and done.stdout == expected
+    assert b"\r\n" not in done.stdout
+    assert not (printing / "model" / "staging").exists(), "--print writes nothing"
+
+
+def test_an_unwritable_target_is_named_with_the_way_out_and_no_traceback(example_root, tmp_path, monkeypatch, capsys):
+    """It crashed with a traceback -- a generator that crashes reports nothing."""
+    import errno
+    from pathlib import Path
+
+    from easkills import cli
+
+    root = _gapped(example_root, tmp_path, "readonly")
+
+    def refuse(self, *args, **kwargs):
+        raise OSError(errno.EROFS, "Read-only file system")
+
+    monkeypatch.setattr(Path, "mkdir", refuse)
+    assert cli.main(["propose", "--root", str(root), "--from", "align", "--as-of", "2026-11-11"]) == 1
+    out = capsys.readouterr().out
+    target = (root / "model" / "staging" / "proposed-requirements.yaml").resolve()
+    assert f"could not write {target}: Read-only file system" in out and "--print" in out
+    assert "req-wholesale-core-" in out, "the report still says what was proposed"
+    assert "Traceback" not in out and not target.exists()
+
+
+def test_a_write_that_fails_part_way_leaves_nothing_behind(example_root, tmp_path, monkeypatch):
+    """A truncated file would be refused by the next run ("never overwrites") and fail its gate."""
+    import errno
+    import os as os_module
+
+    root = _gapped(example_root, tmp_path, "full-disk")
+
+    def full(src, dst):
+        raise OSError(errno.ENOSPC, "No space left on device")
+
+    monkeypatch.setattr(os_module, "replace", full)
+    with pytest.raises(OSError, match="No space left on device"):
+        propose.propose(root, source="align", as_of=AS_OF)
+    staging = root / "model" / "staging"
+    assert not list(staging.iterdir()), [p.name for p in staging.iterdir()]
+
+
+def test_print_with_dry_run_still_prints_the_file(example_root, tmp_path):
+    """The skill shows a dry run, then says to run the same command with --print. Kept
+    together, the two printed nothing and said "nothing to propose" -- the opposite."""
+    root = _gapped(example_root, tmp_path, "both")
+    done = _cli("propose", "--root", root, "--from", "align", "--as-of", "2026-11-11", "--dry-run", "--print")
+    assert done.returncode == 0 and b"req-wholesale-core-" in done.stdout
+    assert not (root / "model" / "staging").exists()
+
+
+def test_print_refuses_json_instead_of_dropping_it(example_root, tmp_path):
+    root = _gapped(example_root, tmp_path, "json")
+    done = _cli("propose", "--root", root, "--from", "align", "--as-of", "2026-11-11", "--print", "--json", tmp_path / "r.json")
+    assert done.returncode == 1 and b"takes no --json" in done.stdout and not (tmp_path / "r.json").exists()
+
+
+def test_print_works_on_a_text_only_stdout(example_root, tmp_path, monkeypatch):
+    import contextlib
+    import io
+
+    from easkills import cli
+
+    root = _gapped(example_root, tmp_path, "text")
+    sink = io.StringIO()
+    with contextlib.redirect_stdout(sink):
+        assert cli.main(["propose", "--root", str(root), "--from", "align", "--as-of", "2026-11-11", "--print"]) == 0
+    assert sink.getvalue().startswith("#") and "req-wholesale-core-" in sink.getvalue()
+
+
+def test_an_unwritable_run_ends_on_fail_not_pass(example_root, tmp_path, monkeypatch, capsys):
+    import errno
+    from pathlib import Path
+
+    from easkills import cli
+
+    root = _gapped(example_root, tmp_path, "verdict")
+    monkeypatch.setattr(Path, "mkdir", lambda self, *a, **k: (_ for _ in ()).throw(OSError(errno.EROFS, "Read-only file system")))
+    assert cli.main(["propose", "--root", str(root), "--from", "align", "--as-of", "2026-11-11"]) == 1
+    out = capsys.readouterr().out
+    assert "could NOT be written" in out and "FAIL" in out and "PASS" not in out
+
+
+def test_the_unwritable_error_keeps_its_errno_and_survives_a_pickle(example_root, tmp_path, monkeypatch):
+    import errno
+    import pickle
+    from pathlib import Path
+
+    root = _gapped(example_root, tmp_path, "pickle")
+    monkeypatch.setattr(Path, "mkdir", lambda self, *a, **k: (_ for _ in ()).throw(OSError(errno.EROFS, "Read-only file system")))
+    with pytest.raises(OSError) as caught:
+        propose.propose(root, source="align", as_of=AS_OF)
+    assert caught.value.errno == errno.EROFS
+    again = pickle.loads(pickle.dumps(caught.value))
+    assert again.errno == errno.EROFS and again.target == caught.value.target and again.report.proposals
+
+
+def test_a_json_report_that_cannot_be_written_fails_the_run(example_root, tmp_path, capsys):
+    from easkills import cli
+
+    root = _gapped(example_root, tmp_path, "badjson")
+    blocker = tmp_path / "not-a-directory"
+    blocker.write_text("x", encoding="utf-8")
+    code = cli.main(["propose", "--root", str(root), "--from", "align", "--as-of", "2026-11-11",
+                     "--json", str(blocker / "r.json")])
+    assert code == 1 and "could not write" in capsys.readouterr().out

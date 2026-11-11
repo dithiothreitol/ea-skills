@@ -30,6 +30,7 @@ is not, which is the same failure as a fabricated quote one layer up.
 from __future__ import annotations
 
 import hashlib
+import os
 import re
 from dataclasses import dataclass, field
 from datetime import date
@@ -85,6 +86,28 @@ class ProposeRefusal(RuntimeError):
     """A request the generator refuses rather than half-satisfies."""
 
 
+class ProposeUnwritable(OSError):
+    """The proposals were generated and the file could not be written.
+
+    Still an `OSError`, as the write failure always was, and it carries the report. The way
+    out is `--print`: the exact file on stdout and nothing written, so an agent whose shell
+    may not write (the plugin-eval sandbox mounts the working directory read-only for shell
+    commands) can put it in place with its file tool -- a verbatim copy of the generator's
+    output is still the generator's output.
+    """
+
+    def __init__(self, target: Path, report: ProposeReport, reason: str, error_number: int | None = None):
+        # (errno, strerror, filename), as an OSError is built, so `errno` survives for any
+        # handler that tests it -- EROFS from a sandbox stays EROFS.
+        super().__init__(error_number, reason, str(target))
+        self.target = target
+        self.report = report
+        self.reason = reason
+
+    def __reduce__(self):  # picklable and copyable, despite the extra arguments
+        return (type(self), (self.target, self.report, self.reason, self.errno))
+
+
 @dataclass
 class Proposal:
     id: str
@@ -126,6 +149,7 @@ class ProposeReport:
     proposals: list[Proposal] = field(default_factory=list)
     skipped: list[dict[str, str]] = field(default_factory=list)
     written: bool = False
+    content: str = ""  # the file's exact text, once generated
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -700,6 +724,7 @@ def propose(
     references: list[str] | None = None,
     out: Path | None = None,
     dry_run: bool = False,
+    print_only: bool = False,
 ) -> ProposeReport:
     if source not in SOURCES:
         raise ProposeRefusal(f"unknown source '{source}'; expected one of {', '.join(SOURCES)}")
@@ -765,7 +790,7 @@ def propose(
             f"{target} already exists -- propose never overwrites. Complete or delete what is "
             "in it, or pass --out to write elsewhere."
         )
-    if dry_run:
+    if dry_run and not print_only:  # --print with --dry-run still prints: neither writes
         return report
 
     if source == "coverage":
@@ -784,8 +809,22 @@ def propose(
         default_flow_style=False,
         width=98,
     )
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(header + "\n" + body, encoding="utf-8", newline="\n")
+    report.content = header + "\n" + body
+    if print_only:
+        return report
+    # Through a temporary file, so a write that fails part-way leaves nothing behind: a
+    # truncated file would be refused by the next run ("never overwrites") and fail its gate.
+    temporary = target.with_name(f".{target.name}.partial")
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        temporary.write_text(report.content, encoding="utf-8", newline="\n")
+        os.replace(temporary, target)
+    except OSError as exc:
+        try:
+            temporary.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise ProposeUnwritable(target, report, exc.strerror or str(exc), exc.errno) from exc
     report.written = True
     return report
 
@@ -801,7 +840,9 @@ _ROLE = {
 }
 
 
-def render(report: ProposeReport) -> str:
+def render(report: ProposeReport, failed: bool = False) -> str:
+    """The report; ``failed`` when the file could not be written, which ends it in FAIL --
+    a run that wrote nothing it was asked to write must not close on a passing verdict."""
     from . import ui
 
     lines = [
@@ -839,11 +880,12 @@ def render(report: ProposeReport) -> str:
             )
         )
     else:
-        lines.append(
-            ui.green(f"{ui.check()} {len(report.proposals)} skeleton(s) written to {report.target}")
-            if report.written
-            else ui.yellow(f"{len(report.proposals)} skeleton(s) would be written to {report.target}")
-        )
+        if report.written:
+            lines.append(ui.green(f"{ui.check()} {len(report.proposals)} skeleton(s) written to {report.target}"))
+        elif failed:
+            lines.append(ui.red(f"{len(report.proposals)} skeleton(s) could NOT be written to {report.target}"))
+        else:
+            lines.append(ui.yellow(f"{len(report.proposals)} skeleton(s) would be written to {report.target}"))
         if report.source == "coverage":
             advice = (
                 f"Every question opens with `{PLACEHOLDER}`: write it and name who should answer, "
@@ -856,5 +898,5 @@ def render(report: ProposeReport) -> str:
                 "owner and a review date."
             )
         lines.append(ui.dim(advice))
-    lines += ["", ui.verdict(True, 0, 0)]
+    lines += ["", ui.verdict(not failed, 1 if failed else 0, 0)]
     return "\n".join(lines)

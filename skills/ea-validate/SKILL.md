@@ -1,6 +1,6 @@
 ---
 name: ea-validate
-description: Run and interpret the deterministic EA model validation gate. Use when asked to check, validate, review or lint an architecture model, when a model build fails, before promoting content from staging to approved, or when investigating ArchiMate relationship errors, provenance failures or model quality findings.
+description: Run and interpret the deterministic EA model validation gate. Use when asked whether a model or staged work is ready (for a review, an architecture board, promotion), when asked to check, validate, review or lint an architecture model, when a model build fails, before promoting content from staging to approved, or when investigating ArchiMate relationship errors, provenance failures or model quality findings.
 allowed-tools:
   - Bash(easkills compile *)
   - Bash(easkills promote --dry-run *)

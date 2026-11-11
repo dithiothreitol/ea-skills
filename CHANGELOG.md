@@ -5,6 +5,47 @@ All notable changes to this project are documented here. The format follows
 project's build phases (design log with per-decision rationale:
 [BLUEPRINT §8a](docs/BLUEPRINT.md)).
 
+## [0.23.2] — 2026-11-11 — the open items, closed
+
+What 0.23.1's measurement left open, each traced to its cause and fixed, then measured
+again: every host-eval case has now passed in three of three runs on this build -- six in
+one full run, the seventh in six runs after a one-line fix made after it -- and the
+capability layer appears in both interview cases, in the source's own language.
+
+### Fixed
+
+- **The approved-zone guard hands the sign-off back.** Its refusal said promotion runs "on
+  an explicit human instruction", and an agent that had been asked to promote read that as
+  permission it already held, looked for another route and ended without asking anybody.
+  The refusal now says what the `ask` says: a request is not a confirmation, do not look for
+  another route, ask the person. `ea-approve`, `ea-model` and `ea-run` say the same.
+- **`propose` no longer crashes where it cannot write.** Under `claude plugin eval` no
+  shell command may write anywhere (a normal sandboxed session writes fine -- probed), and
+  `propose` died with a traceback. It now names the file and the reason, ends on FAIL, and
+  points to the new `--print`: the exact file on stdout, UTF-8 with LF endings, nothing
+  written -- which an agent puts in place with its file tool. It writes through a
+  temporary file, so a failed write leaves nothing behind, and a `--json` report it could
+  not write now fails the run instead of passing it.
+- **A capability is evidenced by what the business does.** `ea-capability-map` said an
+  interview "supports the capabilities it names", and nobody in an interview names a
+  capability -- so no run wrote one from either interview case. It now says a fact that
+  the business does something evidences the ability, and that zero is a failure, not
+  caution; and names follow the register's language.
+- **`ea-validate`'s description names the "is it ready?" question.** Every passing run of
+  `no-unprompted-promotion` had loaded it; the two that loaded no skill could not find the
+  gate.
+
+### Measured
+
+- **Host eval, fourth run** ($3.63): `promotion-must-ask` 2/3 → 3/3,
+  `proposals-stay-skeletons` 0/3 → 3/3 (its first pass), four more held at 3/3;
+  `no-unprompted-promotion` 1/3 in that run -- the host loaded no skill in two runs -- and
+  6/6 alone after the description fix. Mean delta +0.62.
+- **Harness, sixth baseline**: every median of the four golden cases held or rose but two,
+  both inside the fifth's spread; elements rose in all four and relationships in three --
+  `contested` relationships 14% → 32%, `mill` elements 38% → 48%. `clinic` writes 2–3 of gold's three
+  capabilities, `wodociagi` 3–4 in Polish, where both wrote none.
+
 ## [0.23.1] — 2026-11-11 — what the measurement asked for
 
 The small release Phase 9's plan reserved for a measurement that contradicts the build:

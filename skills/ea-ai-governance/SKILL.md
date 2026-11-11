@@ -20,6 +20,12 @@ easkills ai-act-register --root <repo> --as-of <date> --out docs/ai-act-register
 easkills propose --root <repo> --from ai-act --as-of <date>   # FRIA skeletons, Art. 27
 ```
 
+If `propose` reports that it could not write its file (a shell that may not write, as in
+a sandbox), run the same command again with `--print`: it writes nothing and prints
+exactly that file, in full -- do not pipe it through `head` or `tail`. Write that
+output, unchanged, to the path the error named, with your file tool. Edited on the way,
+it would be your text, not the generator's.
+
 `--lang pl` renders the inventory in Polish; the model's own text is not translated.
 
 ## Non-negotiables

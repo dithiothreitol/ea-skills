@@ -14,8 +14,9 @@ criteria 2–8 are met; criterion 1 is not -- four of seven host-eval cases pass
 three runs, and the causes of the other three are on
 [the coverage page](SKILL-COVERAGE.md), recorded for a later release as D14 requires.
 That later release was 0.23.1, the same day (§10's small release): five of seven cases
-now pass in three of three runs; the two that do not are a run that skipped the sign-off
-hand-back and the eval sandbox's read-only working directory.
+passed in three of three runs. 0.23.2 closed the other two and what its own run found:
+every case has passed three of three on its build -- six in one full run, the seventh in
+six runs after a one-line fix -- so criterion 1 is met case by case, not yet in one run.
 
 ## 1. What this phase answers
 

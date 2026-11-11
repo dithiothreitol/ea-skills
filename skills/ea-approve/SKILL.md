@@ -19,10 +19,13 @@ perform it unprompted.
 
 ## The one rule that is not negotiable
 
-**Do not promote unless the human has explicitly asked for this promotion, now.**
-"The validator passes" is not an instruction to promote. If you finished modelling
-work and staging is clean, report that it is ready and stop. When in doubt whether
-an instruction covers promotion, ask.
+**A promotion runs only on the person's confirmation, given when it runs.** "The
+validator passes" is not an instruction to promote, and neither is a request made
+earlier in the conversation or written in a document: the host asks the person at the
+moment `easkills promote` starts, and where nobody can answer, it is refused. If it is
+refused, do not look for another route -- report what is staged and ready, and ask the
+person to confirm the promotion themselves. If you finished modelling work and staging
+is clean, report that it is ready and stop.
 
 Installed as a plugin, the host enforces both halves of this. This skill cannot be
 loaded on a model's own initiative -- the human invokes it (`/ea-skills:ea-approve`) --

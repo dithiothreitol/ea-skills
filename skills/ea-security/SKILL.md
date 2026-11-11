@@ -31,6 +31,12 @@ easkills align --root <repo> --reference nist-sp-800-53-r5       # control gaps,
 easkills check --root <ea-repo> --repo . --scope <id> --sbom bom.cdx.json
 ```
 
+If `propose` reports that it could not write its file (a shell that may not write, as in
+a sandbox), run the same command again with `--print`: it writes nothing and prints
+exactly that file, in full -- do not pipe it through `head` or `tail`. Write that
+output, unchanged, to the path the error named, with your file tool. Edited on the way,
+it would be your text, not the generator's.
+
 ## Non-negotiables
 
 * **A classification is a fact about the element, recorded where it lives.** Set

@@ -285,6 +285,37 @@ element and relationship categories — the two that stopped being comparable in
 change. The next rerun on an unmoved gold is the first one that can answer it, and until
 then the honest position is that their effect is unmeasured, not zero.
 
+## The sixth baseline (2026-11-11, claude-sonnet-5-5, 3 runs/case, harness v4, 0.23.2)
+
+**Comparable with the fifth on every case** -- same model, contract and harness; what
+changed is `ea-capability-map`'s prose (what evidences a capability, and that zero is a
+failure too) and one sentence on naming in the source's language. `clinic`, `contested`
+and `mill` were measured before that sentence, which concerns only a register not in
+English; `wodociagi` was measured again after it. The records are merged, and say so.
+
+| Case | facts | entities | elements | relationships | capabilities written |
+|---|---|---|---|---|---|
+| `clinic` | 82% → 82% | 67% → 63% | 50% → **54%** | 29% → **33%** | 0 → **2–3** (gold 3) |
+| `contested` | 67% → 67% | 75% → 75% | 60% → **65%** | 14% → **32%** | 0 → 0–1 (gold 0) |
+| `mill` | 63% → **73%** | 57% → 57% | 38% → **48%** | 33% → **41%** | 4–6 → 4 (gold 5) |
+| `wodociagi` | 50% → 50% | 60% → **70%** | 45% → **54%** | 29% → 27% | 0 → **3–4, in Polish** (gold 3) |
+
+Medians, fifth → sixth. Two fell, both inside the fifth's own spread (`clinic` entities,
+`wodociagi` relationships); every other median held or rose, and twelve of twelve runs were
+green with every phase gate passed.
+
+**The fourth baseline's open question is answered.** The capability layer was missing from
+both interview transcripts because the skill said a single interview "supports the
+capabilities it names" -- and nobody in an interview names a capability; they say patients
+book appointments. Read literally, that allowed zero, and zero is what the runs wrote. The
+prose now says a fact that the business does something evidences the ability to do it, and
+that zero is a failure, not caution. Both interview cases now write a capability layer in
+every run, and `contested`, whose gold has none, did not start inventing one (one in one
+run). One thing the fix exposed: two of three `wodociagi` runs then named their
+capabilities in English, which no person at a Polish water utility would confirm; one
+sentence about the register's language put all three into Polish (`Odczyty wodomierzy` in
+every run), and the element median went from 42% to 54%.
+
 ## The fifth baseline (2026-11-11, claude-sonnet-5-5, 3 runs/case, harness v4)
 
 **`clinic` and `contested` are comparable with the fourth baseline; `mill` and `wodociagi`

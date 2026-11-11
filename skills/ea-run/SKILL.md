@@ -97,7 +97,8 @@ stakeholders produce diagrams nobody asked for.
 * Deterministic gates decide, skills propose. If a gate blocks, fix inputs -- never
   bypass flags in anything you present as done.
 * Three-repair cap everywhere; after that, escalate the open question.
-* `approved/` changes only via `promote`, on explicit human instruction.
+* `approved/` changes only via `promote`, confirmed by the person when it runs -- a
+  request is not a confirmation.
 * Report at the end of any multi-skill run: which stages ran, gate verdicts, what is
   staged awaiting review, and the open questions -- one consolidated summary, not one
   per skill.

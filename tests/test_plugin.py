@@ -820,3 +820,35 @@ def test_the_guard_holds_the_approval_records_to_promote(ea_repo, tool, tool_inp
     assert bool(message) is refused
     if refused:
         assert "approval" in message and "easkills promote" in message
+
+
+@pytest.mark.parametrize("target", ["model/approved/a.yaml", "governance-log/approvals/approval-2026-11-11-01.yaml"])
+def test_a_refusal_hands_the_decision_back_instead_of_inviting_another_route(target):
+    """0.23.2: "run on an explicit human instruction" read, to an agent that had been asked
+    to promote, as permission it already held -- it went looking for another route and
+    ended without asking anybody. The refusal now says what the `ask` says."""
+    message = _hook("guard_approved")._refusal(target)
+    assert "Do not look for another route" in message and "confirm the promotion" in message
+    assert "is not that confirmation" in message and "explicit human instruction" not in message
+
+
+@pytest.mark.parametrize("name", ["ea-align", "ea-ai-governance", "ea-intake", "ea-security"])
+def test_the_skills_that_run_propose_say_how_to_place_an_unwritten_file(name):
+    """0.23.2: under `claude plugin eval` no shell command may write, so the generator's
+    file never landed and `proposals-stay-skeletons` failed every run. `propose` now prints
+    the exact content it could not write; the skill says to copy it unchanged."""
+    _, body = _frontmatter(REPO_ROOT / "skills" / name / "SKILL.md")
+    flat = " ".join(body.split())
+    assert "If `propose` reports that it could not write its file" in flat and "unchanged" in flat
+    assert "with `--print`" in flat and "do not pipe it through `head` or `tail`" in flat
+
+
+def test_the_four_copies_of_the_unwritten_file_paragraph_are_one_text():
+    """Each skill is loaded alone, so each carries the paragraph; this keeps the copies one
+    text, so a correction cannot reach three skills and miss the fourth."""
+    copies = {}
+    for name in ("ea-align", "ea-ai-governance", "ea-intake", "ea-security"):
+        flat = " ".join(_frontmatter(REPO_ROOT / "skills" / name / "SKILL.md")[1].split())
+        start = flat.index("If `propose` reports that it could not write its file")
+        copies[name] = flat[start: flat.index("not the generator's.", start)]
+    assert len(set(copies.values())) == 1, copies

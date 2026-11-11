@@ -173,6 +173,12 @@ that what it *cannot* supply is impossible to miss.
 easkills propose --root <repo> --from align --as-of <date> --dry-run
 ```
 
+Drop `--dry-run` to write the skeletons. If `propose` reports that it could not write
+its file (a shell that may not write, as in a sandbox), run the same command again with
+`--print`: it writes nothing and prints exactly that file, in full -- do not pipe it
+through `head` or `tail`. Write that output, unchanged, to the path the error named,
+with your file tool. Edited on the way, it would be your text, not the generator's.
+
 **Three things a requirement has to say, and none of them can be derived from a taxonomy
 node:**
 

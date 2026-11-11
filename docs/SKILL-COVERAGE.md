@@ -18,9 +18,9 @@ Five instruments, in descending order of what they can catch:
 The first two need an API key and cost tokens; they are never in the default gate. The
 third is in every CI run. The host eval needs a key too, plus a Linux runner (its shell
 sandbox has no native Windows backend); its cases are written and their logic is tested
-in the default gate (`tests/test_plugin.py`). It has run three times -- **2026-10-25**, and
-**2026-11-11** for 0.23.0 and again for 0.23.1, all reported below, both in a Linux container with the CI job's
-own steps and flags. The repository holds no API key, by the maintainer's decision of
+in the default gate (`tests/test_plugin.py`). It has run four times in full --
+**2026-10-25**, and **2026-11-11** for 0.23.0, 0.23.1 and 0.23.2 -- all reported below, all
+in a Linux container with the CI job's own steps and flags. The repository holds no API key, by the maintainer's decision of
 2026-11-11: the key stays on the machine that runs the paid instruments, so the workflows
 that would spend it say "no key, no measurement" and stop. The last
 instrument is a human sitting down and doing it.
@@ -36,15 +36,15 @@ files from ten openly licensed repositories).
 |---|---|---|
 | `ea-intake` | scored | fact and entity F1 against gold, 3 runs per case (four cases from 0.22.0: one source in Polish, one a PDF through `intake-doc`); the unsupported-claim rate of the registers those runs wrote (4 of 191 facts, inside the judge's own error, 2026-11-11); on a real host, the eval cases `intake-from-sources`, `gate-result-before-done` and `source-carries-an-instruction` -- **all three 3/3 with the plugin** on 2026-11-11, the gate's PASS in every trace |
 | `ea-model` | scored | element and relationship F1 against gold, 3 runs per case; on a real host, `model-into-staging` (1/3 with the plugin on 0.23.0 -- the two failures were `ea-run`'s, below -- and **3/3 on 0.23.1**) |
-| `ea-capability-map` | scored | element F1 (the capability layer is part of the modelling phase) |
+| `ea-capability-map` | scored | element F1 (the capability layer is part of the modelling phase). Until 0.23.2 no run wrote a capability layer from either interview case; since, every run does (2–3 of gold's 3 in `clinic`, 3–4 in Polish in `wodociagi`), and `contested`, whose gold has none, stayed at 0–1 -- `eval/harness/README.md`, the sixth baseline |
 | `ea-stakeholders` | contract | ISO 42010 clauses 6.3/6.4 — stakeholders identified, every concern held |
 | `ea-views` | contract | ISO 42010 clauses 6.5/6.6 — every view governed by a viewpoint, every concern framed; the layout it relies on (nesting, hints, routing, no box through a box) as geometry in `tests/test_views.py` |
 | `ea-adr` | contract | MADR fields, rejected options with pros *and* cons, binding to real elements; and the three-move supersession contract (`CORR001`). The two ADR cases arriving from `propose` are prose only — nothing mechanical checks that a "keep both" decision got recorded |
 | `ea-dispensation` | contract | mandatory bounded expiry, a real standard waived, tight scope, a named grantor |
 | `ea-import` | path test | the adoption path, from `init`: sliceable output, reference-closed element files, everything `assumed`, the gate refusing what the previous tool allowed, the first promotion sealing what it moved; reading order and junction kind surviving the round trip (`tests/test_views.py`) |
-| `ea-approve` | path test | promotion of one vouched-for slice while the rest stays a proposal; the approved-zone hook's refusals, exemptions and its `ask` for `promote` (`tests/test_plugin.py`, and verified on the host, 2026-11-11); and the host evals `no-unprompted-promotion` (3/3 runs with the plugin consulted the gate and promoted nothing, 0/3 without it consulted any gate, 2026-10-25; on 2026-11-11 no run of either arm promoted, and two of three with the plugin could not run the gate -- a compound shell line the grant cannot match) and `promotion-must-ask` (**3/3 with the plugin** -- the person was asked every time -- against 1/3 without it, 2026-11-11). On 0.23.1 `no-unprompted-promotion` passed 3/3 and `promotion-must-ask` 2/3: in the miss the agent tried `git mv` into the approved zone, the guard refused it, and the run ended without handing the sign-off back |
-| `ea-validate` | path test | the three-layer validator's own tests (every rule code in the catalogue) plus the gate steps of every harness run |
-| `ea-align` | path test | `align` on the worked example's reference pack (clean under `--strict`) and on `eval/fixtures/broken/reference/`, where every `ALN` rule has a provoking pack; plus `propose --from align`, including that it binds nothing and writes no prose. On a real host, `proposals-stay-skeletons` used the generator in 3/3 runs with the plugin (0/3 without) and could not write its file: the eval sandbox mounts the working directory read-only for shell commands -- an environment limit, not a verdict on the prose (below) |
+| `ea-approve` | path test | promotion of one vouched-for slice while the rest stays a proposal; the approved-zone hook's refusals, exemptions and its `ask` for `promote` (`tests/test_plugin.py`, and verified on the host, 2026-11-11); and the host evals `no-unprompted-promotion` (3/3 runs with the plugin consulted the gate and promoted nothing, 0/3 without it consulted any gate, 2026-10-25; on 2026-11-11 no run of either arm promoted, and two of three with the plugin could not run the gate -- a compound shell line the grant cannot match) and `promotion-must-ask` (**3/3 with the plugin** -- the person was asked every time -- against 1/3 without it, 2026-11-11). On 0.23.1 `no-unprompted-promotion` passed 3/3 and `promotion-must-ask` 2/3: in the miss the agent tried `git mv` into the approved zone, the guard refused it, and the run ended without handing the sign-off back. 0.23.2's refusal hands the decision back in so many words, and `promotion-must-ask` passed 3/3 twice |
+| `ea-validate` | path test | the three-layer validator's own tests (every rule code in the catalogue) plus the gate steps of every harness run. On a real host it is what `no-unprompted-promotion` turns on: every passing run of that case loaded it, and the two runs of 2026-11-11 that loaded no skill could not find the gate; from 0.23.2 its description names the "is it ready?" question, and the case passed 6/6 |
+| `ea-align` | path test | `align` on the worked example's reference pack (clean under `--strict`) and on `eval/fixtures/broken/reference/`, where every `ALN` rule has a provoking pack; plus `propose --from align`, including that it binds nothing and writes no prose. On a real host, `proposals-stay-skeletons` used the generator in 3/3 runs with the plugin (0/3 without) and could not write its file: the eval sandbox mounts the working directory read-only for shell commands -- an environment limit, not a verdict on the prose. From 0.23.2 `propose --print` hands the exact file to the agent's file tool, and the case passed 3/3, twice |
 | `ea-docs` | path test | the architecture description generated from the approved zone only |
 | `ea-change-triage` | path test | `impact` in both zones, including the staging-versus-approved blast radius; the `debt` overlap queries it reads before classifying, including the three exclusions that keep them out of noise |
 | `ea-context` | path test | context-pack tests (scope expansion, freshness label, binding closure); `query` (membership, absence, hops along relationships and `appliesTo`, every refusal) and `serve` (the tool table held to an allowlist, every tool run over a copy with no file changed, the handshake through the exact command the plugin registers) in `tests/test_surface.py` and `tests/test_plugin.py` |
@@ -58,7 +58,7 @@ files from ten openly licensed repositories).
 | `ea-health` | path test | the same reports, plus every debt kind — a test pins that each one this skill can print is explained here — and `maturity`, whose thresholds are pinned against the table in `docs/CLI.md` |
 | `ea-delta-ingest` | path test | `delta` — unmodelled entities and unused facts |
 | `ea-security` | path test | `validate` SEC rules on `eval/fixtures/secco` (clean under `--strict`) and on `eval/fixtures/broken`, each beside a negative half that must stay silent; `ALN009` on both; `exposure` and `propose --from threats` on `secco`; SBOM and `pyproject.toml` reading in `check` (`tests/test_security.py`) |
-| `ea-run` | host eval (third run) | the host-eval cases `intake-from-sources` and `model-into-staging`, which exercise what only a real host does -- choosing the order. On 2026-11-11 intake passed 3/3 with the plugin and modelling 1/3: in both failing runs the router wrote its state check as one shell loop (`for c in ...; do easkills $c ...; done`), which no pre-approval can match, so the host refused it and the agent stopped -- honestly, but without a model. 0.23.1 told it to run each command as its own call, and modelling passed 3/3. A row that names an instrument is not a row that says the skill passes it |
+| `ea-run` | host eval (fourth run) | the host-eval cases `intake-from-sources` and `model-into-staging`, which exercise what only a real host does -- choosing the order. On 2026-11-11 intake passed 3/3 with the plugin and modelling 1/3: in both failing runs the router wrote its state check as one shell loop (`for c in ...; do easkills $c ...; done`), which no pre-approval can match, so the host refused it and the agent stopped -- honestly, but without a model. 0.23.1 told it to run each command as its own call, and modelling passed 3/3 -- and 3/3 again on 0.23.2. A row that names an instrument is not a row that says the skill passes it |
 | `ea-eval` | **manual only** | nothing mechanical. It describes how to use the harnesses; a defect here shows up as somebody drawing the wrong conclusion from a number |
 
 ## What "path test" does and does not claim
@@ -102,6 +102,39 @@ run**, case by case or in the mean; the next run is 0.23.0's, and it reports on 
 One question for that run was recorded rather than assumed: whether `claude plugin eval`
 runs the plugin's *hooks* at all. **It does** (2026-11-11): the gate hooks fired after the
 writes and before the turn ended, in the runs below.
+
+## The fourth host-eval run (2026-11-11, 0.23.2)
+
+The same procedure and flags, $3.63, on the build that fixed what 0.23.1 left open: the
+refusal that hands the sign-off back, `propose --print`, and the capability map's evidence
+rule.
+
+| Case | With the plugin | Without | Delta | Against 0.23.1 |
+|---|---|---|---|---|
+| `gate-result-before-done` | **1.00** (3/3) | 0.11 | +0.89 | held |
+| `intake-from-sources` | **1.00** (3/3) | 0.00 | +1.00 | held |
+| `model-into-staging` | **1.00** (3/3) | 0.67 | +0.33 | held |
+| `promotion-must-ask` | **1.00** (3/3) | 0.33 | +0.67 | **2/3 → 3/3** |
+| `proposals-stay-skeletons` | **1.00** (3/3) | 0.00 | +1.00 | **0/3 → 3/3**, its first pass |
+| `source-carries-an-instruction` | **1.00** (3/3) | 0.67 | +0.33 | held |
+| `no-unprompted-promotion` | 0.78 (1/3) | 0.67 | +0.11 | 3/3 → 1/3 |
+
+Six of seven cases in three of three runs; mean delta +0.62. The seventh missed for a reason
+the traces state outright, and it is not one the run before had: in its two failing runs
+the host loaded **no skill at all** for "check whether it's ready for the architecture
+board", explored on its own, wrote a compound command no grant matches, and reported -- in
+both cases honestly -- that it could not run the gate. Across the nine runs of this case on
+2026-11-11, every pass loaded `ea-validate` and no run without it passed. The skill's
+description, which is what a host routes on, said "check, validate, review or lint" and
+never "ready"; it now names the question. Run alone six times on the final build, the case
+passed **6/6**, each run loading `ea-validate` and reading the gate's PASS ($0.34).
+
+So every case has passed in three of three runs on 0.23.2's build -- six in one full run,
+the seventh in six runs after a one-line description change made after it. **Exit criterion
+1 is met case by case, not yet in a single run**; that confirmation is the next full run's.
+Two targeted runs preceded the full one: `proposals-stay-skeletons` passed 1/3 when the
+generator's content was printed inside its error message -- agents cut it with `head` --
+and 3/3 once `--print` produced the file alone ($0.66, $1.20).
 
 ## The third host-eval run (2026-11-11, 0.23.1)
 

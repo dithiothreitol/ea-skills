@@ -212,6 +212,12 @@ report forgets. Start from the skeletons:
 easkills propose --root <repo> --from coverage --as-of <date>
 ```
 
+If `propose` reports that it could not write its file (a shell that may not write, as in
+a sandbox), run the same command again with `--print`: it writes nothing and prints
+exactly that file, in full -- do not pipe it through `head` or `tail`. Write that
+output, unchanged, to the path the error named, with your file tool. Edited on the way,
+it would be your text, not the generator's.
+
 That writes one entry per uncited statement into `facts/questions/proposed-questions.yaml`,
 each pointing at the file, the lines and the statement's own text, with the question left
 as `PROPOSED --`. Work through them: a fact you missed -> extract it and delete the entry;
