@@ -322,3 +322,30 @@ def test_cli_import_reports_and_writes_json(exported_example, tmp_path, capsys):
 def test_cli_import_refusal_exits_one(tmp_path, capsys):
     assert cli.main(["import", "--root", str(tmp_path), "--file", str(tmp_path / "no.xml")]) == 1
     assert "ERROR" in capsys.readouterr().out
+
+
+def test_a_generated_id_never_outgrows_the_schema(tmp_path):
+    """Found by the corpus run (tools/corpus_run.py): two unnamed relationships between
+    long-named elements derive the same 80-character id, and the collision suffix pushed
+    the second past the schema's limit -- an import that wrote a file its own gate rejects."""
+    long_a = "Control Manufacturing Operations Control Business Functions Group"
+    long_b = "Enterprise Business Planning And Logistics Business Functions Group"
+    elements = "".join(
+        f'<element identifier="e{i}" xsi:type="BusinessFunction"><name>{name}</name></element>'
+        for i, name in ((1, long_a), (2, long_b))
+    )
+    relationships = "".join(
+        f'<relationship identifier="r{i}" source="e1" target="e2" xsi:type="Aggregation"/>' for i in (1, 2, 3)
+    )
+    source = tmp_path / "long.xml"
+    source.write_text(
+        '<?xml version="1.0"?><model xmlns="http://www.opengroup.org/xsd/archimate/3.0/" '
+        'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
+        f"<elements>{elements}</elements><relationships>{relationships}</relationships></model>",
+        encoding="utf-8",
+    )
+    importer.import_exchange(tmp_path, source)
+    ids = [item["id"] for item in yaml.safe_load((tmp_path / "model" / "staging" / "relations.yaml").read_text(encoding="utf-8"))["relationships"]]
+    assert len(set(ids)) == 3 and all(len(i) <= 80 for i in ids), ids
+    report = validate.validate(tmp_path, zone="staging")
+    assert "SCHEMA001" not in {f.code for f in report.findings}

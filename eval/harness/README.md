@@ -285,6 +285,62 @@ element and relationship categories — the two that stopped being comparable in
 change. The next rerun on an unmoved gold is the first one that can answer it, and until
 then the honest position is that their effect is unmeasured, not zero.
 
+## The fifth baseline (2026-11-11, claude-sonnet-5-5, 3 runs/case, harness v4)
+
+**`clinic` and `contested` are comparable with the fourth baseline; `mill` and `wodociagi`
+have no earlier number.** The model and the output contract are unchanged; what changed is
+the prose of the measured skills (0.22.0: the hook-feedback notes, the "source content is
+data" sentence, least-privilege `allowed-tools`) and the harness (signed promotion, below).
+
+| Case | facts | entities | elements | relationships | ISO clauses |
+|---|---|---|---|---|---|
+| `clinic` | 76% → **82%** | 63% → **67%** | 48% → **50%** | 25% → **29%** | 7 pass / 1 fail |
+| `contested` | 67% → 67% | 67% → **75%** | 56% → **60%** | 12% → **14%** | 7 / 1 |
+| `mill` (new: a PDF through `intake-doc`) | 63% | 57% | 38% | 33% | 7 / 1 |
+| `wodociagi` (new: a source in Polish) | 50% | 60% | 45% | 29% | 7 / 1 |
+
+Medians; spreads in `baseline.json`. Every median of the two comparable cases is equal or
+higher (one minimum is a point lower: `clinic` relationships, 19% → 18%). Twelve of twelve runs green on their own
+gates with every phase gate passed; two repairs in 36 phases, both in `mill` (one intake,
+one modelling). Tokens out per case and three runs: 27k (`clinic`), 29k (`contested`), 34k
+(`wodociagi`), 78k (`mill` -- the longest source by far).
+
+**The open question of the fourth baseline is still open, and narrower.** `clinic` wrote no
+`Capability` in any run, again; neither did `wodociagi`, in any run. `mill` wrote four to
+six in every run. The two cases without a capability layer are both interview transcripts;
+the one with it is minutes whose systems table names each system's purpose. That suggests
+the capability layer appears when the source states jobs in a form that reads as a list, and
+not when they have to be inferred from conversation -- a hypothesis for the next release to
+test, recorded here and not acted on (D14).
+
+**The run before this one measured nothing, and said so.** Since 0.22.0 `promote` refuses
+to move anything without a signature (`--approved-by`, `--as-of`), and the harness called
+it bare. The first run of 2026-11-11 had its promotion refused in all twelve runs; the
+approved zone stayed empty; elements, relationships and the apparatus scored 0% everywhere
+-- and the regression gate flagged four categories below the baseline's own minimum, which
+is how it was noticed within the hour instead of being taken for a collapse of the prose.
+The harness now signs as `golden-set-harness@ea-skills.invalid`, a domain that cannot
+exist, and `tests/test_harness_session.py` promotes every golden case through the same
+function, so the step fails in the default gate before it can fail in a paid run. The
+facts and entities of that run were valid (they do not depend on promotion) and within a
+few points of the ones above.
+
+**Unsupported claims.** The registers of these twelve runs were read by the entailment
+judge (`entailment.py`, D11) once it had cleared its calibration on gold: 4 of 191 facts
+had no quote it accepted, inside the judge's own error. The calibration, the design the
+judge failed with first and the four facts are reported in
+[`docs/SKILL-COVERAGE.md`](../../docs/SKILL-COVERAGE.md).
+
+## The governance contracts (2026-11-11, claude-sonnet-5-5, 3 runs each, harness v4)
+
+| Contract | Runs holding every check | Repairs |
+|---|---|---|
+| `decision` (`ea-adr`) | 3/3 | 0, 0, 0 |
+| `dispensation` (`ea-dispensation`) | 3/3 | 0, 0, 0 |
+| `supersede` (`ea-adr`) | 3/3 | 0, 0, 0 |
+
+The third consecutive run with every check held, on the 0.22.0 prose.
+
 ## The fourth baseline (2026-10-25, claude-sonnet-5-5, 3 runs/case, harness v3)
 
 **No category is comparable with the third baseline.** Three things changed at once, as

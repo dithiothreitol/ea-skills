@@ -76,11 +76,17 @@ def test_the_readme_status_sentence_agrees_with_the_phase_table(repo_root):
     """"Phase 8 is under way" sat above a table that said Phase 8 was done, for a release.
     The sentence and the table are now the same claim, checked once."""
     readme = _read(repo_root, "README.md")
-    sentence = re.search(r"\*\*Phases 0–(\d+) are complete; Phase (\d+) is under way\*\*", readme)
+    sentence = re.search(r"\*\*Phases 0–(\d+) are complete(?:; Phase (\d+) is under way)?\*\*", readme)
     assert sentence, "the README's status sentence moved -- update this test with it"
-    complete, current = int(sentence.group(1)), int(sentence.group(2))
+    complete = int(sentence.group(1))
     rows = dict(re.findall(r"^\| (\d+) \| [^|]+ \| \*\*([a-z ]+)\*\*", readme, re.MULTILINE))
     assert all(rows.get(str(n)) == "done" for n in range(complete + 1)), rows
+    if sentence.group(2) is None:
+        # Between phases (0.23.0 closed Phase 9): no row may claim work the sentence denies.
+        assert "under way" not in rows.values(), rows
+        assert max(map(int, rows)) == complete, "a phase row beyond the last complete one"
+        return
+    current = int(sentence.group(2))
     assert rows.get(str(current)) == "under way", rows
     assert current == complete + 1
     assert (repo_root / "docs" / f"PHASE{current}-PLAN.md").is_file(), "the status sentence links the current plan"

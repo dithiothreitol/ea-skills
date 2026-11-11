@@ -42,6 +42,46 @@ def run(common):
     return _load("ea_run", "run.py")
 
 
+# ------------------------------------------------------------------------- promotion
+
+
+@pytest.mark.parametrize("case", ["clinic", "contested", "wodociagi", "mill"])
+def test_every_run_ends_with_a_promotion_that_lands(run, tmp_path, case):
+    """The run's one deterministic write into the approved zone, on gold staged the way a run
+    stages it. Bare, it was refused in every run of 2026-11-11 (promote requires a signature
+    since 0.22.0) and the scores read 0% -- a step that fails must fail here first."""
+    scratch = tmp_path / case
+    shutil.copytree(run.CASES[case], scratch)
+    staging = scratch / "model" / "staging"
+    staging.mkdir(parents=True, exist_ok=True)
+    moved = sorted(p.name for p in (scratch / "model" / "approved").glob("*.yaml"))
+    for name in moved:
+        (scratch / "model" / "approved" / name).rename(staging / name)
+    done = run.promote(scratch, today="2026-11-11")
+    assert done.returncode == 0, done.stdout[-1200:]
+    assert sorted(p.name for p in (scratch / "model" / "approved").glob("*.yaml")) == moved
+    record = (scratch / "governance-log" / "approvals" / "approval-2026-11-11-01.yaml").read_text(encoding="utf-8")
+    assert run.SIGNER in record
+    run.require_promoted(done)  # a landed promotion passes the check every run makes
+
+
+def test_a_refused_promotion_fails_the_run_instead_of_scoring_zero(run, tmp_path):
+    """The silent-0% class, closed at the source: whatever refuses a promotion -- here a
+    staged model the approved-zone gate rejects -- the run fails with the reason."""
+    scratch = tmp_path / "clinic"
+    shutil.copytree(run.CASES["clinic"], scratch)
+    (scratch / "model" / "staging").mkdir(parents=True, exist_ok=True)
+    (scratch / "model" / "staging" / "broken.yaml").write_text(
+        "relationships:\n  - id: rel-x\n    type: Assignment\n    source: nowhere\n    target: nothing\n", encoding="utf-8"
+    )
+    done = run.promote(scratch, today="2026-11-11")
+    assert done.returncode != 0
+    with pytest.raises(ValueError, match="promotion refused"):
+        run.require_promoted(done)
+    approvals = scratch / "governance-log" / "approvals"
+    assert not (approvals.is_dir() and any(approvals.glob("*.yaml"))), "a refused promotion writes no record"
+
+
 # ------------------------------------------------------------------------- contract
 
 

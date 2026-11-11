@@ -39,7 +39,7 @@ from typing import Any
 import yaml
 from lxml import etree
 
-from . import aoef, oracle
+from . import aoef, genschema, oracle
 
 # Property keys `aoef.py` writes for governance metadata; lifted back into DSL fields
 # on import (and removed from the property map, so nothing exists twice).
@@ -55,6 +55,7 @@ TYPE_ALIASES = {"AndJunction": "Junction", "OrJunction": "Junction"}
 JUNCTION_KINDS = {"AndJunction": "and", "OrJunction": "or"}
 
 SLUG_CHARS = set("abcdefghijklmnopqrstuvwxyz0123456789._-")
+SLUG_MAX = genschema.SLUG_MAX_LENGTH  # read from the schema, so the two cannot drift
 
 
 class ImportRefusal(RuntimeError):
@@ -98,7 +99,7 @@ def _slugify(text: str) -> str:
     replaced = "".join(ch if ch in SLUG_CHARS else "-" for ch in lowered)
     collapsed = re.sub(r"-{2,}", "-", replaced)
     trimmed = collapsed.strip("-._")
-    return trimmed[:80].rstrip("-._")
+    return trimmed[:SLUG_MAX].rstrip("-._")
 
 
 def _strip_export_prefix(identifier: str) -> str:
@@ -127,7 +128,11 @@ class _IdAllocator:
         slug = base
         suffix = 2
         while slug in self.used:
-            slug = f"{base}-{suffix}"
+            # The suffix makes room for itself: appended to an 80-character base it produced
+            # an id the schema rejects -- found by running import over other people's models
+            # (tools/corpus_run.py), where long derived relationship names collide often.
+            tail = f"-{suffix}"
+            slug = f"{base[: SLUG_MAX - len(tail)].rstrip('-._')}{tail}"
             suffix += 1
         self.used.add(slug)
         if slug != identifier:

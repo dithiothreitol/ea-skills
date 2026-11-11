@@ -54,9 +54,22 @@ jobs:
         with:
           python-version: "3.12"
 
+      # Into the interpreter first on PATH, because that is the one the hooks find: the eval
+      # sandbox passes no EASKILLS_PYTHON through, and a hook on an interpreter without the
+      # dependencies reports "the gate could not run" after every write (2026-11-11).
       - name: Install the runtime dependencies `easkills` needs
         if: env.HAS_KEY == 'true'
         run: python -m pip install --require-hashes -r constraints.txt
+
+      # A real session puts the plugin's bin/ on the Bash tool's PATH; the plugin-eval sandbox
+      # does not (checked 2026-11-11, Claude Code 2.1.322), and every `easkills` call in a run
+      # failed with "command not found". This stands in for exactly that, and nothing else.
+      - name: Put the plugin's command on PATH, as an installed plugin has it
+        if: env.HAS_KEY == 'true'
+        run: |
+          printf '#!/bin/sh\nexec "%s/bin/easkills" "$@"\n' "$GITHUB_WORKSPACE" | sudo tee /usr/local/bin/easkills >/dev/null
+          sudo chmod 755 /usr/local/bin/easkills
+          easkills oracle-info
 
       - name: Install the sandbox backend and Claude Code
         if: env.HAS_KEY == 'true'

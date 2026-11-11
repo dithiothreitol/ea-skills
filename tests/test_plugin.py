@@ -450,6 +450,28 @@ def test_the_gate_hook_reports_a_passing_gate_in_one_line(clinic_repo):
     assert context.startswith("ea-skills gate (validate-facts)") and "0 error(s)" in context and "PASS" in context
 
 
+def test_the_gate_hook_shows_the_person_its_verdict_in_the_channel_a_trace_records(clinic_repo):
+    """``additionalContext`` reaches the model and leaves no trace in a host's stream-json; a
+    hook's ``systemMessage`` is recorded ("PostToolUse:Write says: ..."). The first 0.22.0
+    host eval could not see one passing gate for exactly that reason (2026-11-11)."""
+    hook = _hook("run_gate")
+    register = clinic_repo / "facts" / "register" / "interview-clinic.yaml"
+    register.write_text(register.read_text(encoding="utf-8"), encoding="utf-8")
+    passed = hook.decide(_write_payload(clinic_repo, "facts/register/interview-clinic.yaml"))
+    assert passed["systemMessage"] == (
+        "ea-skills gate (validate-facts) after writing facts/register/interview-clinic.yaml: "
+        "0 error(s), 0 warning(s) -- PASS"
+    )
+    (clinic_repo / "model" / "staging" / "bad.yaml").write_text(ILLEGAL_STAGING, encoding="utf-8")
+    blocked = hook.decide(_write_payload(clinic_repo, "model/staging/bad.yaml"))
+    assert "\n" not in blocked["systemMessage"] and blocked["systemMessage"].endswith("-- FAIL")
+    recorded = json.dumps(
+        {"type": "system", "subtype": "informational", "content": f"PostToolUse:Write says: {passed['systemMessage']}"}
+    )
+    pattern = re.compile(_grader_pattern("gate-verdict-passes"))
+    assert pattern.search(recorded), "the property grader must read the verdict the way the host records it"
+
+
 def test_the_gate_hook_reads_shell_write_targets(clinic_repo):
     (clinic_repo / "model" / "staging" / "bad.yaml").write_text(ILLEGAL_STAGING, encoding="utf-8")
     payload = {
@@ -482,6 +504,7 @@ def test_a_gate_that_could_not_run_says_so_by_name(clinic_repo, monkeypatch):
     output = hook.decide(_write_payload(clinic_repo, "facts/register/interview-clinic.yaml"))
     context = output["hookSpecificOutput"]["additionalContext"]
     assert "could not run" in context and "lxml" in context and "Nothing was checked" in context
+    assert "did not run" in output["systemMessage"] and "lxml" in output["systemMessage"], "the person is told too"
 
 
 def test_the_gate_hook_script_fails_open_with_a_notice_on_garbage():
@@ -655,8 +678,9 @@ GRADER_PROOFS: dict[str, tuple[list[str], list[str]]] = {
         [
             _VERDICT_PASS,
             "1 error(s), 0 warning(s) -- FAIL\n(repaired)\n0 error(s), 2 warning(s) -- OK PASS",
-            json.dumps({"additionalContext": "ea-skills gate (validate-facts) after writing facts/register/a.yaml: "
-                        "0 error(s), 0 warning(s) -- PASS"}),
+            # How a host trace records the plugin's own gate (probed 2026-11-11, 2.1.322).
+            json.dumps({"type": "system", "subtype": "informational", "content": "PostToolUse:Write says: ea-skills "
+                        "gate (validate-facts) after writing facts/register/a.yaml: 0 error(s), 0 warning(s) -- PASS"}),
             json.dumps({"content": _VERDICT_PASS}),
         ],
         [
@@ -706,6 +730,10 @@ GRADER_PROOFS: dict[str, tuple[list[str], list[str]]] = {
 
 def _graders() -> list[tuple[Path, dict]]:
     return [(path, _frontmatter(path)[0]) for case in CASES for path in sorted((case / "graders").glob("*.md"))]
+
+
+def _grader_pattern(name: str) -> str:
+    return next(spec["pattern"] for path, spec in _graders() if path.stem == name)
 
 
 def test_every_pattern_grader_is_proved_against_both_answers():

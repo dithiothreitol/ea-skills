@@ -45,8 +45,10 @@ import argparse
 import json
 import os
 import shutil
+import subprocess
 import time
 from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -69,6 +71,33 @@ from common import (  # noqa: E402
 )
 
 BASELINE_PATH = HARNESS_DIR / "baseline.json"
+# Who signs a run's promotion. Since 0.22.0 `promote` moves nothing without a signature, and
+# the harness called it bare: on 2026-11-11 all twelve runs had their promotion refused,
+# and elements, relationships and the apparatus scored 0% everywhere -- caught only because
+# the baseline comparison flagged the drop. A domain that cannot exist, so a harness record
+# is never mistaken for a person's decision.
+SIGNER = "golden-set-harness@ea-skills.invalid"
+
+
+def promote(scratch: Path, today: str | None = None) -> subprocess.CompletedProcess:
+    """The promotion every run ends with, signed the way promotion now has to be."""
+    return easkills(
+        "promote", "--root", str(scratch), "--approved-by", SIGNER, "--as-of", today or date.today().isoformat()
+    )
+
+
+def require_promoted(done: subprocess.CompletedProcess) -> None:
+    """A refused promotion fails the run; it is never scored.
+
+    Scoring an empty approved zone reads as 0% on elements, relationships and the apparatus
+    -- a collapse of the prose, to anyone reading the number. Whatever refused it (a gate the
+    model failed, a flag the harness forgot), the run did not produce a model to score.
+    """
+    if done.returncode != 0:
+        tail = " / ".join((done.stdout or done.stderr).strip().splitlines()[-2:]) or "no output"
+        raise ValueError(f"promotion refused (exit {done.returncode}), so there is no approved model to score: {tail}")
+
+
 CASES = {
     "clinic": REPO_ROOT / "eval" / "golden" / "clinic",
     "contested": REPO_ROOT / "eval" / "golden" / "contested",
@@ -348,8 +377,9 @@ def run_case(client: Any, case: str, model: str, workdir: Path, candidates: int 
         )
 
         # ---------------------------------------------------------------- promote & score
-        promotion = easkills("promote", "--root", str(scratch))
+        promotion = promote(scratch)
         result.gates["promotion"] = promotion.returncode
+        require_promoted(promotion)
         result.apparatus = measure_apparatus(scratch, workdir)
 
         # Removed before the run, not after: the work directory is reused across

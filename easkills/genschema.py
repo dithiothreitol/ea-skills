@@ -150,6 +150,8 @@ def split_regulatory_scopes(value: Any) -> frozenset[str]:
     return frozenset(str(value or "").split())
 
 SLUG_PATTERN = "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$"
+# The longest id the schemas accept; `import` cuts generated ids to it (0.23.0).
+SLUG_MAX_LENGTH = 80
 DATE_PATTERN = "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
 
 
@@ -388,7 +390,7 @@ def build_schema() -> dict[str, Any]:
             "slug": {
                 "type": "string",
                 "pattern": SLUG_PATTERN,
-                "maxLength": 80,
+                "maxLength": SLUG_MAX_LENGTH,
                 "description": "Stable author-supplied identifier; never regenerated.",
             },
             "provenance": provenance_item,
@@ -558,7 +560,7 @@ def build_facts_schema() -> dict[str, Any]:
             "slug": {
                 "type": "string",
                 "pattern": SLUG_PATTERN,
-                "maxLength": 80,
+                "maxLength": SLUG_MAX_LENGTH,
                 "description": "Stable author-supplied identifier; never regenerated.",
             },
             "provenance": provenance_item,
@@ -632,7 +634,7 @@ def build_entities_schema() -> dict[str, Any]:
             "slug": {
                 "type": "string",
                 "pattern": SLUG_PATTERN,
-                "maxLength": 80,
+                "maxLength": SLUG_MAX_LENGTH,
             },
             "entity": {
                 "type": "object",
@@ -818,7 +820,7 @@ def _slug_def() -> dict[str, Any]:
     return {
         "type": "string",
         "pattern": SLUG_PATTERN,
-        "maxLength": 80,
+        "maxLength": SLUG_MAX_LENGTH,
     }
 
 

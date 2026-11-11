@@ -78,8 +78,11 @@ With the plugin installed, the owning gate also runs on its own after every writ
 governed directory -- `facts/` (`validate-facts`), `model/staging/` (`validate --zone
 staging`), `standards/`, `governance-log/`, `services/` (`validate-gov`) -- and again
 before a turn ends on uncommitted governed changes, its verdict handed back to the model
-as hook feedback. Same commands, same exit codes; nothing a hook reports is a finding a
-manual run would not.
+as hook feedback. After a write, the person sees the verdict too, as one line --
+`ea-skills gate (validate-facts) after writing facts/register/a.yaml: 0 error(s), 0
+warning(s) -- PASS`, or why the gate did not run -- which is also the only form in which
+a host's session trace records it (0.23.0). Same commands, same exit codes; nothing a hook
+reports is a finding a manual run would not.
 
 ## Build & publish
 

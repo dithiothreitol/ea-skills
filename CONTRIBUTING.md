@@ -55,7 +55,26 @@ runs each one as a real Claude Code session with only this plugin loaded and aga
 plugin, and reports the difference. Dispatch it from the Actions tab
 (`.github/workflows/plugin-eval.yml`); it needs a Linux runner, because shell-granting runs
 need an OS sandbox native Windows does not have. `tests/test_plugin.py` keeps the cases
-loadable and proves the one judgement-bearing grader against both answers.
+loadable and proves the one judgement-bearing grader against both answers. Run it anywhere
+else and give the sandbox what the workflow gives it: the runtime dependencies in the
+interpreter first on `PATH` (the hooks find that one -- no environment is passed through)
+and `easkills` on the shell's path (the eval sandbox does not add a plugin's `bin/`).
+
+Three more instruments, each run on purpose and never in the gate:
+
+```bash
+python eval/harness/entailment.py --workdir <harness workdir> --out entailment.json   # paid
+python tools/corpus_run.py <scratch-dir> --json corpus.json    # network, no tokens
+python tools/simulate.py <out-dir>                             # neither: the whole lifecycle
+```
+
+The judge says whether the harness's registers quote what they claim, and reports nothing
+unless it first clears its calibration on gold. The corpus run feeds openly licensed
+exchange files nobody here wrote through `import` and the gate. The simulation walks the
+lifecycle end to end as one story -- scaffold to sealed, published, assessed model, the
+hooks fed the payloads a host sends -- and writes an `INDEX.md` of every step, its expected
+and observed outcome, and every artifact; run it before a release, because no per-command
+test answers whether the commands work together.
 
 ## Changing the plugin surface
 

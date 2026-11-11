@@ -30,45 +30,45 @@
       "f1": {
         "elements": {
           "min": 0.4583,
-          "median": 0.4783,
-          "max": 0.4783
+          "median": 0.5,
+          "max": 0.55
         },
         "entities": {
-          "min": 0.6,
-          "median": 0.6316,
-          "max": 0.6667
+          "min": 0.6316,
+          "median": 0.6667,
+          "max": 0.8
         },
         "facts": {
-          "min": 0.7517,
-          "median": 0.7636,
-          "max": 0.8019
+          "min": 0.7636,
+          "median": 0.8163,
+          "max": 0.8163
         },
         "relationships": {
-          "min": 0.1905,
-          "median": 0.25,
-          "max": 0.3636
+          "min": 0.1818,
+          "median": 0.2857,
+          "max": 0.3
         }
       },
       "minF1": [
-        0.1905,
-        0.25,
-        0.3636
+        0.2857,
+        0.3,
+        0.1818
       ],
       "apparatus": {
         "clausesFailed": 1,
         "clausesPassed": 7,
         "concerns": 1,
         "stakeholders": 1,
-        "views": 2
+        "views": 1
       },
       "apparatusClauseFailures": [
         "6.10"
       ],
       "tokens": {
         "input": 36,
-        "output": 28682,
-        "cacheWrite": 35731,
-        "cacheRead": 28036
+        "output": 26929,
+        "cacheWrite": 21198,
+        "cacheRead": 45292
       },
       "servedBy": [
         "claude-sonnet-5-5"
@@ -100,36 +100,178 @@
       "gaveUp": [],
       "f1": {
         "elements": {
-          "min": 0.45,
-          "median": 0.5556,
+          "min": 0.5789,
+          "median": 0.6,
           "max": 0.6875
         },
         "entities": {
-          "min": 0.6316,
-          "median": 0.6667,
-          "max": 0.7059
+          "min": 0.6667,
+          "median": 0.75,
+          "max": 0.75
         },
         "facts": {
-          "min": 0.6422,
+          "min": 0.6731,
           "median": 0.6731,
-          "max": 0.6731
+          "max": 0.7404
         },
         "relationships": {
-          "min": 0.1176,
-          "median": 0.125,
-          "max": 0.1333
+          "min": 0.1429,
+          "median": 0.1429,
+          "max": 0.2667
         }
       },
       "minF1": [
-        0.1333,
-        0.125,
-        0.1176
+        0.1429,
+        0.1429,
+        0.2667
+      ],
+      "apparatus": {
+        "clausesFailed": 1,
+        "clausesPassed": 7,
+        "concerns": 2,
+        "stakeholders": 2,
+        "views": 2
+      },
+      "apparatusClauseFailures": [
+        "6.10"
+      ],
+      "tokens": {
+        "input": 36,
+        "output": 28765,
+        "cacheWrite": 20254,
+        "cacheRead": 45644
+      },
+      "servedBy": [
+        "claude-sonnet-5-5"
+      ]
+    },
+    "mill": {
+      "runs": 3,
+      "completed": 3,
+      "failures": [],
+      "repairs": [
+        {
+          "intake": 0,
+          "modelling": 1,
+          "apparatus": 0
+        },
+        {
+          "intake": 0,
+          "modelling": 0,
+          "apparatus": 0
+        },
+        {
+          "intake": 1,
+          "modelling": 0,
+          "apparatus": 0
+        }
+      ],
+      "gatesGreen": 3,
+      "phasesGreen": 3,
+      "gaveUp": [],
+      "f1": {
+        "elements": {
+          "min": 0.3704,
+          "median": 0.383,
+          "max": 0.4286
+        },
+        "entities": {
+          "min": 0.5128,
+          "median": 0.5714,
+          "max": 0.5789
+        },
+        "facts": {
+          "min": 0.6249,
+          "median": 0.6349,
+          "max": 0.7582
+        },
+        "relationships": {
+          "min": 0.2963,
+          "median": 0.3265,
+          "max": 0.3415
+        }
+      },
+      "minF1": [
+        0.2963,
+        0.3265,
+        0.3415
       ],
       "apparatus": {
         "clausesFailed": 1,
         "clausesPassed": 7,
         "concerns": 4,
-        "stakeholders": 2,
+        "stakeholders": 4,
+        "views": 4
+      },
+      "apparatusClauseFailures": [
+        "6.10"
+      ],
+      "tokens": {
+        "input": 44,
+        "output": 77907,
+        "cacheWrite": 75347,
+        "cacheRead": 68793
+      },
+      "servedBy": [
+        "claude-sonnet-5-5"
+      ]
+    },
+    "wodociagi": {
+      "runs": 3,
+      "completed": 3,
+      "failures": [],
+      "repairs": [
+        {
+          "intake": 0,
+          "modelling": 0,
+          "apparatus": 0
+        },
+        {
+          "intake": 0,
+          "modelling": 0,
+          "apparatus": 0
+        },
+        {
+          "intake": 0,
+          "modelling": 0,
+          "apparatus": 0
+        }
+      ],
+      "gatesGreen": 3,
+      "phasesGreen": 3,
+      "gaveUp": [],
+      "f1": {
+        "elements": {
+          "min": 0.3846,
+          "median": 0.4545,
+          "max": 0.5417
+        },
+        "entities": {
+          "min": 0.5,
+          "median": 0.6,
+          "max": 0.7273
+        },
+        "facts": {
+          "min": 0.5,
+          "median": 0.5,
+          "max": 0.5
+        },
+        "relationships": {
+          "min": 0.2609,
+          "median": 0.2857,
+          "max": 0.381
+        }
+      },
+      "minF1": [
+        0.2857,
+        0.2609,
+        0.381
+      ],
+      "apparatus": {
+        "clausesFailed": 1,
+        "clausesPassed": 7,
+        "concerns": 4,
+        "stakeholders": 1,
         "views": 3
       },
       "apparatusClauseFailures": [
@@ -137,9 +279,9 @@
       ],
       "tokens": {
         "input": 36,
-        "output": 32986,
-        "cacheWrite": 21732,
-        "cacheRead": 41705
+        "output": 34358,
+        "cacheWrite": 25257,
+        "cacheRead": 45916
       },
       "servedBy": [
         "claude-sonnet-5-5"

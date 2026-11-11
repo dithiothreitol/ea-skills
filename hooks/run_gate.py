@@ -229,8 +229,13 @@ def run_gate(root: Path, gate: str, timeout: float = TIMEOUT_SECONDS) -> GateRes
     )
 
 
+def _head(result: GateResult, after: str) -> str:
+    """The prefix both channels share -- and the graders read -- so they cannot drift apart."""
+    return f"ea-skills gate ({result.gate}) after {after}:"
+
+
 def message(result: GateResult, after: str) -> str:
-    head = f"ea-skills gate ({result.gate}) after {after}:"
+    head = _head(result, after)
     if not result.ran:
         return (
             f"{head} the gate could not run -- {result.problem}. Nothing was checked; run "
@@ -254,8 +259,21 @@ def run_within(gates: list[tuple[Path, str]], budget: float = BUDGET_SECONDS) ->
     return [run_gate(root, gate, timeout=min(TIMEOUT_SECONDS, deadline - time.monotonic())) for root, gate in gates]
 
 
+def headline(result: GateResult, after: str) -> str:
+    """The one line the person sees: which gate, after what, and its verdict or why it did not run."""
+    outcome = result.verdict if result.ran else f"did not run -- {result.problem}"
+    return f"{_head(result, after)} {outcome}"
+
+
 def decide(payload: dict) -> dict | None:
-    """The hook's JSON output for this tool call, or None for no output."""
+    """The hook's JSON output for this tool call, or None for no output.
+
+    The findings go to the model (``reason`` / ``additionalContext``); the verdict line goes
+    to the person as well (``systemMessage``). That second channel is also the only one a
+    host's stream-json trace records -- ``additionalContext`` reaches the model and leaves
+    no trace (probed 2026-11-11, Claude Code 2.1.322) -- so without it a gate that ran and
+    passed is indistinguishable, in any recorded session, from a gate that never ran.
+    """
     owned_paths: dict[tuple[Path, str], str] = {}
     for path in written_paths(payload):
         owned = gate_for(path)
@@ -266,9 +284,10 @@ def decide(payload: dict) -> dict | None:
     if not results:
         return None
     text = "\n\n".join(message(result, f"writing {after}") for result, after in results)
+    shown = "\n".join(headline(result, f"writing {after}") for result, after in results)
     if any(result.ran and result.errors for result, _after in results):
-        return {"decision": "block", "reason": text}
-    return {"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": text}}
+        return {"decision": "block", "reason": text, "systemMessage": shown}
+    return {"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": text}, "systemMessage": shown}
 
 
 def main() -> int:
